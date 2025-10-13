@@ -44,8 +44,12 @@ public class ApiResponse<T> {
         return new ApiResponse<>(OK_CODE, DEFAULT_MESSAGE, EMPTY);
     }
 
-    public static <T> ApiResponse<String> created() {
+    public static ApiResponse<Void> created() {
         return new ApiResponse<>(CREATED_CODE, DEFAULT_MESSAGE, null);
+    }
+
+    public static ApiResponse<Void> created(String message) {
+        return new ApiResponse<>(CREATED_CODE, message, null);
     }
 
     private ApiResponse(int statusCode, String message, T data) {
