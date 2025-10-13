@@ -1,14 +1,24 @@
 spring:
   application:
     name: monito
+  security:
+    user:
+      name: user
+      password: 1234
 
-  # DataBase
-#  datasource:
-#    driver-class-name: oracle.jdbc.driver.OracleDriver
-#    url: ${DB_URL}
-#    username: ${DB_USERNAME}
-#    password: ${DB_PASSWORD}
-#    type: com.zaxxer.hikari.HikariDataSource
+#   DataBase
+  datasource:
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    type: com.zaxxer.hikari.HikariDataSource
 
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}  # ?? 32? ??
+    expiration: 86400000  # 24?? (???)
+    refresh-expiration: 604800000  # 7? (???)
