@@ -1,7 +1,7 @@
 package com.monito.global.security.userdetails;
 
-import com.monito.domians.member.domain.Member;
-import com.monito.domians.member.repository.MemberRepository;
+import com.monito.domains.member.domain.Member;
+import com.monito.domains.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
