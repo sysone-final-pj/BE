@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-import org.springframework.stereotype.Service;
 
 @Getter
 @SuperBuilder

@@ -13,6 +13,7 @@ public class MemberRowMapper implements RowMapper<Member> {
                 .id(rs.getLong("id"))
                 .username(rs.getString("username"))
                 .password(rs.getString("password"))
+                .email(rs.getString("email"))
                 .role(Role.valueOf(rs.getString("role")))
                 .createdAt(rs.getTimestamp("created_at"))
                 .updatedAt(rs.getTimestamp("updated_at"))

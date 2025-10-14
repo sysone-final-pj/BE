@@ -3,7 +3,6 @@ package com.monito.domians.member.service;
 import com.monito.domians.member.domain.Member;
 import com.monito.domians.member.dto.request.MemberCreateRequestDTO;
 import com.monito.domians.member.dto.request.MemberUpdateRequestDTO;
-import com.monito.domians.member.dto.response.MemberResponseDTO;
 import com.monito.domians.member.repository.MemberRepository;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;

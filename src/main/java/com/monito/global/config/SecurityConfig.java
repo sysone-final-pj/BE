@@ -45,8 +45,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authz -> authz
                         // 인증이 필요 없는 경로
-                        .requestMatchers("/").permitAll() // 테스트용 엔드포인트 todo: 향후 제거
-                        .requestMatchers("/api/auth/**").permitAll()
+//                        .requestMatchers("/").permitAll() // 테스트용 엔드포인트 todo: 향후 제거
+                        .requestMatchers("/api/auth/**", "/api/test/public").permitAll()
                         .requestMatchers("/*").permitAll()
                         .requestMatchers("/api/members").permitAll() // 회원가입
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
