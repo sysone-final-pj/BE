@@ -52,7 +52,7 @@ public class ApiResponse<T> {
         return new ApiResponse<>(CREATED_CODE, message, null);
     }
 
-    public static ApiResponse<Long> created(Long id, String message) { return new ApiResponse<>(CREATED_CODE, message, id); }
+    public static <T> ApiResponse<T> created(T data, String message) { return new ApiResponse<>(CREATED_CODE, message, data); }
 
     private ApiResponse(int statusCode, String message, T data) {
         this.statusCode = statusCode;

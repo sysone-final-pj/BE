@@ -28,7 +28,7 @@ public class MemberController {
      * 사용자 등록
      */
     @PostMapping
-    public ApiResponse<Long> createMember(@Valid @RequestBody MemberCreateRequestDTO memberCreateRequestDTO) {
+    public ApiResponse<Member> createMember(@Valid @RequestBody MemberCreateRequestDTO memberCreateRequestDTO) {
         return ApiResponse.created(memberService.createMember(memberCreateRequestDTO), "사용자가 성공적으로 등록되었습니다.");
     }
 

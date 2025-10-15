@@ -23,7 +23,7 @@ public class MemberServiceImpl implements MemberService{
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
-    public Long createMember(MemberCreateRequestDTO memberCreateRequestDTO) {
+    public Member createMember(MemberCreateRequestDTO memberCreateRequestDTO) {
         // account_id 중복 체크
         if (memberRepository.existsByUsername(memberCreateRequestDTO.getUsername())) {
             throw new BadRequestException(ExceptionMessage.DUPLICATE_ACCOUNT_ID);
@@ -43,6 +43,7 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
     }
@@ -50,30 +51,17 @@ public class MemberServiceImpl implements MemberService{
     @Override
     public void updateMember(Long id, MemberUpdateRequestDTO memberUpdateRequestDTO) {
         // 사용자 존재 확인
-        memberRepository.findById(id)
+        Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException(ExceptionMessage.MEMBER_NOT_FOUND));
 
-        // 비밀번호가 있으면 암호화
-        if (memberUpdateRequestDTO.getPassword() != null) {
-            String encodedPassword = passwordEncoder.encode(memberUpdateRequestDTO.getPassword());
-            memberUpdateRequestDTO.setPassword(encodedPassword);
-        }
-
-        int result = memberRepository.updateMember(id, memberUpdateRequestDTO);
-        if (result == 0) {
-            throw new BadRequestException(ExceptionMessage.MEMBER_UPDATE_FAILED);
-        }
+        member.updateInfo(memberUpdateRequestDTO, passwordEncoder);
     }
 
     @Override
     public void deleteMember(Long id) {
-        // 사용자 존재 확인
-        memberRepository.findById(id)
+        Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException(ExceptionMessage.MEMBER_NOT_FOUND));
 
-        int result = memberRepository.deleteMember(id);
-        if (result == 0) {
-            throw new BadRequestException(ExceptionMessage.MEMBER_DELETE_FAILED);
-        }
+        member.markAsDeleted();
     }
 }

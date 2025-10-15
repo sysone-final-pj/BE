@@ -6,7 +6,7 @@ import com.monito.domains.member.dto.request.MemberUpdateRequestDTO;
 import java.util.List;
 
 public interface MemberService {
-    Long createMember(MemberCreateRequestDTO memberCreateRequestDTO);
+    Member createMember(MemberCreateRequestDTO memberCreateRequestDTO);
     Member getMemberById(Long id);
     List<Member> getAllMembers();
     void updateMember(Long id, MemberUpdateRequestDTO memberUpdateRequestDTO);
