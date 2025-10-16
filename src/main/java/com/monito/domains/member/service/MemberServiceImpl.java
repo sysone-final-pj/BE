@@ -49,12 +49,16 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
-    public void updateMember(Long id, MemberUpdateRequestDTO memberUpdateRequestDTO) {
+    public void updateMember(Long id, MemberUpdateRequestDTO dto) {
         // 사용자 존재 확인
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException(ExceptionMessage.MEMBER_NOT_FOUND));
 
-        member.updateInfo(memberUpdateRequestDTO, passwordEncoder);
+        String encodedPassword = dto.getPassword() != null
+                ? passwordEncoder.encode(dto.getPassword())
+                : null;
+
+        member.updateInfo(dto.getEmail(), encodedPassword, dto.getRole());
     }
 
     @Override

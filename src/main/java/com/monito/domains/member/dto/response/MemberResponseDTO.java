@@ -1,7 +1,7 @@
 package com.monito.domains.member.dto.response;
 
 import com.monito.domains.member.domain.Role;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
@@ -10,6 +10,6 @@ public class MemberResponseDTO {
     private String username;
     private Role role;
     private String email;
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

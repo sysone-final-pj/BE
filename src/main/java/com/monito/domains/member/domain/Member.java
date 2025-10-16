@@ -16,7 +16,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLRestriction;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Entity
 @Table(name = "members")
@@ -36,7 +35,6 @@ public class Member extends BaseEntity {
     )
     private Long id;
 
-
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
@@ -44,15 +42,15 @@ public class Member extends BaseEntity {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Role role;
 
     @Column(nullable = false, unique = false, length = 100)
     private String email;
 
-    public void updateInfo(MemberUpdateRequestDTO dto, PasswordEncoder passwordEncoder){
-        if(dto.getEmail() != null) this.email = dto.getEmail();
-        if(dto.getPassword() != null) this.password = passwordEncoder.encode(dto.getPassword());
-        if(dto.getRole() != null) this.role = Role.valueOf(dto.getRole().toUpperCase());
+    public void updateInfo(String email, String password, String role){
+        if(email != null) this.email = email;
+        if(password != null) this.password = password;
+        if(role != null) this.role = Role.valueOf(role.toUpperCase());
     }
 }
