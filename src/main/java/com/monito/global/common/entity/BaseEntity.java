@@ -1,32 +1,38 @@
 package com.monito.global.common.entity;
 
-import java.sql.Timestamp;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @SuperBuilder
+@NoArgsConstructor
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public class BaseEntity {
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
-    private Integer isDeleted;
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    // 생성 시 자동 호출할 메서드
-    public void onCreate() {
-        this.createdAt = Timestamp.valueOf(LocalDateTime.now());
-        this.updatedAt = Timestamp.valueOf(LocalDateTime.now());
-        this.isDeleted = 0;
-    }
+    @LastModifiedDate
+    @Column(name= "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
-    // 수정 시 자동 호출할 메서드
-    public void onUpdate() {
-        this.updatedAt = Timestamp.valueOf(LocalDateTime.now());
-    }
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Integer isDeleted = 0;
 
     // 삭제 시 자동 호출할 메서드
     public void markAsDeleted() {
         this.isDeleted = 1;
-        this.updatedAt = Timestamp.valueOf(LocalDateTime.now());
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -52,6 +52,8 @@ public class ApiResponse<T> {
         return new ApiResponse<>(CREATED_CODE, message, null);
     }
 
+    public static <T> ApiResponse<T> created(T data, String message) { return new ApiResponse<>(CREATED_CODE, message, data); }
+
     private ApiResponse(int statusCode, String message, T data) {
         this.statusCode = statusCode;
         this.message = message;

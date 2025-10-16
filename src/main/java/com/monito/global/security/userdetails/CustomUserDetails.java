@@ -1,7 +1,7 @@
 package com.monito.global.security.userdetails;
 
-import com.monito.domians.member.domain.Member;
-import com.monito.domians.member.domain.Role;
+import com.monito.domains.member.domain.Member;
+import com.monito.domains.member.domain.Role;
 import java.util.Collection;
 import java.util.Collections;
 import lombok.Getter;

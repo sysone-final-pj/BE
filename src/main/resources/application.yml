@@ -1,18 +1,19 @@
 spring:
   application:
     name: monito
-  security:
-    user:
-      name: user
-      password: 1234
 
-#   DataBase
+  profiles:
+    active: dev
+
   datasource:
     driver-class-name: oracle.jdbc.driver.OracleDriver
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     type: com.zaxxer.hikari.HikariDataSource
+
+  jpa:
+    open-in-view: false
 
 server:
   port: 8080
