@@ -35,7 +35,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class ContainerLogs {
+public class ContainerLog {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "container_log_seq")
     @SequenceGenerator(
