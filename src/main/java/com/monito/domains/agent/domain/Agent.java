@@ -1,4 +1,4 @@
-package com.monito.domains.node.domain;
+package com.monito.domains.agent.domain;
 
 import com.monito.global.common.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -18,10 +18,10 @@ import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(
-        name = "nodes",
+        name = "agents",
         indexes = {
-                @jakarta.persistence.Index(name = "IDX_NODE_HOST_IP", columnList = "host_ip"),
-                @jakarta.persistence.Index(name = "IDX_NODE_API_TOKEN", columnList = "api_token")
+                @jakarta.persistence.Index(name = "IDX_AGENT_HOST_IP", columnList = "host_ip"),
+                @jakarta.persistence.Index(name = "IDX_AGENT_API_TOKEN", columnList = "api_token")
         }
 )
 @SuperBuilder
@@ -29,18 +29,18 @@ import org.hibernate.annotations.SQLRestriction;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Node extends BaseEntity {
+public class Agent extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "node_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "agent_seq")
     @SequenceGenerator(
-            name = "node_seq",
-            sequenceName = "NODE_SEQ",
+            name = "agent_seq",
+            sequenceName = "AGENT_SEQ",
             allocationSize = 1
     )
     private Long id;
 
     @Column(nullable = false, length = 100)
-    private String nodeName;
+    private String agentName;
 
     @Column(nullable = false, length = 50)
     private String hostIp;
@@ -65,8 +65,8 @@ public class Node extends BaseEntity {
         this.agentStatus = status;
     }
 
-    public void updateNodeInfo(String nodeName, String hostIp, Integer hostPort) {
-        if (nodeName != null) this.nodeName = nodeName;
+    public void updateAgentInfo(String agentName, String hostIp, Integer hostPort) {
+        if (agentName != null) this.agentName = agentName;
         if (hostIp != null) this.hostIp = hostIp;
         if (hostPort != null) this.hostPort = hostPort;
     }

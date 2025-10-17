@@ -1,6 +1,6 @@
 package com.monito.domains.container.domain;
 
-import com.monito.domains.node.domain.Node;
+import com.monito.domains.agent.domain.Agent;
 import com.monito.global.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,8 +39,8 @@ public class Container extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "node_id", nullable = false)
-    private Node node;
+    @JoinColumn(name = "agent_id", nullable = false)
+    private Agent agent;
 
     @Column(nullable = false, length = 64)
     private String containerHash;
