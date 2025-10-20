@@ -1,4 +1,4 @@
-package com.monito.domains.agent.service;
+package com.monito.domains.agent.component;
 
 import java.time.Instant;
 import java.util.Map;

@@ -3,7 +3,7 @@ package com.monito.domains.agent.scheduler;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.repository.AgentRepository;
-import com.monito.domains.container.service.ContainerCollectorService;
+import com.monito.domains.container.service.ContainerCollectorServiceImpl;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class AgentPollingScheduler {
 
     private final AgentRepository agentRepository;
-    private final ContainerCollectorService collectorService;
+    private final ContainerCollectorServiceImpl collectorService;
 
     @Scheduled(
         fixedDelayString = "${app.scheduler.agent-polling.fixed-delay}",
