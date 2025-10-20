@@ -1,4 +1,4 @@
-package com.monito.domains.node.domain;
+package com.monito.domains.agent.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
 package com.monito.domains.alert.domain;
 
+import com.monito.domains.container.domain.MetricType;
 import com.monito.domains.member.domain.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,29 +47,32 @@ public class Alert {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rule_id", nullable = false)
+    private AlertRule alertRule;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @Column(nullable = false)
+    private Long containerId;
+
+    @Column(nullable = false, length = 255)
+    private String message;
+
+    @Column(nullable = false)
+    private LocalDateTime sendTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 255)
+    private MetricType metricType;
+
+    @Column(nullable = false)
+    private Boolean isRead;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AlertLevel alertLevel;
-
-    @Column(nullable = false)
-    private String message;
-
-    @Column(name = "send_time", nullable = false)
-    private LocalDateTime sendTime;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "message_type", nullable = false, length = 20)
-    private MessageType messageType;
-
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     public void markAsRead() {
         this.isRead = true;
