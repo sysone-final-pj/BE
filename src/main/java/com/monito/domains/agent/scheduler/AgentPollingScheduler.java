@@ -24,10 +24,10 @@ public class AgentPollingScheduler {
     private final AgentRepository agentRepository;
     private final ContainerCollectorServiceImpl collectorService;
 
-    @Scheduled(
-        fixedDelayString = "${app.scheduler.agent-polling.fixed-delay}",
-        initialDelayString = "${app.scheduler.agent-polling.initial-delay}"
-    )
+//    @Scheduled(
+//        fixedDelayString = "${app.scheduler.agent-polling.fixed-delay}",
+//        initialDelayString = "${app.scheduler.agent-polling.initial-delay}"
+//    )
     public void pollAllAgents() {
         List<Agent> activeAgents = agentRepository.findByAgentStatus(AgentStatus.ONLINE);
 
