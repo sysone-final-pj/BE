@@ -1,6 +1,6 @@
 package com.monito.domains.container.dto.response;
 
-import com.monito.domains.container.domain.ContainerStatus;
+import com.monito.domains.container.domain.ContainerState;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +19,7 @@ public class ContainerResponseDto {
 
     private String containerHash;
     private String name;
-    private ContainerStatus status;
+    private ContainerState status;
 
     // CPU 관련
     private BigDecimal cpuPercent;

@@ -5,12 +5,13 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ContainerStatus {
-    DEBUG("디버그"),
-    INFO("정보"),
-    WARN("경고"),
-    ERROR("에러"),
-    FATAL("치명적");
+public enum ContainerState {
+    RUNNING("실행중"),
+    RESTARTING("재실행"),
+    DEAD("DEAD"),
+    CREATED("생성됨"),
+    EXIT("종료"),
+    PAUSED("일시정지");
 
     private final String description;
 }

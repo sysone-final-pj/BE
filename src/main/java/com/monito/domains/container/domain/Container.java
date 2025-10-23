@@ -50,7 +50,7 @@ public class Container extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private ContainerStatus status;
+    private ContainerState status;
 
     // CPU 관련
     @Column(precision = 6, scale = 2)
@@ -149,7 +149,7 @@ public class Container extends BaseEntity {
     @Column(nullable = false)
     private Integer txDropped;
 
-    public void updateStats(ContainerStatus status, BigDecimal cpuPercent, BigDecimal memPercent,
+    public void updateStats(ContainerState status, BigDecimal cpuPercent, BigDecimal memPercent,
                             Long cpuUsageTotal, Long memUsage, Long rxBytes, Long txBytes) {
         this.status = status;
         this.cpuPercent = cpuPercent;

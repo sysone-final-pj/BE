@@ -65,8 +65,10 @@ public enum ExceptionMessage {
     EMAIL_BAD_REQUEST("잘못된 이메일 요청입니다."),
 
     // 작업 로그 관련
-    ISSUE_LOG_NOT_FOUND("작업 로그 데이터를 찾을 수 없습니다.")
-    ;
+    ISSUE_LOG_NOT_FOUND("작업 로그 데이터를 찾을 수 없습니다."),
+
+    // Agent 관련
+    AGENT_NOT_MATCH_PASSWORD("agentkey에 할당된 비밀번호가 일치하지 않습니다.");
 
     private final String message;
 }

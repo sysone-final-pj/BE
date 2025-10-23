@@ -9,19 +9,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AgentRepository extends JpaRepository<Agent, Long> {
-
     /**
-     * 특정 상태의 Agent 목록 조회
-     * @param status Agent 상태 (ONLINE, OFFLINE 등)
-     * @return 해당 상태의 Agent 목록
-     */
-    List<Agent> findByAgentStatus(AgentStatus status);
-
-    /**
-     * Host IP와 Port로 Agent 조회
-     * @param hostIp 호스트 IP
-     * @param hostPort 호스트 포트
+     * AgentKey로 Agent 조회 (WebSocket 인증용)
+     * @param agentKey UUID 기반 Agent 식별 키
      * @return Agent
      */
-    Optional<Agent> findByHostIpAndHostPort(String hostIp, Integer hostPort);
+    Optional<Agent> findByAgentKey(String agentKey);
 }
