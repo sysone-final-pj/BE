@@ -159,4 +159,13 @@ public class Container extends BaseEntity {
         this.rxBytes = rxBytes;
         this.txBytes = txBytes;
     }
+
+    // 테스트용 메서드
+    public void updateCpuPercent(BigDecimal cpuPercent) {
+        this.cpuPercent = cpuPercent;
+    }
+
+    public void updateMemPercent(BigDecimal memPercent) {
+        this.memPercent = memPercent;
+    }
 }

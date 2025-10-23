@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Alert Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        input, button {
+            padding: 8px 12px;
+            margin: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #messages {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .message {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            background-color: white;
+        }
+        .message.CRITICAL {
+            border-left-color: #dc3545;
+        }
+        .message.WARNING {
+            border-left-color: #ffc107;
+        }
+        .message.INFO {
+            border-left-color: #17a2b8;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket 알림 테스트</h1>
+
+    <div class="container">
+        <h2>연결 설정</h2>
+        <div>
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" value="1" placeholder="사용자 ID 입력">
+            <button id="connectBtn" onclick="connect()">연결</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>연결 해제</button>
+        </div>
+        <div id="status" class="status disconnected">연결 끊김</div>
+    </div>
+
+    <div class="container">
+        <h2>수신 메시지</h2>
+        <div id="messages"></div>
+        <button onclick="clearMessages()">메시지 지우기</button>
+    </div>
+
+    <div class="container">
+        <h2>테스트용 알림 전송 (REST API)</h2>
+        <p>알림을 생성하면 연결된 WebSocket으로 실시간 전송됩니다.</p>
+        <div>
+            <label>JWT Token:</label>
+            <input type="text" id="jwtToken" placeholder="JWT 토큰 입력" style="width: 400px;">
+        </div>
+        <div>
+            <label>Rule ID:</label>
+            <input type="number" id="ruleId" value="1">
+        </div>
+        <div>
+            <label>Container ID:</label>
+            <input type="number" id="containerId" value="1">
+        </div>
+        <div>
+            <label>Message:</label>
+            <input type="text" id="message" value="테스트 알림입니다" style="width: 300px;">
+        </div>
+        <div>
+            <label>Metric Type:</label>
+            <select id="metricType">
+                <option value="CPU">CPU</option>
+                <option value="MEMORY">MEMORY</option>
+                <option value="NETWORK">NETWORK</option>
+            </select>
+        </div>
+        <div>
+            <label>Alert Level:</label>
+            <select id="alertLevel">
+                <option value="INFO">INFO</option>
+                <option value="WARNING">WARNING</option>
+                <option value="CRITICAL">CRITICAL</option>
+            </select>
+        </div>
+        <button onclick="sendTestAlert()">알림 생성 및 전송</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectInterval = null;
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                alert('User ID를 입력해주세요');
+                return;
+            }
+
+            // WebSocket 연결
+            const wsUrl = `ws://localhost:8080/ws/alerts?userId=${userId}`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                console.log('WebSocket 연결 성공');
+                updateStatus(true);
+                addMessage('시스템', 'WebSocket 연결 성공', 'INFO');
+            };
+
+            ws.onmessage = function(event) {
+                console.log('메시지 수신:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    addMessage(data.title || 'Alert', data.message, data.type, data);
+                } catch (e) {
+                    addMessage('Raw Message', event.data, 'INFO');
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket 에러:', error);
+                addMessage('시스템', 'WebSocket 에러 발생', 'CRITICAL');
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket 연결 종료');
+                updateStatus(false);
+                addMessage('시스템', 'WebSocket 연결 종료', 'WARNING');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = '연결됨';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = '연결 끊김';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function addMessage(title, message, type, data) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            messageDiv.innerHTML = `
+                <strong>${title}</strong> <span class="timestamp">[${timestamp}]</span><br>
+                ${message}
+                ${data ? `<br><small>Data: ${JSON.stringify(data, null, 2)}</small>` : ''}
+            `;
+
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        async function sendTestAlert() {
+            const token = document.getElementById('jwtToken').value;
+            if (!token) {
+                alert('JWT 토큰을 입력해주세요');
+                return;
+            }
+
+            const payload = {
+                ruleId: parseInt(document.getElementById('ruleId').value),
+                containerId: parseInt(document.getElementById('containerId').value),
+                message: document.getElementById('message').value,
+                metricType: document.getElementById('metricType').value,
+                alertLevel: document.getElementById('alertLevel').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/api/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('알림 생성 성공:', result);
+                    alert('알림이 생성되었습니다. WebSocket으로 전송됩니다.');
+                } else {
+                    const error = await response.json();
+                    console.error('알림 생성 실패:', error);
+                    alert('알림 생성 실패: ' + (error.message || response.statusText));
+                }
+            } catch (error) {
+                console.error('요청 실패:', error);
+                alert('요청 실패: ' + error.message);
+            }
+        }
+
+        // 페이지 언로드 시 연결 해제
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>

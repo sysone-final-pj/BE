@@ -4,6 +4,7 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.agent.component.AgentHealthTracker;
+import com.monito.domains.alert.service.AlertRuleEvaluator;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.response.ContainerLogResponseDto;
@@ -39,6 +40,7 @@ public class ContainerCollectorServiceImpl implements ContainerCollectorService{
     private final ContainerLogRepository logRepository;
     private final AgentRepository agentRepository;
     private final AgentHealthTracker healthTracker;
+    private final AlertRuleEvaluator alertRuleEvaluator;
 
     private static final int MAX_FAILURE_COUNT = 3;
     private static final int REQUEST_TIMEOUT_SECONDS = 5;
@@ -133,6 +135,9 @@ public class ContainerCollectorServiceImpl implements ContainerCollectorService{
 
             // 시계열 로그 저장 (히스토리 추적용)
             saveStatsLog(container, dto);
+
+            // 알림 규칙 평가 (임계값 초과 시 자동 알림 발생)
+            alertRuleEvaluator.evaluateContainer(container);
 
             log.debug("Container data 처리 및 저장 완료: {} ({})", dto.getName(), dto.getContainerHash());
 
