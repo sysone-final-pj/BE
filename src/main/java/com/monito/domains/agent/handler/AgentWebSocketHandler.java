@@ -1,6 +1,9 @@
 package com.monito.domains.agent.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.monito.domains.agent.domain.Agent;
+import com.monito.domains.agent.domain.AgentStatus;
+import com.monito.domains.agent.service.AgentService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -18,6 +21,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Slf4j
 public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
+    private final AgentService agentService;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, String> authenticatedAgents = new ConcurrentHashMap<>();
@@ -80,40 +84,59 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
     private void handleAuth(WebSocketSession session, Map<String, Object> data) throws Exception {
         String sessionId = session.getId();
-        String agentId = String.valueOf(data.get("agentId"));
+        String agentKey = String.valueOf(data.get("agentKey"));
         String password = String.valueOf(data.get("password"));
 
         log.info("═══════════════════════════════════════");
-        log.info("인증 핸들러");
-        log.info("client password : {}", password);
+        log.info("🔐 인증 시도");
+        log.info("   Session ID: {}", sessionId);
+        log.info("   Agent Key: {}", agentKey);
         log.info("═══════════════════════════════════════");
 
-        // TODO: 실제 DB 조회 및 비밀번호 검증
-        if (agentId != null && !agentId.isEmpty()
-                && password != null && password.equals("test123")) {
+        // 중복 연결 체크
+        if (authenticatedAgents.containsValue(agentKey)) {
+            sendMessage(session, Map.of(
+                    "type", "AUTH_FAILED",
+                    "message", "Agent already connected from another session",
+                    "timestamp", System.currentTimeMillis()
+            ));
 
-            authenticatedAgents.put(sessionId, agentId);
+            log.warn("인증 실패: 이미 연결된 Agent - agentKey: {}", agentKey);
+            session.close(CloseStatus.NOT_ACCEPTABLE);
+            return;
+        }
+
+        // Agent 인증
+        try {
+            Agent agent = agentService.authenticateAgent(agentKey, password);
+
+            // 인증 성공 처리
+            authenticatedAgents.put(sessionId, agentKey);
+            agentService.updateAgentStatus(agentKey, AgentStatus.ONLINE);
 
             sendMessage(session, Map.of(
                     "type", "AUTH_SUCCESS",
                     "message", "Authentication Successful",
-                    "agentId", agentId,
+                    "agentKey", agentKey,
+                    "agentName", agent.getAgentName(),
                     "timestamp", System.currentTimeMillis()
             ));
 
             log.info("인증 성공");
-            log.info("      Agent ID: {}", agentId);
+            log.info("      Agent Key: {}", agentKey);
+            log.info("      Agent Name: {}", agent.getAgentName());
             log.info("      현재 인증된 Agent 수: {}", authenticatedAgents.size());
-        } else {
+
+        } catch (Exception e) {
             sendMessage(session, Map.of(
                     "type", "AUTH_FAILED",
-                    "message", "Invalid credentials",
+                    "message", e.getMessage(),
                     "timestamp", System.currentTimeMillis()
             ));
 
             log.error("인증 실패");
-            log.error("      Agent ID: {}", agentId);
-            log.error("      Reason: Invalid credentials");
+            log.error("      Agent Key: {}", agentKey);
+            log.error("      Reason: {}", e.getMessage());
 
             session.close(CloseStatus.NOT_ACCEPTABLE);
         }
@@ -122,9 +145,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     // todo: 이러한 구조(응답 상태 확인)에서 네트워크 연결 비용 고려해보기
     private void handleMetrics(WebSocketSession session, Map<String, Object> data) throws Exception {
         String sessionId = session.getId();
-        String agentId = authenticatedAgents.get(sessionId);
+        String agentKey = authenticatedAgents.get(sessionId);
 
-        if (agentId == null) {
+        if (agentKey == null) {
             log.warn("인증되지 않은 세션에서 메트릭 전송 시도: {}", sessionId);
             sendMessage(session, Map.of(
                     "type", "ERROR",
@@ -133,12 +156,11 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-//        Map<String, Object> metricsData = (Map<String, Object>) data.get("data");
         Map<String, Object> metricsData = (Map<String, Object>) data.get("data");
 
         log.info("═══════════════════════════════════════");
-        log.info("📊 메트릭 수신");
-        log.info("   Agent ID: {}", agentId);
+        log.info("메트릭 수신");
+        log.info("   Agent Key: {}", agentKey);
         log.info("   데이터: {}", metricsData);
         log.info("   시각: {}", getCurrentTime());
         log.info("═══════════════════════════════════════");
@@ -154,9 +176,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handlePing(WebSocketSession session) throws Exception {
-        String agentId = authenticatedAgents.get(session.getId());
+        String agentKey = authenticatedAgents.get(session.getId());
 
-        log.debug("PING from Agent: {}", agentId);
+        log.debug("PING from Agent: {}", agentKey);
 
         sendMessage(session, Map.of(
                 "type", "PONG",
@@ -167,18 +189,20 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String sessionId = session.getId();
-        String agentId = authenticatedAgents.get(sessionId);
+        String agentKey = authenticatedAgents.get(sessionId);
 
-        WebSocketSession removedSession = sessions.remove(sessionId);
+        // Map에서 제거 (세션은 이미 닫힌 상태)
+        sessions.remove(sessionId);
         authenticatedAgents.remove(sessionId);
 
-        if(removedSession != null){
-            removedSession.close();
+        // Agent 상태를 OFFLINE으로 변경
+        if (agentKey != null) {
+            agentService.updateAgentStatus(agentKey, AgentStatus.OFFLINE);
         }
 
         log.info("═══════════════════════════════════════");
-        log.info("연결 종료");
-        log.info("   Agent ID: {}", agentId);
+        log.info("🔌 연결 종료");
+        log.info("   Agent Key: {}", agentKey);
         log.info("   Session ID: {}", sessionId);
         log.info("   Status: {}", status);
         log.info("   남은 연결 수: {}", sessions.size());
@@ -189,11 +213,16 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         String sessionId = session.getId();
-        String agentId = authenticatedAgents.get(sessionId);
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        // Agent 상태를 ERROR로 변경
+        if (agentKey != null) {
+            agentService.updateAgentStatus(agentKey, AgentStatus.ERROR);
+        }
 
         log.error("═══════════════════════════════════════");
         log.error("WebSocket 전송 에러");
-        log.error("   Agent ID: {}", agentId);
+        log.error("   Agent Key: {}", agentKey);
         log.error("   Session ID: {}", sessionId);
         log.error("   Error: ", exception);
         log.error("═══════════════════════════════════════");
