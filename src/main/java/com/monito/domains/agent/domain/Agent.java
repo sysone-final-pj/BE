@@ -8,8 +8,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,8 +22,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Table(
         name = "agents",
         indexes = {
-                @jakarta.persistence.Index(name = "IDX_AGENT_HOST_IP", columnList = "host_ip"),
-                @jakarta.persistence.Index(name = "IDX_AGENT_API_TOKEN", columnList = "api_token")
+                @jakarta.persistence.Index(name = "IDX_AGENT_KEY", columnList = "agent_key", unique = true),
         }
 )
 @SuperBuilder
@@ -39,23 +40,17 @@ public class Agent extends BaseEntity {
     )
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 36, updatable = false)
+    private String agentKey;
+
     @Column(nullable = false, length = 100)
     private String agentName;
-
-    @Column(nullable = false, length = 50)
-    private String hostIp;
-
-    @Column(nullable = false)
-    private Integer hostPort;
 
     @Column(nullable = false, length = 50)
     private String osType;
 
     @Column(nullable = false, length = 50)
     private String dockerVersion;
-
-    @Column(nullable = false, length = 255)
-    private String apiToken;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -65,9 +60,14 @@ public class Agent extends BaseEntity {
         this.agentStatus = status;
     }
 
-    public void updateAgentInfo(String agentName, String hostIp, Integer hostPort) {
+    public void updateAgentInfo(String agentName) {
         if (agentName != null) this.agentName = agentName;
-        if (hostIp != null) this.hostIp = hostIp;
-        if (hostPort != null) this.hostPort = hostPort;
+    }
+
+    @PrePersist
+    public void generateAgentKey() {
+        if (this.agentKey == null) {
+            this.agentKey = UUID.randomUUID().toString();
+        }
     }
 }

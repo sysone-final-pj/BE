@@ -54,7 +54,7 @@ public class ContainerStatsLog {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private ContainerStatus status;
+    private ContainerState status;
 
     // CPU 관련
     @Column(precision = 6, scale = 2)
