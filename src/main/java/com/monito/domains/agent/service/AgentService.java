@@ -10,10 +10,9 @@ public interface AgentService {
     /**
      * AgentKey로 Agent 인증 (WebSocket용)
      * @param agentKey UUID 기반 Agent 식별 키
-     * @param rawPassword 평문 비밀번호
      * @return 인증 성공 시 Agent 객체, 실패 시 empty
      */
-    Agent authenticateAgent(String agentKey, String rawPassword);
+    Agent authenticateAgent(String agentKey);
 
     /**
      * Agent 상태 업데이트

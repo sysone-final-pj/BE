@@ -85,7 +85,6 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private void handleAuth(WebSocketSession session, Map<String, Object> data) throws Exception {
         String sessionId = session.getId();
         String agentKey = String.valueOf(data.get("agentKey"));
-        String password = String.valueOf(data.get("password"));
 
         log.info("═══════════════════════════════════════");
         log.info("🔐 인증 시도");
@@ -108,7 +107,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
         // Agent 인증
         try {
-            Agent agent = agentService.authenticateAgent(agentKey, password);
+            Agent agent = agentService.authenticateAgent(agentKey);
 
             // 인증 성공 처리
             authenticatedAgents.put(sessionId, agentKey);

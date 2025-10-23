@@ -12,7 +12,6 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class AgentCreateRequestDTO {
     private String agentName;
-    private String password;
     private String osType;
     private String dockerVersion;
     private AgentStatus agentStatus;
@@ -20,7 +19,6 @@ public class AgentCreateRequestDTO {
     public Agent toEntity() {
         return Agent.builder()
                 .agentName(agentName)
-                .password(password)
                 .osType(osType)
                 .dockerVersion(dockerVersion)
                 .agentStatus(agentStatus)

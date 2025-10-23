@@ -46,9 +46,6 @@ public class Agent extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String agentName;
 
-    @Column(nullable = false, length = 255)
-    private String password;
-
     @Column(nullable = false, length = 50)
     private String osType;
 

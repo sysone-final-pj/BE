@@ -5,7 +5,6 @@ import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
-import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,19 +20,11 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Agent authenticateAgent(String agentKey, String rawPassword) {
+    public Agent authenticateAgent(String agentKey) {
         Agent agent = agentRepository.findByAgentKey(agentKey)
                 .orElseThrow(() ->
                     new NotFoundException(ExceptionMessage.DATA_NOT_FOUND)
                 );
-
-        // 비밀번호 검증 (개발 중: 평문 비교) todo: password encoder를 통해 암복호화
-        if (!rawPassword.equals(agent.getPassword())) {
-            log.warn("인증 실패: 비밀번호 불일치 - agentKey: {}", agentKey);
-            log.warn("입력된 비밀번호: {}", rawPassword);
-            log.warn("저장된 비밀번호: {}", agent.getPassword());
-            throw new BadRequestException(ExceptionMessage.AGENT_NOT_MATCH_PASSWORD);
-        }
 
         log.info("인증 성공 - agentKey: {}, agentName: {}", agentKey, agent.getAgentName());
         return agent;
