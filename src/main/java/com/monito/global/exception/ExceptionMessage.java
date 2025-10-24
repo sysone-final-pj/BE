@@ -74,9 +74,6 @@ public enum ExceptionMessage {
     ALERT_RULE_UPDATE_ACCESS_DENIED("본인의 알림 규칙만 수정할 수 있습니다."),
     ALERT_RULE_DELETE_ACCESS_DENIED("본인의 알림 규칙만 삭제할 수 있습니다."),
 
-    // Container 도메인 관련
-    CONTAINER_NOT_FOUND("컨테이너를 찾을 수 없습니다."),
-
     // 이메일 관련
     EMAIL_BAD_REQUEST("잘못된 이메일 요청입니다."),
 

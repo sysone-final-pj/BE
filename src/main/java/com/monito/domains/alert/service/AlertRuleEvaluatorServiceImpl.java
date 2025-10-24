@@ -4,7 +4,7 @@ import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.domain.AlertRule;
 import com.monito.domains.alert.dto.internal.AlertCreationDTO;
 import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.domain.MetricType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,29 +32,29 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
      * 해당 컨테이너에 대한 모든 활성화된 AlertRule을 조회하여 평가
      */
     @Override
-    public void evaluateContainer(Container container) {
+    public void evaluateContainer(ContainerStatsLog containerStats) {
         // 해당 컨테이너에 대한 활성화된 모든 규칙 조회
         List<AlertRule> activeRules = alertRuleRepository
-                .findByContainerIdAndIsEnabledTrue(container.getId());
+                .findByContainerIdAndIsEnabledTrue(containerStats.getContainer().getId());
 
-        log.debug("컨테이너 {} 평가: {}개 규칙 발견", container.getId(), activeRules.size());
+        log.debug("컨테이너 {} 평가: {}개 규칙 발견", containerStats.getContainer().getId(), activeRules.size());
 
         for (AlertRule rule : activeRules) {
-            evaluateRule(container, rule);
+            evaluateRule(containerStats, rule);
         }
     }
 
     /**
      * 특정 규칙에 대해 컨테이너 평가
      */
-    private void evaluateRule(Container container, AlertRule rule) {
+    private void evaluateRule(ContainerStatsLog containerStats, AlertRule rule) {
         try {
             // 메트릭 타입에 따라 현재 값 가져오기
-            BigDecimal currentValue = getCurrentMetricValue(container, rule.getMetricType());
+            BigDecimal currentValue = getCurrentMetricValue(containerStats, rule.getMetricType());
 
             if (currentValue == null) {
                 log.debug("메트릭 값이 null: containerId={}, metricType={}",
-                        container.getId(), rule.getMetricType());
+                        containerStats.getContainer().getId(), rule.getMetricType());
                 return;
             }
 
@@ -63,26 +63,26 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
 
             if (alertLevel != null) {
                 // 알림 발생 조건 충족
-                triggerAlertIfNeeded(container, rule, alertLevel, currentValue);
+                triggerAlertIfNeeded(containerStats, rule, alertLevel, currentValue);
             }
 
         } catch (Exception e) {
             log.error("규칙 평가 중 오류 발생: ruleId={}, containerId={}",
-                    rule.getId(), container.getId(), e);
+                    rule.getId(), containerStats.getContainer().getId(), e);
         }
     }
 
     /**
      * 컨테이너에서 메트릭 타입에 해당하는 현재 값 추출
      */
-    private BigDecimal getCurrentMetricValue(Container container, MetricType metricType) {
+    private BigDecimal getCurrentMetricValue(ContainerStatsLog containerStats, MetricType metricType) {
         return switch (metricType) {
-            case CPU -> container.getCpuPercent();
-            case MEMORY -> container.getMemPercent();
+            case CPU -> containerStats.getCpuPercent();
+            case MEMORY -> containerStats.getMemPercent();
             case NETWORK -> {
                 // 네트워크는 RX + TX 합계 (Mbps)
-                Long rxMbps = container.getRxMbps() != null ? container.getRxMbps() : 0L;
-                Long txMbps = container.getTxMbps() != null ? container.getTxMbps() : 0L;
+                Long rxMbps = containerStats.getRxMbps() != null ? containerStats.getRxMbps() : 0L;
+                Long txMbps = containerStats.getTxMbps() != null ? containerStats.getTxMbps() : 0L;
                 yield BigDecimal.valueOf(rxMbps + txMbps);
             }
             default -> null;
@@ -92,26 +92,26 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
     /**
      * 알림 발생 (쿨다운 체크 포함)
      */
-    private void triggerAlertIfNeeded(Container container, AlertRule rule,
+    private void triggerAlertIfNeeded(ContainerStatsLog containerStats, AlertRule rule,
                                       AlertLevel alertLevel, BigDecimal currentValue) {
-        String cooldownKey = getCooldownKey(rule.getMember().getId(), container.getId(), rule.getId());
+        String cooldownKey = getCooldownKey(rule.getMember().getId(), containerStats.getContainer().getId(), rule.getId());
         LocalDateTime now = LocalDateTime.now();
 
         // 쿨다운 체크
         if (!isCooldownExpired(cooldownKey, rule.getCooldownSeconds(), now)) {
             log.debug("쿨다운 기간 중 알림 스킵: memberId={}, containerId={}, ruleId={}",
-                    rule.getMember().getId(), container.getId(), rule.getId());
+                    rule.getMember().getId(), containerStats.getContainer().getId(), rule.getId());
             return;
         }
 
         // 알림 메시지 생성
-        String message = buildAlertMessage(container, rule, alertLevel, currentValue);
+        String message = buildAlertMessage(containerStats, rule, alertLevel, currentValue);
 
         // AlertCreationDTO 생성 후 알림 전송
         AlertCreationDTO dto = AlertCreationDTO.builder()
                 .member(rule.getMember())
                 .alertRule(rule)
-                .container(container)
+                .container(containerStats.getContainer())
                 .message(message)
                 .metricType(rule.getMetricType())
                 .metricValue(currentValue)
@@ -124,7 +124,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
         lastAlertTimes.put(cooldownKey, now);
 
         log.info("알림 발생: memberId={}, containerId={}, ruleId={}, level={}, value={}",
-                rule.getMember().getId(), container.getId(), rule.getId(), alertLevel, currentValue);
+                rule.getMember().getId(), containerStats.getContainer().getId(), rule.getId(), alertLevel, currentValue);
     }
 
     /**
@@ -151,7 +151,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
     /**
      * 알림 메시지 생성
      */
-    private String buildAlertMessage(Container container, AlertRule rule,
+    private String buildAlertMessage(ContainerStatsLog containerStats, AlertRule rule,
                                      AlertLevel alertLevel, BigDecimal currentValue) {
         String metricName = getMetricDisplayName(rule.getMetricType());
         BigDecimal threshold = getThresholdForLevel(rule, alertLevel);
@@ -159,7 +159,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
         return String.format(
                 "[%s] 컨테이너 '%s'의 %s 사용률이 임계값을 초과했습니다. (현재: %s%%, 임계값: %s%%)",
                 alertLevel.getDescription(),
-                container.getName(),
+                containerStats.getContainer().getName(),
                 metricName,
                 currentValue.setScale(2, BigDecimal.ROUND_HALF_UP),
                 threshold != null ? threshold.toString() : "N/A"

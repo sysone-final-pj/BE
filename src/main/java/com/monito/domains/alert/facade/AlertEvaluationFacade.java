@@ -1,7 +1,7 @@
 package com.monito.domains.alert.facade;
 
 import com.monito.domains.alert.service.AlertRuleEvaluatorService;
-import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerStatsLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,24 +21,24 @@ public class AlertEvaluationFacade {
     private final AlertRuleEvaluatorService alertRuleEvaluator;
 
     /**
-     * 단일 컨테이너 메트릭 평가 및 알림 생성
+     * 단일 컨테이너 통계 로그 평가 및 알림 생성
      */
-    public void evaluateContainer(Container container) {
+    public void evaluateContainerStats(ContainerStatsLog containerStats) {
         log.debug("컨테이너 평가 시작: containerId={}, containerName={}",
-                container.getId(), container.getName());
+                containerStats.getContainer().getId(), containerStats.getContainer().getName());
 
-        alertRuleEvaluator.evaluateContainer(container);
+        alertRuleEvaluator.evaluateContainer(containerStats);
 
-        log.debug("컨테이너 평가 완료: containerId={}", container.getId());
+        log.debug("컨테이너 평가 완료: containerId={}", containerStats.getContainer().getId());
     }
 
     /**
-     * 여러 컨테이너 일괄 평가
+     * 여러 컨테이너 통계 로그 일괄 평가
      */
-    public void evaluateAllContainers(List<Container> containers) {
-        log.info("전체 컨테이너 평가 시작: 총 {}개", containers.size());
+    public void evaluateAllContainerStats(List<ContainerStatsLog> containerStatsList) {
+        log.info("전체 컨테이너 평가 시작: 총 {}개", containerStatsList.size());
 
-        containers.forEach(this::evaluateContainer);
+        containerStatsList.forEach(this::evaluateContainerStats);
 
         log.info("전체 컨테이너 평가 완료");
     }

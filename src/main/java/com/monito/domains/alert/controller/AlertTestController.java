@@ -4,6 +4,8 @@ import com.monito.domains.alert.domain.AlertRule;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.common.response.ApiResponse;
 import com.monito.global.exception.ExceptionMessage;
@@ -42,48 +44,63 @@ public class AlertTestController {
     public ApiResponse<String> setContainerMetrics(
             @PathVariable Long containerId,
             @RequestParam(required = false) BigDecimal cpuPercent,
-            @RequestParam(required = false) BigDecimal memPercent) {
+            @RequestParam(required = false) BigDecimal memPercent,
+            @RequestParam(required = false) Long rxMbps,
+            @RequestParam(required = false) Long txMbps) {
 
         Container container = containerRepository.findById(containerId)
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
 
-        // 메트릭 강제 설정
-        if (cpuPercent != null) {
-            container.updateCpuPercent(cpuPercent);
-        }
-        if (memPercent != null) {
-            container.updateMemPercent(memPercent);
-        }
-
-        containerRepository.save(container);
+        // 테스트용 ContainerStatsLog 생성 (임시 데이터)
+        ContainerStatsLog testStats = ContainerStatsLog.builder()
+                .container(container)
+                .containerHash(container.getContainerHash())
+                .state(ContainerState.RUNNING)
+                .cpuPercent(cpuPercent != null ? cpuPercent : BigDecimal.ZERO)
+                .memPercent(memPercent != null ? memPercent : BigDecimal.ZERO)
+                .rxMbps(rxMbps != null ? rxMbps : 0L)
+                .txMbps(txMbps != null ? txMbps : 0L)
+                // 필수 필드들을 기본값으로 설정
+                .hostCpuUsageTotal(0L)
+                .cpuUsageTotal(0L)
+                .cpuUser(0L)
+                .cpuSystem(0L)
+                .cpuQuota(container.getCpuQuota())
+                .cpuPeriod(container.getCpuPeriod())
+                .cpuLimit(container.getCpuLimit())
+                .onlineCpus(container.getOnlineCpus())
+                .throttlingPeriods(0L)
+                .throttledPeriods(0L)
+                .throttledTime(0L)
+                .oomKills(0)
+                .memUsage(0L)
+                .memLimit(container.getMemLimit())
+                .memMaxUsage(0L)
+                .memRss(0L)
+                .memCache(0L)
+                .blkRead(0L)
+                .blkWrite(0L)
+                .rxBytes(0L)
+                .txBytes(0L)
+                .rxPps(0L)
+                .txPps(0L)
+                .rxErrors(0)
+                .txErrors(0)
+                .rxDropped(0)
+                .txDropped(0)
+                .build();
 
         // 알림 규칙 평가 (자동 알림 발생)
-        alertEvaluationFacade.evaluateContainer(container);
+        alertEvaluationFacade.evaluateContainerStats(testStats);
 
         String message = String.format(
-                "컨테이너 '%s' 메트릭 설정 완료 - CPU: %s%%, Memory: %s%%. 알림 규칙 평가 실행됨.",
+                "컨테이너 '%s' 메트릭 테스트 완료 - CPU: %s%%, Memory: %s%%, Network: %d Mbps. 알림 규칙 평가 실행됨.",
                 container.getName(),
-                container.getCpuPercent(),
-                container.getMemPercent()
+                cpuPercent,
+                memPercent,
+                (rxMbps != null ? rxMbps : 0L) + (txMbps != null ? txMbps : 0L)
         );
 
-        log.info(message);
-        return ApiResponse.ok(message);
-    }
-
-    /**
-     * 모든 컨테이너에 대해 알림 규칙 재평가
-     */
-    @Operation(summary = "모든 컨테이너 알림 재평가",
-            description = "현재 등록된 모든 컨테이너에 대해 알림 규칙을 재평가합니다.")
-    @PostMapping("/evaluate-all")
-    public ApiResponse<String> evaluateAllContainers() {
-        List<Container> containers = containerRepository.findAll();
-
-        // Facade를 통한 일괄 평가
-        alertEvaluationFacade.evaluateAllContainers(containers);
-
-        String message = String.format("%d개 컨테이너에 대해 알림 규칙 평가 완료", containers.size());
         log.info(message);
         return ApiResponse.ok(message);
     }
@@ -111,8 +128,7 @@ public class AlertTestController {
                 .map(c -> new ContainerInfo(
                         c.getId(),
                         c.getName(),
-                        c.getCpuPercent(),
-                        c.getMemPercent(),
+                        c.getContainerHash(),
                         c.getAgent().getId()
                 ))
                 .toList();
@@ -124,8 +140,7 @@ public class AlertTestController {
     public record ContainerInfo(
             Long id,
             String name,
-            BigDecimal cpuPercent,
-            BigDecimal memPercent,
+            String containerHash,
             Long agentId
     ) {}
 }

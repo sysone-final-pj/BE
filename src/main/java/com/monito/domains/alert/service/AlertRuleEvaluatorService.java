@@ -1,6 +1,6 @@
 package com.monito.domains.alert.service;
 
-import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerStatsLog;
 
 /**
  * 컨테이너 메트릭과 사용자별 AlertRule을 비교하여 알림 발생 여부 판단
@@ -9,10 +9,10 @@ import com.monito.domains.container.domain.Container;
 public interface AlertRuleEvaluatorService {
 
     /**
-     * 컨테이너 메트릭 평가 및 알림 생성
+     * 컨테이너 통계 로그 평가 및 알림 생성
      * - 해당 컨테이너에 대한 모든 활성화된 AlertRule을 조회하여 평가
      */
-    void evaluateContainer(Container container);
+    void evaluateContainer(ContainerStatsLog containerStats);
 
     /**
      * 쿨다운 캐시 정리 (옵션)
