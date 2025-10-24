@@ -2,6 +2,7 @@ package com.monito.domains.alert.service;
 
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.domain.AlertRule;
+import com.monito.domains.alert.dto.internal.AlertCreationDTO;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.MetricType;
@@ -15,15 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 알림 규칙 평가 서비스 구현체
- * - 컨테이너 메트릭과 사용자별 AlertRule을 비교하여 알림 발생 여부 판단
- * - 중복 알림 방지 (쿨다운 기간)
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AlertRuleEvaluatorImpl implements AlertRuleEvaluator {
+public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService {
 
     private final AlertRuleRepository alertRuleRepository;
     private final AlertService alertService;
@@ -39,7 +35,7 @@ public class AlertRuleEvaluatorImpl implements AlertRuleEvaluator {
     public void evaluateContainer(Container container) {
         // 해당 컨테이너에 대한 활성화된 모든 규칙 조회
         List<AlertRule> activeRules = alertRuleRepository
-                .findByContainerIdAndIsEnabledTrueAndIsDeletedFalse(container.getId());
+                .findByContainerIdAndIsEnabledTrue(container.getId());
 
         log.debug("컨테이너 {} 평가: {}개 규칙 발견", container.getId(), activeRules.size());
 
@@ -111,16 +107,18 @@ public class AlertRuleEvaluatorImpl implements AlertRuleEvaluator {
         // 알림 메시지 생성
         String message = buildAlertMessage(container, rule, alertLevel, currentValue);
 
-        // 해당 사용자에게 알림 전송
-        alertService.createAndSendAlert(
-                rule.getMember(),
-                rule,
-                container,
-                message,
-                rule.getMetricType(),
-                currentValue,
-                alertLevel
-        );
+        // AlertCreationDTO 생성 후 알림 전송
+        AlertCreationDTO dto = AlertCreationDTO.builder()
+                .member(rule.getMember())
+                .alertRule(rule)
+                .container(container)
+                .message(message)
+                .metricType(rule.getMetricType())
+                .metricValue(currentValue)
+                .alertLevel(alertLevel)
+                .build();
+
+        alertService.createAndSendAlert(dto);
 
         // 마지막 알림 시간 기록
         lastAlertTimes.put(cooldownKey, now);

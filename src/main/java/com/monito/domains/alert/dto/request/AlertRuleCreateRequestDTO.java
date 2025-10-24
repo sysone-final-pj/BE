@@ -12,6 +12,10 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * 알림 규칙 생성 요청 DTO
+ * - 컨테이너별 메트릭 임계값 및 알림 규칙 설정 시 사용
+ */
 @Getter
 @Builder
 @NoArgsConstructor

@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * 알림 규칙 수정 요청 DTO
+ * - 기존 알림 규칙의 임계값, 쿨다운, 활성화 상태 등을 수정할 때 사용
+ */
 @Getter
 @Builder
 @NoArgsConstructor

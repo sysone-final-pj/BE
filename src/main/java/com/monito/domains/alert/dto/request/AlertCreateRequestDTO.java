@@ -32,6 +32,5 @@ public class AlertCreateRequestDTO {
     @NotNull(message = "메트릭 값은 필수입니다.")
     private BigDecimal metricValue;
 
-    // alertLevel은 선택 사항 (임계값 미만일 경우 null 가능)
     private AlertLevel alertLevel;
 }

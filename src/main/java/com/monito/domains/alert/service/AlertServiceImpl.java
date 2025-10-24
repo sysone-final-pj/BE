@@ -4,19 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.alert.domain.Alert;
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.domain.AlertRule;
-import com.monito.domains.alert.dto.AlertMessageDTO;
+import com.monito.domains.alert.dto.internal.AlertCreationDTO;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
-import com.monito.domains.alert.dto.response.AlertResponseDTO;
+import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
+import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
+import com.monito.domains.alert.dto.response.AlertMessageResponseDTO;
+import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.alert.websocket.handler.AlertWebSocketHandler;
 import com.monito.domains.container.domain.Container;
-import com.monito.domains.container.domain.MetricType;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
 
-import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,51 +44,39 @@ public class AlertServiceImpl implements AlertService {
      * 알림 생성 및 웹소켓 전송
      */
     @Override
-    public void createAndSendAlert(Member member, AlertRule alertRule, Container container,
-                                   String message, MetricType metricType, BigDecimal metricValue,
-                                   AlertLevel alertLevel) {
+    public void createAndSendAlert(AlertCreationDTO dto) {
         try {
-            // 1. DB에 알림 저장
-            Alert alert = Alert.builder()
-                    .member(member)
-                    .alertRule(alertRule)
-                    .container(container)
-                    .message(message)
-                    .metricType(metricType)
-                    .metricValue(metricValue)
-                    .alertLevel(alertLevel)
-                    .isRead(false)
-                    .build();
-
+            // 1. DTO를 엔티티로 변환 후 DB에 저장
+            Alert alert = dto.toEntity();
             alertRepository.save(alert);
 
             // 2. 웹소켓으로 실시간 전송
-            AlertMessageDTO.ContainerInfoDTO containerInfo = AlertMessageDTO.ContainerInfoDTO.builder()
-                    .containerId(container.getId())
-                    .containerName(container.getName())
-                    .containerHash(container.getContainerHash())
-                    .metricType(metricType.name())
-                    .metricValue(metricValue)
+            ContainerInfoResponseDTO containerInfo = ContainerInfoResponseDTO.builder()
+                    .containerId(dto.getContainer().getId())
+                    .containerName(dto.getContainer().getName())
+                    .containerHash(dto.getContainer().getContainerHash())
+                    .metricType(dto.getMetricType().name())
+                    .metricValue(dto.getMetricValue())
                     .build();
 
-            AlertMessageDTO alertMessage = AlertMessageDTO.builder()
+            AlertMessageResponseDTO alertMessage = AlertMessageResponseDTO.builder()
                     .alertId(alert.getId())
-                    .metricType(metricType.name())
-                    .title(alertLevel != null ? alertLevel.getDescription() : "알림")
-                    .message(message)
+                    .metricType(dto.getMetricType().name())
+                    .title(dto.getAlertLevel() != null ? dto.getAlertLevel().getDescription() : "알림")
+                    .message(dto.getMessage())
                     .createdAt(LocalDateTime.now())
                     .containerInfo(containerInfo)
                     .build();
 
             String jsonMessage = objectMapper.writeValueAsString(alertMessage);
-            webSocketHandler.sendAlertToUser(String.valueOf(member.getId()), jsonMessage);
+            webSocketHandler.sendAlertToUser(String.valueOf(dto.getMember().getId()), jsonMessage);
 
             log.info("알림 생성 및 전송 완료: memberId={}, containerId={}, alertLevel={}, metricValue={}",
-                    member.getId(), container.getId(), alertLevel, metricValue);
+                    dto.getMember().getId(), dto.getContainer().getId(), dto.getAlertLevel(), dto.getMetricValue());
 
         } catch (Exception e) {
             log.error("알림 생성 중 에러 발생: memberId={}, containerId={}",
-                    member.getId(), container.getId(), e);
+                    dto.getMember().getId(), dto.getContainer().getId(), e);
         }
     }
 
@@ -97,7 +86,7 @@ public class AlertServiceImpl implements AlertService {
     @Override
     @Transactional(readOnly = true)
     public List<Alert> getUnreadAlerts(Long memberId) {
-        return alertRepository.findByMemberIdAndIsReadFalseAndIsDeletedFalseOrderByCreatedAtDesc(memberId);
+        return alertRepository.findByMemberIdAndIsReadFalseOrderByCreatedAtDesc(memberId);
     }
 
     /**
@@ -106,7 +95,7 @@ public class AlertServiceImpl implements AlertService {
     @Override
     @Transactional(readOnly = true)
     public List<Alert> getAllAlerts(Long memberId) {
-        return alertRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(memberId);
+        return alertRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
     }
 
     /**
@@ -136,7 +125,7 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public void broadcastAlert(String title, String message, AlertLevel alertLevel) {
         try {
-            AlertMessageDTO alertMessage = AlertMessageDTO.builder()
+            AlertMessageResponseDTO alertMessage = AlertMessageResponseDTO.builder()
                     .metricType("SYSTEM")
                     .title(title)
                     .message(message)
@@ -156,7 +145,7 @@ public class AlertServiceImpl implements AlertService {
      * 알림 생성 (수동 생성용)
      */
     @Override
-    public AlertResponseDTO createAlert(Long memberId, AlertCreateRequestDTO request) {
+    public AlertDetailResponseDTO createAlert(Long memberId, AlertCreateRequestDTO request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
@@ -180,7 +169,7 @@ public class AlertServiceImpl implements AlertService {
         Alert savedAlert = alertRepository.save(alert);
         log.info("알림 생성 완료: alertId={}, memberId={}", savedAlert.getId(), memberId);
 
-        return AlertResponseDTO.from(savedAlert);
+        return AlertDetailResponseDTO.from(savedAlert);
     }
 
     /**
@@ -188,7 +177,7 @@ public class AlertServiceImpl implements AlertService {
      */
     @Override
     @Transactional(readOnly = true)
-    public AlertResponseDTO getAlert(Long alertId, Long memberId) {
+    public AlertDetailResponseDTO getAlert(Long alertId, Long memberId) {
         Alert alert = alertRepository.findById(alertId)
                 .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
 
@@ -196,30 +185,30 @@ public class AlertServiceImpl implements AlertService {
             throw new IllegalArgumentException("본인의 알림만 조회할 수 있습니다.");
         }
 
-        return AlertResponseDTO.from(alert);
+        return AlertDetailResponseDTO.from(alert);
     }
 
     /**
-     * 사용자의 모든 알림 조회 (DTO 변환)
+     * 사용자의 모든 알림 목록 조회 (DTO 변환)
      */
     @Override
     @Transactional(readOnly = true)
-    public List<AlertResponseDTO> getAllAlertsAsResponse(Long memberId) {
-        return alertRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(memberId)
+    public List<AlertListItemResponseDTO> getAllAlertsAsResponse(Long memberId) {
+        return alertRepository.findByMemberIdOrderByCreatedAtDesc(memberId)
                 .stream()
-                .map(AlertResponseDTO::from)
+                .map(AlertListItemResponseDTO::from)
                 .collect(Collectors.toList());
     }
 
     /**
-     * 사용자의 읽지 않은 알림 조회 (DTO 변환)
+     * 사용자의 읽지 않은 알림 목록 조회 (DTO 변환)
      */
     @Override
     @Transactional(readOnly = true)
-    public List<AlertResponseDTO> getUnreadAlertsAsResponse(Long memberId) {
-        return alertRepository.findByMemberIdAndIsReadFalseAndIsDeletedFalseOrderByCreatedAtDesc(memberId)
+    public List<AlertListItemResponseDTO> getUnreadAlertsAsResponse(Long memberId) {
+        return alertRepository.findByMemberIdAndIsReadFalseOrderByCreatedAtDesc(memberId)
                 .stream()
-                .map(AlertResponseDTO::from)
+                .map(AlertListItemResponseDTO::from)
                 .collect(Collectors.toList());
     }
 
@@ -249,7 +238,7 @@ public class AlertServiceImpl implements AlertService {
      */
     @Override
     public void markAllAsRead(Long memberId) {
-        List<Alert> unreadAlerts = alertRepository.findByMemberIdAndIsReadFalseAndIsDeletedFalseOrderByCreatedAtDesc(memberId);
+        List<Alert> unreadAlerts = alertRepository.findByMemberIdAndIsReadFalseOrderByCreatedAtDesc(memberId);
 
         unreadAlerts.forEach(Alert::markAsRead);
         alertRepository.saveAll(unreadAlerts);
@@ -262,7 +251,7 @@ public class AlertServiceImpl implements AlertService {
      */
     @Override
     public void deleteAllAlerts(Long memberId) {
-        List<Alert> alerts = alertRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(memberId);
+        List<Alert> alerts = alertRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
         alerts.forEach(Alert::delete);
         alertRepository.saveAll(alerts);
 
@@ -274,7 +263,7 @@ public class AlertServiceImpl implements AlertService {
      */
     @Override
     public void deleteReadAlerts(Long memberId) {
-        List<Alert> alerts = alertRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(memberId);
+        List<Alert> alerts = alertRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
         List<Alert> readAlerts = alerts.stream()
                 .filter(Alert::getIsRead)
                 .collect(Collectors.toList());
@@ -290,7 +279,7 @@ public class AlertServiceImpl implements AlertService {
      */
     private void sendReadStatusUpdate(Long memberId, Long alertId, boolean isRead) {
         try {
-            AlertMessageDTO statusUpdate = AlertMessageDTO.builder()
+            AlertMessageResponseDTO statusUpdate = AlertMessageResponseDTO.builder()
                     .alertId(alertId)
                     .metricType("ALERT_READ_STATUS")
                     .title("알림 읽음 처리")
@@ -312,7 +301,7 @@ public class AlertServiceImpl implements AlertService {
      */
     private void sendDeleteNotification(Long memberId, Long alertId) {
         try {
-            AlertMessageDTO deleteNotification = AlertMessageDTO.builder()
+            AlertMessageResponseDTO deleteNotification = AlertMessageResponseDTO.builder()
                     .alertId(alertId)
                     .metricType("ALERT_DELETED")
                     .title("알림 삭제")

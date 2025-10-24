@@ -9,13 +9,15 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
+/**
+ * AlertRule의 CRUD API
+ * - 규칙 생성/단일조회/목록조회/단일수정
+ */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AlertRuleResponseDTO {
-
     private Long id;
     private Long memberId;
     private String memberUsername;

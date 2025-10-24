@@ -1,9 +1,9 @@
 package com.monito.domains.alert.controller;
 
-import com.monito.domains.alert.domain.Alert;
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
-import com.monito.domains.alert.dto.response.AlertResponseDTO;
+import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
+import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 import com.monito.domains.alert.service.AlertService;
 import com.monito.global.common.response.ApiResponse;
 import com.monito.global.security.userdetails.CustomUserDetails;
@@ -28,24 +28,24 @@ public class AlertController {
     private final AlertService alertService;
 
     /**
-     * 읽지 않은 알림 조회(개인)
+     * 읽지 않은 알림 목록 조회(개인)
      */
-    @Operation(summary = "읽지 않은 알림 조회", description = "현재 사용자의 읽지 않은 알림을 조회합니다.")
+    @Operation(summary = "읽지 않은 알림 목록 조회", description = "현재 사용자의 읽지 않은 알림 목록을 조회합니다.")
     @GetMapping("/unread")
-    public ApiResponse<List<AlertResponseDTO>> getUnreadAlerts(
+    public ApiResponse<List<AlertListItemResponseDTO>> getUnreadAlerts(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<AlertResponseDTO> alerts = alertService.getUnreadAlertsAsResponse(userDetails.getId());
+        List<AlertListItemResponseDTO> alerts = alertService.getUnreadAlertsAsResponse(userDetails.getId());
         return ApiResponse.ok(alerts, "읽지 않은 알림 조회 성공");
     }
 
     /**
-     * 모든 알림 조회(개인))
+     * 모든 알림 목록 조회(개인)
      */
-    @Operation(summary = "모든 알림 조회", description = "현재 사용자의 모든 알림을 조회합니다.")
+    @Operation(summary = "모든 알림 목록 조회", description = "현재 사용자의 모든 알림 목록을 조회합니다.")
     @GetMapping
-    public ApiResponse<List<AlertResponseDTO>> getAllAlerts(
+    public ApiResponse<List<AlertListItemResponseDTO>> getAllAlerts(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<AlertResponseDTO> alerts = alertService.getAllAlertsAsResponse(userDetails.getId());
+        List<AlertListItemResponseDTO> alerts = alertService.getAllAlertsAsResponse(userDetails.getId());
         return ApiResponse.ok(alerts, "알림 조회 성공");
     }
 
@@ -80,22 +80,22 @@ public class AlertController {
      */
     @Operation(summary = "알림 생성", description = "새로운 알림을 생성합니다.")
     @PostMapping
-    public ApiResponse<AlertResponseDTO> createAlert(
+    public ApiResponse<AlertDetailResponseDTO> createAlert(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody AlertCreateRequestDTO request) {
-        AlertResponseDTO response = alertService.createAlert(userDetails.getId(), request);
+        AlertDetailResponseDTO response = alertService.createAlert(userDetails.getId(), request);
         return ApiResponse.ok(response, "알림이 생성되었습니다.");
     }
 
     /**
-     * 특정 알림 조회(개인)
+     * 특정 알림 상세 조회(개인)
      */
-    @Operation(summary = "특정 알림 조회", description = "알림 ID로 특정 알림을 조회합니다. (본인 알림만 가능)")
+    @Operation(summary = "특정 알림 상세 조회", description = "알림 ID로 특정 알림의 상세 정보를 조회합니다. (본인 알림만 가능)")
     @GetMapping("/{id}")
-    public ApiResponse<AlertResponseDTO> getAlert(
+    public ApiResponse<AlertDetailResponseDTO> getAlert(
             @PathVariable("id") Long alertId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        AlertResponseDTO response = alertService.getAlert(alertId, userDetails.getId());
+        AlertDetailResponseDTO response = alertService.getAlert(alertId, userDetails.getId());
         return ApiResponse.ok(response, "알림 조회 성공");
     }
 

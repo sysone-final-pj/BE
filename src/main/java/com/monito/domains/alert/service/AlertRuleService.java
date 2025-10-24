@@ -17,7 +17,7 @@ public interface AlertRuleService {
     AlertRuleResponseDTO createAlertRule(Long memberId, AlertRuleCreateRequestDTO request);
 
     /**
-     * 특정 알림 규칙 조회 (본인 규칙만 조회 가능)
+     * 특정 알림 규칙 조회
      */
     AlertRuleResponseDTO getAlertRule(Long ruleId, Long memberId);
 
@@ -32,12 +32,12 @@ public interface AlertRuleService {
     List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId);
 
     /**
-     * 알림 규칙 수정 (본인 규칙만 수정 가능)
+     * 알림 규칙 수정
      */
     AlertRuleResponseDTO updateAlertRule(Long ruleId, Long memberId, AlertRuleUpdateRequestDTO request);
 
     /**
-     * 알림 규칙 삭제 (Soft Delete, 본인 규칙만 삭제 가능)
+     * 알림 규칙 삭제
      */
     void deleteAlertRule(Long ruleId, Long memberId);
 

@@ -39,7 +39,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
                 .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다."));
 
         // 동일한 컨테이너 + 메트릭 타입 규칙이 이미 존재하는지 확인
-        boolean exists = alertRuleRepository.existsByMemberIdAndContainerIdAndMetricTypeAndIsDeletedFalse(
+        boolean exists = alertRuleRepository.existsByMemberIdAndContainerIdAndMetricType(
                 memberId, request.getContainerId(), request.getMetricType());
 
         if (exists) {
@@ -70,7 +70,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     }
 
     /**
-     * 특정 알림 규칙 조회 (본인 규칙만 조회 가능)
+     * 특정 알림 규칙 조회
      */
     @Override
     @Transactional(readOnly = true)
@@ -91,7 +91,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     @Transactional(readOnly = true)
     public List<AlertRuleResponseDTO> getAllAlertRules(Long memberId) {
-        return alertRuleRepository.findByMemberIdAndIsDeletedFalse(memberId)
+        return alertRuleRepository.findByMemberId(memberId)
                 .stream()
                 .map(AlertRuleResponseDTO::from)
                 .collect(Collectors.toList());
@@ -103,14 +103,14 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     @Transactional(readOnly = true)
     public List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId) {
-        return alertRuleRepository.findByMemberIdAndContainerIdAndIsDeletedFalse(memberId, containerId)
+        return alertRuleRepository.findByMemberIdAndContainerId(memberId, containerId)
                 .stream()
                 .map(AlertRuleResponseDTO::from)
                 .collect(Collectors.toList());
     }
 
     /**
-     * 알림 규칙 수정 (본인 규칙만 수정 가능)
+     * 알림 규칙 수정
      */
     @Override
     public AlertRuleResponseDTO updateAlertRule(Long ruleId, Long memberId, AlertRuleUpdateRequestDTO request) {

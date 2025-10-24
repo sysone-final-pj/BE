@@ -11,17 +11,20 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 알림 상세 조회 응답 DTO
+ * - 단일 알림 조회 (GET /api/alerts/{id})
+ * - 알림 생성 후 응답 (POST /api/alerts)
+ */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AlertResponseDTO {
+public class AlertDetailResponseDTO {
 
     private Long id;
     private Long ruleId;
     private String ruleName;
-    private Long memberId;
-    private String memberUsername;
     private Long containerId;
     private String containerName;
     private String message;
@@ -31,13 +34,11 @@ public class AlertResponseDTO {
     private Boolean isRead;
     private AlertLevel alertLevel;
 
-    public static AlertResponseDTO from(Alert alert) {
-        return AlertResponseDTO.builder()
+    public static AlertDetailResponseDTO from(Alert alert) {
+        return AlertDetailResponseDTO.builder()
                 .id(alert.getId())
                 .ruleId(alert.getAlertRule().getId())
                 .ruleName(alert.getAlertRule().getRuleName())
-                .memberId(alert.getMember().getId())
-                .memberUsername(alert.getMember().getUsername())
                 .containerId(alert.getContainer() != null ? alert.getContainer().getId() : null)
                 .containerName(alert.getContainer() != null ? alert.getContainer().getName() : null)
                 .message(alert.getMessage())

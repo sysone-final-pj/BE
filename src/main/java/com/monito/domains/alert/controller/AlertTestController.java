@@ -1,9 +1,8 @@
 package com.monito.domains.alert.controller;
 
-import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.domain.AlertRule;
+import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.alert.service.AlertRuleEvaluator;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.common.response.ApiResponse;
@@ -18,8 +17,7 @@ import java.util.List;
 
 /**
  * 자동 알림 시스템 테스트용 컨트롤러
- * 개발/테스트 환경에서만 사용
- * 프로덕션 환경에서는 비활성화됨
+ * - 개발/테스트 환경에서만 사용
  */
 @Slf4j
 @RestController
@@ -29,7 +27,7 @@ import java.util.List;
 @org.springframework.context.annotation.Profile({"dev", "local", "test"})
 public class AlertTestController {
 
-    private final AlertRuleEvaluator alertRuleEvaluator;
+    private final AlertEvaluationFacade alertEvaluationFacade;
     private final ContainerRepository containerRepository;
     private final AlertRuleRepository alertRuleRepository;
 
@@ -58,7 +56,7 @@ public class AlertTestController {
         containerRepository.save(container);
 
         // 알림 규칙 평가 (자동 알림 발생)
-        alertRuleEvaluator.evaluateContainer(container);
+        alertEvaluationFacade.evaluateContainer(container);
 
         String message = String.format(
                 "컨테이너 '%s' 메트릭 설정 완료 - CPU: %s%%, Memory: %s%%. 알림 규칙 평가 실행됨.",
@@ -80,13 +78,10 @@ public class AlertTestController {
     public ApiResponse<String> evaluateAllContainers() {
         List<Container> containers = containerRepository.findAll();
 
-        int count = 0;
-        for (Container container : containers) {
-            alertRuleEvaluator.evaluateContainer(container);
-            count++;
-        }
+        // Facade를 통한 일괄 평가
+        alertEvaluationFacade.evaluateAllContainers(containers);
 
-        String message = String.format("%d개 컨테이너에 대해 알림 규칙 평가 완료", count);
+        String message = String.format("%d개 컨테이너에 대해 알림 규칙 평가 완료", containers.size());
         log.info(message);
         return ApiResponse.ok(message);
     }
@@ -98,7 +93,7 @@ public class AlertTestController {
             description = "현재 활성화된 모든 알림 규칙을 조회합니다.")
     @GetMapping("/rules")
     public ApiResponse<List<AlertRule>> getActiveRules() {
-        List<AlertRule> rules = alertRuleRepository.findByIsEnabledTrueAndIsDeletedFalse();
+        List<AlertRule> rules = alertRuleRepository.findByIsEnabledTrue();
         return ApiResponse.ok(rules, "활성화된 알림 규칙 " + rules.size() + "개 조회 완료");
     }
 

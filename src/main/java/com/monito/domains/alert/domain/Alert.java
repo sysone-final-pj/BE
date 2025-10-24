@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -35,6 +36,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         }
 )
 @Builder
+@SQLRestriction("is_deleted = 0")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -48,7 +50,6 @@ public class Alert {
             allocationSize = 1
     )
     private Long id;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rule_id", nullable = false)
     private AlertRule alertRule;
