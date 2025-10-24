@@ -53,8 +53,8 @@ public class ContainerStatsLog {
     private String containerHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ContainerState status;
+    @Column(length = 20, nullable = false)
+    private ContainerState state;
 
     // CPU 관련
     @Column(precision = 6, scale = 2)

@@ -4,8 +4,6 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.global.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,8 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -49,26 +45,7 @@ public class Container extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ContainerState status;
-
-    // CPU 관련
-    @Column(precision = 6, scale = 2)
-    private BigDecimal cpuPercent;
-
-    @Column(nullable = false)
-    private Long hostCpuUsageTotal;
-
-    @Column(nullable = false)
-    private Long cpuUsageTotal;
-
-    @Column(nullable = false)
-    private Long cpuUser;
-
-    @Column(nullable = false)
-    private Long cpuSystem;
-
+    // 리소스 제한 설정 (정적 데이터 - 컨테이너 생성 시 설정되고 거의 변하지 않음)
     @Column(nullable = false)
     private Long cpuQuota;
 
@@ -82,91 +59,5 @@ public class Container extends BaseEntity {
     private Integer onlineCpus;
 
     @Column(nullable = false)
-    private Long throttlingPeriods;
-
-    @Column(nullable = false)
-    private Long throttledPeriods;
-
-    @Column(nullable = false)
-    private Long throttledTime;
-
-    @Column(nullable = false)
-    private Integer oomKills;
-
-    // Memory 관련
-    @Column(nullable = false, precision = 6, scale = 2)
-    private BigDecimal memPercent;
-
-    @Column(nullable = false)
-    private Long memUsage;
-
-    @Column(nullable = false)
     private Long memLimit;
-
-    @Column(nullable = false)
-    private Long memMaxUsage;
-
-    @Column(nullable = false)
-    private Long memRss;
-
-    @Column(nullable = false)
-    private Long memCache;
-
-    // Block I/O 관련
-    @Column(nullable = false)
-    private Long blkRead;
-
-    @Column(nullable = false)
-    private Long blkWrite;
-
-    // Network 관련
-    @Column(nullable = false)
-    private Long rxBytes;
-
-    @Column(nullable = false)
-    private Long txBytes;
-
-    @Column(nullable = false)
-    private Long rxMbps;
-
-    @Column(nullable = false)
-    private Long txMbps;
-
-    @Column(nullable = false)
-    private Long rxPps;
-
-    @Column(nullable = false)
-    private Long txPps;
-
-    @Column(nullable = false)
-    private Integer rxErrors;
-
-    @Column(nullable = false)
-    private Integer txErrors;
-
-    @Column(nullable = false)
-    private Integer rxDropped;
-
-    @Column(nullable = false)
-    private Integer txDropped;
-
-    public void updateStats(ContainerState status, BigDecimal cpuPercent, BigDecimal memPercent,
-                            Long cpuUsageTotal, Long memUsage, Long rxBytes, Long txBytes) {
-        this.status = status;
-        this.cpuPercent = cpuPercent;
-        this.memPercent = memPercent;
-        this.cpuUsageTotal = cpuUsageTotal;
-        this.memUsage = memUsage;
-        this.rxBytes = rxBytes;
-        this.txBytes = txBytes;
-    }
-
-    // 테스트용 메서드
-    public void updateCpuPercent(BigDecimal cpuPercent) {
-        this.cpuPercent = cpuPercent;
-    }
-
-    public void updateMemPercent(BigDecimal memPercent) {
-        this.memPercent = memPercent;
-    }
 }

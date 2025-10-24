@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.service.AgentService;
+import com.monito.domains.container.dto.request.AgentMetricsRequestDTO;
+import com.monito.domains.container.dto.request.ContainerMetricsRawRequestDTO;
+import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.service.ContainerStatsService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -22,6 +26,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
+    private final ContainerStatsService containerStatsService;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, String> authenticatedAgents = new ConcurrentHashMap<>();
@@ -155,23 +160,63 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        Map<String, Object> metricsData = (Map<String, Object>) data.get("data");
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> metricsData = (Map<String, Object>) data.get("data");
+            AgentMetricsRequestDTO agentMetrics = objectMapper.convertValue(
+                    metricsData,
+                    AgentMetricsRequestDTO.class
+            );
 
-        log.info("═══════════════════════════════════════");
-        log.info("메트릭 수신");
-        log.info("   Agent Key: {}", agentKey);
-        log.info("   데이터: {}", metricsData);
-        log.info("   시각: {}", getCurrentTime());
-        log.info("═══════════════════════════════════════");
+            log.info("═══════════════════════════════════════");
+            log.info("메트릭 수신");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   컨테이너 개수: {}", agentMetrics.getMetrics() != null ? agentMetrics.getMetrics().size() : 0);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
 
-        // todo: DB 저장
-        // metricsService.~~
+            // 각 컨테이너 메트릭 처리
+            int successCount = 0;
+            int failCount = 0;
 
-        sendMessage(session, Map.of(
-                "type", "ACK",
-                "message", "Metrics received and saved",
-                "timestamp", System.currentTimeMillis()
-        ));
+            if (agentMetrics.getMetrics() != null) {
+                for (ContainerMetricsRawRequestDTO rawMetric : agentMetrics.getMetrics()) {
+                    try {
+                        // Flat DTO로 변환
+                        ContainerMetricsRequestDTO flatMetric = rawMetric.toFlatDTO();
+
+                        // DB 저장 (계산 포함)
+                        containerStatsService.processMetrics(agentKey, flatMetric);
+                        successCount++;
+
+                        log.debug("컨테이너 메트릭 저장 성공 - Hash: {}, Name: {}",
+                                flatMetric.getContainerHash(),
+                                flatMetric.getContainerName());
+                    } catch (Exception e) {
+                        failCount++;
+                        log.error("컨테이너 메트릭 처리 실패 - Hash: {}",
+                                rawMetric.getContainerHash(), e);
+                    }
+                }
+            }
+
+            log.info("메트릭 처리 완료 - 성공: {}, 실패: {}", successCount, failCount);
+
+            sendMessage(session, Map.of(
+                    "type", "ACK",
+                    "message", String.format("Metrics processed: %d success, %d failed", successCount, failCount),
+                    "successCount", successCount,
+                    "failCount", failCount,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
+        } catch (Exception e) {
+            log.error("메트릭 처리 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to process metrics: " + e.getMessage()
+            ));
+        }
     }
 
     private void handlePing(WebSocketSession session) throws Exception {

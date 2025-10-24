@@ -84,7 +84,13 @@ public enum ExceptionMessage {
     ISSUE_LOG_NOT_FOUND("작업 로그 데이터를 찾을 수 없습니다."),
 
     // Agent 관련
-    AGENT_NOT_MATCH_PASSWORD("agentkey에 할당된 비밀번호가 일치하지 않습니다.");
+    AGENT_NOT_MATCH_PASSWORD("agentkey에 할당된 비밀번호가 일치하지 않습니다."),
+    AGENT_NOT_FOUND("Agent를 찾을 수 없습니다."),
+
+    // Container 관련
+    CONTAINER_NOT_FOUND("컨테이너를 찾을 수 없습니다."),
+    CONTAINER_HASH_INVALID("유효하지 않은 컨테이너 해시입니다."),
+    CONTAINER_METRICS_PROCESSING_FAILED("컨테이너 메트릭 처리 중 오류가 발생했습니다.");
 
     private final String message;
 }
