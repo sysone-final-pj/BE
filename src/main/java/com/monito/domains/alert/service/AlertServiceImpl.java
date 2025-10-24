@@ -17,6 +17,9 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
+import com.monito.global.exception.ExceptionMessage;
+import com.monito.global.exception.ForbiddenException;
+import com.monito.global.exception.NotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,10 +107,10 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public void markAsRead(Long alertId, Long memberId) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_NOT_FOUND));
 
         if (!alert.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림만 읽음 처리할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_READ_ACCESS_DENIED);
         }
 
         alert.markAsRead();
@@ -147,13 +150,13 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public AlertDetailResponseDTO createAlert(Long memberId, AlertCreateRequestDTO request) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.MEMBER_NOT_FOUND));
 
         AlertRule alertRule = alertRuleRepository.findById(request.getRuleId())
-                .orElseThrow(() -> new IllegalArgumentException("알림 규칙을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
 
         Container container = containerRepository.findById(request.getContainerId())
-                .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
 
         Alert alert = Alert.builder()
                 .member(member)
@@ -179,10 +182,10 @@ public class AlertServiceImpl implements AlertService {
     @Transactional(readOnly = true)
     public AlertDetailResponseDTO getAlert(Long alertId, Long memberId) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_NOT_FOUND));
 
         if (!alert.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림만 조회할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_VIEW_ACCESS_DENIED);
         }
 
         return AlertDetailResponseDTO.from(alert);
@@ -218,10 +221,10 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public void deleteAlert(Long alertId, Long memberId) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_NOT_FOUND));
 
         if (!alert.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림만 삭제할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_DELETE_ACCESS_DENIED);
         }
 
         alert.delete();

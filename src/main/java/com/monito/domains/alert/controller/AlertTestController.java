@@ -6,6 +6,8 @@ import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.common.response.ApiResponse;
+import com.monito.global.exception.ExceptionMessage;
+import com.monito.global.exception.NotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +45,7 @@ public class AlertTestController {
             @RequestParam(required = false) BigDecimal memPercent) {
 
         Container container = containerRepository.findById(containerId)
-                .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다: " + containerId));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
 
         // 메트릭 강제 설정
         if (cpuPercent != null) {

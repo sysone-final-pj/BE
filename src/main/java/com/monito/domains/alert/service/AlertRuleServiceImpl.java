@@ -9,6 +9,10 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
+import com.monito.global.exception.ConflictException;
+import com.monito.global.exception.ExceptionMessage;
+import com.monito.global.exception.ForbiddenException;
+import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,19 +37,17 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     public AlertRuleResponseDTO createAlertRule(Long memberId, AlertRuleCreateRequestDTO request) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.MEMBER_NOT_FOUND));
 
         Container container = containerRepository.findById(request.getContainerId())
-                .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
 
         // 동일한 컨테이너 + 메트릭 타입 규칙이 이미 존재하는지 확인
         boolean exists = alertRuleRepository.existsByMemberIdAndContainerIdAndMetricType(
                 memberId, request.getContainerId(), request.getMetricType());
 
         if (exists) {
-            throw new IllegalArgumentException(
-                    String.format("해당 컨테이너(%s)의 %s 메트릭에 대한 알림 규칙이 이미 존재합니다.",
-                            container.getName(), request.getMetricType()));
+            throw new ConflictException(ExceptionMessage.ALERT_RULE_ALREADY_EXISTS);
         }
 
         AlertRule alertRule = AlertRule.builder()
@@ -76,10 +78,10 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Transactional(readOnly = true)
     public AlertRuleResponseDTO getAlertRule(Long ruleId, Long memberId) {
         AlertRule alertRule = alertRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("알림 규칙을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
 
         if (!alertRule.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림 규칙만 조회할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_RULE_VIEW_ACCESS_DENIED);
         }
 
         return AlertRuleResponseDTO.from(alertRule);
@@ -115,10 +117,10 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     public AlertRuleResponseDTO updateAlertRule(Long ruleId, Long memberId, AlertRuleUpdateRequestDTO request) {
         AlertRule alertRule = alertRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("알림 규칙을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
 
         if (!alertRule.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림 규칙만 수정할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_RULE_UPDATE_ACCESS_DENIED);
         }
 
         // 업데이트할 필드만 반영 (null이 아닌 경우에만)
@@ -159,10 +161,10 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     public void deleteAlertRule(Long ruleId, Long memberId) {
         AlertRule alertRule = alertRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("알림 규칙을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
 
         if (!alertRule.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림 규칙만 삭제할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_RULE_DELETE_ACCESS_DENIED);
         }
 
         alertRule.delete();
@@ -177,10 +179,10 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     public AlertRuleResponseDTO toggleAlertRule(Long ruleId, Long memberId, boolean enabled) {
         AlertRule alertRule = alertRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("알림 규칙을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
 
         if (!alertRule.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 알림 규칙만 수정할 수 있습니다.");
+            throw new ForbiddenException(ExceptionMessage.ALERT_RULE_UPDATE_ACCESS_DENIED);
         }
 
         if (enabled) {

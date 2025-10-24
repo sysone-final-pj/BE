@@ -61,6 +61,22 @@ public enum ExceptionMessage {
     FCM_MESSAGE_JSON_PARSING_ERROR("FCM 메세지 JSON 변환중 오류 발생했습니다."),
     SEND_FCM_PUSH_ERROR("FCM 메세지 전송중 오류 발생했습니다."),
 
+    // Alert 도메인 관련
+    ALERT_NOT_FOUND("알림을 찾을 수 없습니다."),
+    ALERT_READ_ACCESS_DENIED("본인의 알림만 읽음 처리할 수 있습니다."),
+    ALERT_VIEW_ACCESS_DENIED("본인의 알림만 조회할 수 있습니다."),
+    ALERT_DELETE_ACCESS_DENIED("본인의 알림만 삭제할 수 있습니다."),
+
+    // AlertRule 도메인 관련
+    ALERT_RULE_NOT_FOUND("알림 규칙을 찾을 수 없습니다."),
+    ALERT_RULE_ALREADY_EXISTS("해당 컨테이너의 메트릭에 대한 알림 규칙이 이미 존재합니다."),
+    ALERT_RULE_VIEW_ACCESS_DENIED("본인의 알림 규칙만 조회할 수 있습니다."),
+    ALERT_RULE_UPDATE_ACCESS_DENIED("본인의 알림 규칙만 수정할 수 있습니다."),
+    ALERT_RULE_DELETE_ACCESS_DENIED("본인의 알림 규칙만 삭제할 수 있습니다."),
+
+    // Container 도메인 관련
+    CONTAINER_NOT_FOUND("컨테이너를 찾을 수 없습니다."),
+
     // 이메일 관련
     EMAIL_BAD_REQUEST("잘못된 이메일 요청입니다."),
 
