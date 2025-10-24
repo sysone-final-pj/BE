@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -45,10 +46,13 @@ public class Container extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
-    // 리소스 제한 설정 (정적 데이터 - 컨테이너 생성 시 설정되고 거의 변하지 않음)
+    /**
+     리소스 제한 설정 (default 100,000 µs) -> 0.1초 단위로 CPU 할당 계산
+    */
     @Column(nullable = false)
     private Long cpuQuota;
 
+    // 주기 내 사용 가능한 CPU 시간 (µs 단위)
     @Column(nullable = false)
     private Long cpuPeriod;
 
@@ -60,4 +64,14 @@ public class Container extends BaseEntity {
 
     @Column(nullable = false)
     private Long memLimit;
+
+    @Column(nullable = false)
+    private Integer oomKills;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.oomKills == null) {
+            this.oomKills = 0;
+        }
+    }
 }

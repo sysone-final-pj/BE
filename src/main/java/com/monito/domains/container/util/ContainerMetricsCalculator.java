@@ -20,33 +20,120 @@ import org.springframework.stereotype.Component;
 public class ContainerMetricsCalculator {
 
     /**
-     * CPU 사용률 계산
-     * CPU Percent = (ΔcpuUsage / ΔhostCpuUsage) * 100 * onlineCpus
+     * CPU 사용률 계산 (시간 기반 - Docker CLI 방식)
+     * CPU Percent = (ΔcpuUsage / (시간차 × 10^9)) × 100 / onlineCpus
+     *
+     * 참고: Docker CLI 공식 계산 방식
+     * - cpuUsage는 나노초 단위 누적값
+     * - 실제 경과 시간으로 나누어 정확한 % 계산
      */
     public BigDecimal calculateCpuPercent(
             Long currentCpuUsage,
             Long currentHostCpuUsage,
             Long previousCpuUsage,
             Long previousHostCpuUsage,
-            Integer onlineCpus
+            Integer onlineCpus,
+            LocalDateTime currentTime,
+            LocalDateTime previousTime
     ) {
-        if (previousCpuUsage == null || previousHostCpuUsage == null) {
+        if (previousCpuUsage == null || previousTime == null) {
+            log.info("[CPU CALC] 이전 데이터 null -> 0% 반환");
             return BigDecimal.ZERO;
         }
 
         long deltaCpu = currentCpuUsage - previousCpuUsage;
         long deltaHost = currentHostCpuUsage - previousHostCpuUsage;
 
-        if (deltaHost == 0) {
+        // 실제 경과 시간 (나노초)
+        long timeDiffNanos = Duration.between(previousTime, currentTime).toNanos();
+
+        log.info("[CPU CALC] Delta 계산 - deltaCpu: {}, deltaHost: {}, timeDiff: {}ns ({}s)",
+                deltaCpu, deltaHost, timeDiffNanos, timeDiffNanos / 1_000_000_000.0);
+
+        if (timeDiffNanos == 0) {
+            log.warn("[CPU CALC] 시간차가 0 -> 계산 불가, 0% 반환");
             return BigDecimal.ZERO;
         }
 
+        // Docker CLI 방식: (ΔcpuUsage / timeDiff) * 100 / onlineCpus
         BigDecimal percent = BigDecimal.valueOf(deltaCpu)
-                .divide(BigDecimal.valueOf(deltaHost), 6, RoundingMode.HALF_UP)
+                .divide(BigDecimal.valueOf(timeDiffNanos), 10, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
-                .multiply(BigDecimal.valueOf(onlineCpus));
+                .divide(BigDecimal.valueOf(onlineCpus), 6, RoundingMode.HALF_UP);
 
-        return percent.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal result = percent.setScale(2, RoundingMode.HALF_UP);
+        log.info("[CPU CALC] 계산 완료 - CPU %: {} (deltaCpu={}ns, timeDiff={}ns)", result, deltaCpu, timeDiffNanos);
+
+        return result;
+    }
+
+    /**
+     * Core 사용량 계산 (코어 단위)
+     * Core Usage = cpuPercent * onlineCpus / 100
+     * 예: 15% × 2코어 = 0.3 코어
+     */
+    public BigDecimal calculateCoreUsage(BigDecimal cpuPercent, Integer onlineCpus) {
+        if (cpuPercent == null || onlineCpus == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return cpuPercent
+                .multiply(BigDecimal.valueOf(onlineCpus))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * CPU 제한 계산 (코어 단위)
+     * CPU Limit = cpuQuota / cpuPeriod
+     * 예: 50000 / 100000 = 0.5 코어
+     */
+    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
+    public BigDecimal calculateCpuLimitCores(Long cpuQuota, Long cpuPeriod) {
+        if (cpuQuota == null || cpuPeriod == null || cpuPeriod == 0 || cpuQuota <= 0) {
+            return null; // 무제한
+        }
+
+        return BigDecimal.valueOf(cpuQuota)
+                .divide(BigDecimal.valueOf(cpuPeriod), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Throttling 비율 계산 (Period 기반)
+     * Throttling % = (throttledPeriods / throttlingPeriods) * 100
+     */
+    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
+    public BigDecimal calculateThrottlingPercent(Long throttledPeriods, Long throttlingPeriods) {
+        if (throttlingPeriods == null || throttlingPeriods == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return BigDecimal.valueOf(throttledPeriods)
+                .divide(BigDecimal.valueOf(throttlingPeriods), 6, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Throttling 비율 계산 (Time 기반 - 더 정확)
+     * Throttling % = (throttledTime / totalAvailableTime) * 100
+     * totalAvailableTime = timeDiff * onlineCpus (나노초)
+     */
+    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
+    public BigDecimal calculateThrottlingPercentByTime(
+            Long throttledTime,
+            Long timeDiffNanos,
+            Integer onlineCpus
+    ) {
+        if (throttledTime == null || timeDiffNanos == 0 || onlineCpus == null) {
+            return BigDecimal.ZERO;
+        }
+
+        long totalAvailableTime = timeDiffNanos * onlineCpus;
+
+        return BigDecimal.valueOf(throttledTime)
+                .divide(BigDecimal.valueOf(totalAvailableTime), 6, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -175,15 +262,18 @@ public class ContainerMetricsCalculator {
             ContainerMetricsRequestDTO metrics,
             ContainerStatsLog previousStats
     ) {
-        LocalDateTime now = LocalDateTime.now();
+        // Agent에서 수집한 시간 사용
+        LocalDateTime collectedAt = metrics.getCollectedAt();
 
-        // CPU 사용률 계산
+        // CPU 사용률 계산 (시간 기반)
         BigDecimal cpuPercent = calculateCpuPercent(
                 metrics.getCpuUsageTotal(),
                 metrics.getHostCpuUsageTotal(),
                 previousStats != null ? previousStats.getCpuUsageTotal() : null,
                 previousStats != null ? previousStats.getHostCpuUsageTotal() : null,
-                metrics.getOnlineCpus()
+                metrics.getOnlineCpus(),
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         // Memory 사용률 계산
@@ -191,39 +281,40 @@ public class ContainerMetricsCalculator {
                 metrics.getMemUsage(),
                 metrics.getMemLimit()
         );
-
+        
         // 네트워크 속도 계산
         Long rxMbps = calculateRxMbps(
                 metrics.getRxBytes(),
                 previousStats != null ? previousStats.getRxBytes() : null,
-                now,
-                previousStats != null ? previousStats.getCreatedAt() : null
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         Long txMbps = calculateTxMbps(
                 metrics.getTxBytes(),
                 previousStats != null ? previousStats.getTxBytes() : null,
-                now,
-                previousStats != null ? previousStats.getCreatedAt() : null
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         Long rxPps = calculateRxPps(
                 metrics.getRxBytes(),
                 previousStats != null ? previousStats.getRxBytes() : null,
-                now,
-                previousStats != null ? previousStats.getCreatedAt() : null
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         Long txPps = calculateTxPps(
                 metrics.getTxBytes(),
                 previousStats != null ? previousStats.getTxBytes() : null,
-                now,
-                previousStats != null ? previousStats.getCreatedAt() : null
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         return ContainerStatsLog.builder()
                 .containerHash(metrics.getContainerHash())
                 .state(metrics.getState())
+                .collectedAt(collectedAt)
                 // CPU 계산 값
                 .cpuPercent(cpuPercent)
                 // CPU raw 값
@@ -238,15 +329,12 @@ public class ContainerMetricsCalculator {
                 .throttlingPeriods(metrics.getThrottlingPeriods())
                 .throttledPeriods(metrics.getThrottledPeriods())
                 .throttledTime(metrics.getThrottledTime())
-                .oomKills(metrics.getOomKills())
                 // Memory 계산 값
                 .memPercent(memPercent)
                 // Memory raw 값
                 .memUsage(metrics.getMemUsage())
                 .memLimit(metrics.getMemLimit())
                 .memMaxUsage(metrics.getMemMaxUsage())
-                .memRss(metrics.getMemRss())
-                .memCache(metrics.getMemCache())
                 // Block I/O
                 .blkRead(metrics.getBlkRead())
                 .blkWrite(metrics.getBlkWrite())
