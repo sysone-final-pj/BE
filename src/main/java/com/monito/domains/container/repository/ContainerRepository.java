@@ -40,8 +40,8 @@ public interface ContainerRepository extends JpaRepository<Container, Long> {
                 c.memLimit,
                 latest.blkRead,
                 latest.blkWrite,
-                latest.rxMbps,
-                latest.txMbps
+                latest.rxBytesPerSec,
+                latest.txBytesPerSec
             )
             FROM Container c
             JOIN c.agent a
@@ -72,8 +72,8 @@ public interface ContainerRepository extends JpaRepository<Container, Long> {
                 c.memLimit,
                 latest.blkRead,
                 latest.blkWrite,
-                latest.rxMbps,
-                latest.txMbps
+                latest.rxBytesPerSec,
+                latest.txBytesPerSec
             )
             FROM Container c
             JOIN c.agent a

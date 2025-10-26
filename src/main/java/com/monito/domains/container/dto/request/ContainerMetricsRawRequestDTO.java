@@ -60,7 +60,6 @@ public class ContainerMetricsRawRequestDTO {
                 // Memory
                 .memUsage(memory != null ? memory.getMemUsage() : null)
                 .memLimit(memory != null ? memory.getMemLimit() : null)
-                .memMaxUsage(memory != null ? memory.getMemMaxUsage() : null)
                 // Network
                 .rxBytes(network != null ? network.getRxBytes() : null)
                 .txBytes(network != null ? network.getTxBytes() : null)

@@ -121,10 +121,10 @@ public class ContainerStatsLog {
     private Long txBytes;
 
     @Column(nullable = false)
-    private Long rxMbps;
+    private Long rxBytesPerSec;
 
     @Column(nullable = false)
-    private Long txMbps;
+    private Long txBytesPerSec;
 
     @Column(nullable = false)
     private Long rxPps;

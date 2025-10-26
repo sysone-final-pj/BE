@@ -22,7 +22,6 @@ public class ContainerMetricsCalculator {
     /**
      * CPU 사용률 계산 (시간 기반 - Docker CLI 방식)
      * CPU Percent = (ΔcpuUsage / (시간차 × 10^9)) × 100 / onlineCpus
-     *
      * 참고: Docker CLI 공식 계산 방식
      * - cpuUsage는 나노초 단위 누적값
      * - 실제 경과 시간으로 나누어 정확한 % 계산
@@ -153,10 +152,22 @@ public class ContainerMetricsCalculator {
     }
 
     /**
-     * 네트워크 수신 속도 계산 (Mbps)
-     * Mbps = (ΔrxBytes * 8) / (timeDiffSeconds * 1_000_000)
+     * Memory Max Usage 계산
+     * - 이전 최대값과 현재 사용량을 비교하여 더 큰 값 반환
+     * - 첫 수집 시에는 현재 사용량을 반환
      */
-    public Long calculateRxMbps(
+    public Long calculateMemMaxUsage(Long currentMemUsage, Long previousMemMaxUsage) {
+        if (previousMemMaxUsage == null) {
+            return currentMemUsage;
+        }
+        return Math.max(currentMemUsage, previousMemMaxUsage);
+    }
+
+    /**
+     * 네트워크 수신 속도 계산 (Bytes per second)
+     * BytesPerSec = ΔrxBytes / timeDiffSeconds
+     */
+    public Long calculateRxBytesPerSec(
             Long currentRxBytes,
             Long previousRxBytes,
             LocalDateTime currentTime,
@@ -173,14 +184,15 @@ public class ContainerMetricsCalculator {
             return 0L;
         }
 
-        // bytes to Mbps: (bytes * 8) / (seconds * 1_000_000)
-        return (deltaBytes * 8) / (timeDiffSeconds * 1_000_000);
+        // bytes per second
+        return deltaBytes / timeDiffSeconds;
     }
 
     /**
-     * 네트워크 송신 속도 계산 (Mbps)
+     * 네트워크 송신 속도 계산 (Bytes per second)
+     * BytesPerSec = ΔtxBytes / timeDiffSeconds
      */
-    public Long calculateTxMbps(
+    public Long calculateTxBytesPerSec(
             Long currentTxBytes,
             Long previousTxBytes,
             LocalDateTime currentTime,
@@ -197,7 +209,7 @@ public class ContainerMetricsCalculator {
             return 0L;
         }
 
-        return (deltaBytes * 8) / (timeDiffSeconds * 1_000_000);
+        return deltaBytes / timeDiffSeconds;
     }
 
     /**
@@ -224,9 +236,8 @@ public class ContainerMetricsCalculator {
 
         // 평균 패킷 크기 1500 bytes로 가정
         long avgPacketSize = 1500;
-        long packetsPerSecond = deltaBytes / (timeDiffSeconds * avgPacketSize);
 
-        return packetsPerSecond;
+        return deltaBytes / (timeDiffSeconds * avgPacketSize);
     }
 
     /**
@@ -250,9 +261,7 @@ public class ContainerMetricsCalculator {
         }
 
         long avgPacketSize = 1500;
-        long packetsPerSecond = deltaBytes / (timeDiffSeconds * avgPacketSize);
-
-        return packetsPerSecond;
+        return deltaBytes / (timeDiffSeconds * avgPacketSize);
     }
 
     /**
@@ -281,16 +290,22 @@ public class ContainerMetricsCalculator {
                 metrics.getMemUsage(),
                 metrics.getMemLimit()
         );
-        
-        // 네트워크 속도 계산
-        Long rxMbps = calculateRxMbps(
+
+        // Memory Max Usage 계산 (이전 최대값과 현재 사용량 비교)
+        Long memMaxUsage = calculateMemMaxUsage(
+                metrics.getMemUsage(),
+                previousStats != null ? previousStats.getMemMaxUsage() : null
+        );
+
+        // 네트워크 속도 계산 (Bytes per second)
+        Long rxBytesPerSec = calculateRxBytesPerSec(
                 metrics.getRxBytes(),
                 previousStats != null ? previousStats.getRxBytes() : null,
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
-        Long txMbps = calculateTxMbps(
+        Long txBytesPerSec = calculateTxBytesPerSec(
                 metrics.getTxBytes(),
                 previousStats != null ? previousStats.getTxBytes() : null,
                 collectedAt,
@@ -334,13 +349,13 @@ public class ContainerMetricsCalculator {
                 // Memory raw 값
                 .memUsage(metrics.getMemUsage())
                 .memLimit(metrics.getMemLimit())
-                .memMaxUsage(metrics.getMemMaxUsage())
+                .memMaxUsage(memMaxUsage)
                 // Block I/O
                 .blkRead(metrics.getBlkRead())
                 .blkWrite(metrics.getBlkWrite())
                 // Network 계산 값
-                .rxMbps(rxMbps)
-                .txMbps(txMbps)
+                .rxBytesPerSec(rxBytesPerSec)
+                .txBytesPerSec(txBytesPerSec)
                 .rxPps(rxPps)
                 .txPps(txPps)
                 // Network raw 값

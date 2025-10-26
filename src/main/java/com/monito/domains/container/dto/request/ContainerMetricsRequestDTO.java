@@ -35,7 +35,6 @@ public class ContainerMetricsRequestDTO {
     // Memory 관련
     private Long memUsage;
     private Long memLimit;
-    private Long memMaxUsage;
 
     // Block I/O 관련
     private Long blkRead;

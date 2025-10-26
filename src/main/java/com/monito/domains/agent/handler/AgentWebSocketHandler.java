@@ -3,11 +3,14 @@ package com.monito.domains.agent.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
+import com.monito.domains.agent.dto.request.AgentInfoRequestDTO;
 import com.monito.domains.agent.service.AgentService;
 import com.monito.domains.container.dto.request.AgentMetricsRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRawRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.service.ContainerStatsService;
+import com.monito.global.cache.AgentMetadata;
+import com.monito.global.cache.AgentMetadataCache;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -27,6 +30,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;
+    private final AgentMetadataCache metadataCache;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, String> authenticatedAgents = new ConcurrentHashMap<>();
@@ -64,6 +68,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             switch (type) {
                 case "AUTH":
                     handleAuth(session, data);
+                    break;
+                case "AGENT_INFO":
+                    handleAgentInfo(session, data);
                     break;
                 case "METRICS":
                     handleMetrics(session, data);
@@ -219,6 +226,69 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Agent 메타데이터 처리 (AGENT_INFO)
+     * - Agent의 시스템 정보 (hostTotalMemory, cpuCores 등)를 캐시에 저장
+     * - 인증 후 1회 전송 또는 시스템 변경 시 전송
+     */
+    private void handleAgentInfo(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 Agent 정보 전송 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> agentInfoData = (Map<String, Object>) data.get("data");
+            AgentInfoRequestDTO agentInfo = objectMapper.convertValue(
+                    agentInfoData,
+                    AgentInfoRequestDTO.class
+            );
+
+            // 캐시에 저장
+            AgentMetadata metadata = AgentMetadata.builder()
+                    .agentKey(agentKey)
+                    .hostTotalMemory(agentInfo.getHost().getTotalMemory())
+                    .hostCpuCores(agentInfo.getHost().getCpuCores())
+                    .hostname(agentInfo.getHost().getHostname())
+                    .osType(agentInfo.getHost().getOsType())
+                    .lastUpdatedAt(System.currentTimeMillis())
+                    .build();
+
+            metadataCache.updateMetadata(agentKey, metadata);
+
+            log.info("═══════════════════════════════════════");
+            log.info("📊 Agent 메타데이터 수신");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   Host Total Memory: {} bytes ({} GB)",
+                    metadata.getHostTotalMemory(),
+                    metadata.getHostTotalMemory() / (1024.0 * 1024.0 * 1024.0));
+            log.info("   Host CPU Cores: {}", metadata.getHostCpuCores());
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            sendMessage(session, Map.of(
+                    "type", "AGENT_INFO_ACK",
+                    "message", "Agent metadata received and cached",
+                    "timestamp", System.currentTimeMillis()
+            ));
+
+        } catch (Exception e) {
+            log.error("Agent 메타데이터 처리 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to process agent info: " + e.getMessage()
+            ));
+        }
+    }
+
     private void handlePing(WebSocketSession session) throws Exception {
         String agentKey = authenticatedAgents.get(session.getId());
 
@@ -239,9 +309,10 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         sessions.remove(sessionId);
         authenticatedAgents.remove(sessionId);
 
-        // Agent 상태를 OFFLINE으로 변경
+        // Agent 상태를 OFFLINE으로 변경 및 캐시 제거
         if (agentKey != null) {
             agentService.updateAgentStatus(agentKey, AgentStatus.OFFLINE);
+            metadataCache.removeMetadata(agentKey);
         }
 
         log.info("═══════════════════════════════════════");
