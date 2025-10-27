@@ -2,6 +2,7 @@ package com.monito.domains.container.service;
 
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
+import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
@@ -28,6 +29,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final ContainerRepository containerRepository;
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
+    private final AlertEvaluationFacade alertEvaluationFacade;
 
     @Override
     @Transactional
@@ -102,6 +104,15 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     statsLog.getCpuPercent(),
                     statsLog.getMemPercent()
             );
+
+            // 8. 알림 규칙 평가 (자동 알림 발생)
+            try {
+                alertEvaluationFacade.evaluateContainerStats(statsLog);
+            } catch (Exception e) {
+                // 알림 평가 실패는 메트릭 저장에 영향을 주지 않도록 예외 처리
+                log.error("알림 규칙 평가 중 오류 발생 - containerHash: {}, error: {}",
+                        metricsDto.getContainerHash(), e.getMessage());
+            }
 
         } catch (NotFoundException | BadRequestException e) {
             log.error("메트릭 처리 실패 - containerHash: {}, error: {}",

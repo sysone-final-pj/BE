@@ -53,7 +53,4 @@ public class AlertRuleCreateRequestDTO {
 
     @NotNull(message = "쿨다운 시간은 필수입니다.")
     private Integer cooldownSeconds;
-
-    @NotNull(message = "체크 주기는 필수입니다.")
-    private Integer checkInterval;
 }

@@ -34,7 +34,6 @@ public class AlertRule {
     )
     private Long id;
 
-    // TODO : N+1 문제 고려해보기
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
@@ -67,9 +66,6 @@ public class AlertRule {
 
     @Column(nullable = false, precision = 10)
     private Integer cooldownSeconds;
-
-    @Column(nullable = false, precision = 10)
-    private Integer checkInterval;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -113,12 +109,6 @@ public class AlertRule {
     public void updateCooldownSeconds(Integer cooldownSeconds) {
         if (cooldownSeconds != null && cooldownSeconds > 0) {
             this.cooldownSeconds = cooldownSeconds;
-        }
-    }
-
-    public void updateCheckInterval(Integer checkInterval) {
-        if (checkInterval != null && checkInterval > 0) {
-            this.checkInterval = checkInterval;
         }
     }
 

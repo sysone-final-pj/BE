@@ -31,7 +31,6 @@ public class AlertRuleResponseDTO {
     private BigDecimal highThreshold;
     private BigDecimal criticalThreshold;
     private Integer cooldownSeconds;
-    private Integer checkInterval;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -50,7 +49,6 @@ public class AlertRuleResponseDTO {
                 .highThreshold(alertRule.getHighThreshold())
                 .criticalThreshold(alertRule.getCriticalThreshold())
                 .cooldownSeconds(alertRule.getCooldownSeconds())
-                .checkInterval(alertRule.getCheckInterval())
                 .createdAt(alertRule.getCreatedAt())
                 .updatedAt(alertRule.getUpdatedAt())
                 .build();

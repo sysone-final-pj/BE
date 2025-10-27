@@ -166,6 +166,7 @@ public class AlertServiceImpl implements AlertService {
                 .metricType(request.getMetricType())
                 .metricValue(request.getMetricValue())
                 .alertLevel(request.getAlertLevel())
+                .collectedAt(request.getCollectedAt())
                 .isRead(false)
                 .build();
 
@@ -275,6 +276,15 @@ public class AlertServiceImpl implements AlertService {
         alertRepository.saveAll(readAlerts);
 
         log.info("읽은 알림 삭제 완료: memberId={}, count={}", memberId, readAlerts.size());
+    }
+
+    /**
+     * 읽지 않은 알림 개수 조회 (배지용)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public long getUnreadAlertCount(Long memberId) {
+        return alertRepository.countByMemberIdAndIsReadFalse(memberId);
     }
 
     /**

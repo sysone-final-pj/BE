@@ -75,4 +75,9 @@ public interface AlertService {
      * 사용자의 읽은 알림 모두 삭제
      */
     void deleteReadAlerts(Long memberId);
+
+    /**
+     * 읽지 않은 알림 개수 조회 (배지용)
+     */
+    long getUnreadAlertCount(Long memberId);
 }

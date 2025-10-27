@@ -116,6 +116,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
                 .metricType(rule.getMetricType())
                 .metricValue(currentValue)
                 .alertLevel(alertLevel)
+                .collectedAt(containerStats.getCreatedAt())
                 .build();
 
         alertService.createAndSendAlert(dto);

@@ -73,8 +73,9 @@ public class Alert {
     @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal metricValue;
 
+    @lombok.Builder.Default
     @Column(nullable = false)
-    private Boolean isRead;
+    private Boolean isRead = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, length = 20)
@@ -83,6 +84,9 @@ public class Alert {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "collected_at")
+    private LocalDateTime collectedAt;
 
     @lombok.Builder.Default
     @Column(name = "is_deleted", nullable = false)

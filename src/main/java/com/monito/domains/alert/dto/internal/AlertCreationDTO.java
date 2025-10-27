@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * AlertRuleEvaluator에서 AlertService로 알림 생성 요청 시 사용하는 DTO
@@ -26,6 +27,7 @@ public class AlertCreationDTO {
     private MetricType metricType;
     private BigDecimal metricValue;
     private AlertLevel alertLevel;
+    private LocalDateTime collectedAt;
 
     public Alert toEntity() {
         return Alert.builder()
@@ -36,6 +38,7 @@ public class AlertCreationDTO {
                 .metricType(metricType)
                 .metricValue(metricValue)
                 .alertLevel(alertLevel)
+                .collectedAt(collectedAt)
                 .isRead(false)
                 .build();
     }

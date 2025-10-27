@@ -61,7 +61,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
                 .highThreshold(request.getHighThreshold())
                 .criticalThreshold(request.getCriticalThreshold())
                 .cooldownSeconds(request.getCooldownSeconds())
-                .checkInterval(request.getCheckInterval())
                 .build();
 
         AlertRule saved = alertRuleRepository.save(alertRule);
@@ -137,9 +136,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
 
         if (request.getCooldownSeconds() != null) {
             alertRule.updateCooldownSeconds(request.getCooldownSeconds());
-        }
-        if (request.getCheckInterval() != null) {
-            alertRule.updateCheckInterval(request.getCheckInterval());
         }
         if (request.getIsEnabled() != null) {
             if (request.getIsEnabled()) {

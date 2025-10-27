@@ -39,7 +39,5 @@ public class AlertRuleUpdateRequestDTO {
 
     private Integer cooldownSeconds;
 
-    private Integer checkInterval;
-
     private Boolean isEnabled;
 }

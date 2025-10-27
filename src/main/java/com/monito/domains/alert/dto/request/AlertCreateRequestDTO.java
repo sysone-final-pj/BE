@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -33,4 +34,6 @@ public class AlertCreateRequestDTO {
     private BigDecimal metricValue;
 
     private AlertLevel alertLevel;
+
+    private LocalDateTime collectedAt;
 }

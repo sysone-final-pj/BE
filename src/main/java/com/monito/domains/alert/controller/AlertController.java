@@ -28,6 +28,17 @@ public class AlertController {
     private final AlertService alertService;
 
     /**
+     * 읽지 않은 알림 개수 조회 (배지용)
+     */
+    @Operation(summary = "읽지 않은 알림 개수 조회", description = "현재 사용자의 읽지 않은 알림 개수를 조회합니다. (배지 표시용)")
+    @GetMapping("/unread/count")
+    public ApiResponse<Long> getUnreadAlertCount(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        long count = alertService.getUnreadAlertCount(userDetails.getId());
+        return ApiResponse.ok(count, "읽지 않은 알림 개수 조회 성공");
+    }
+
+    /**
      * 읽지 않은 알림 목록 조회(개인)
      */
     @Operation(summary = "읽지 않은 알림 목록 조회", description = "현재 사용자의 읽지 않은 알림 목록을 조회합니다.")

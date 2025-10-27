@@ -2,6 +2,7 @@ package com.monito.domains.alert.controller;
 
 import com.monito.domains.alert.domain.AlertRule;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
+import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerState;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -34,6 +36,7 @@ public class AlertTestController {
     private final AlertEvaluationFacade alertEvaluationFacade;
     private final ContainerRepository containerRepository;
     private final AlertRuleRepository alertRuleRepository;
+    private final AlertRepository alertRepository;
 
     /**
      * 특정 컨테이너의 메트릭을 임의로 설정하여 알림 테스트
@@ -136,11 +139,119 @@ public class AlertTestController {
         return ApiResponse.ok(infos, "컨테이너 " + infos.size() + "개 조회 완료");
     }
 
+    /**
+     * 디버깅: 알림 읽음 처리 (인증 없이 테스트)
+     */
+    @Operation(summary = "[디버깅] 알림 읽음 처리",
+            description = "alertId로 해당 알림을 읽음 처리합니다.")
+    @PatchMapping("/alerts/{alertId}/read")
+    @org.springframework.transaction.annotation.Transactional
+    public ApiResponse<String> markAlertAsRead(@PathVariable Long alertId) {
+        try {
+            com.monito.domains.alert.domain.Alert alert = alertRepository.findById(alertId)
+                    .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_NOT_FOUND));
+
+            alert.markAsRead();
+            alertRepository.save(alert);
+
+            log.info("테스트: 알림 읽음 처리 완료 - alertId={}", alertId);
+            return ApiResponse.ok("알림 읽음 처리 완료");
+        } catch (Exception e) {
+            log.error("테스트: 알림 읽음 처리 실패 - alertId={}", alertId, e);
+            return ApiResponse.okWithoutData(500, "알림 읽음 처리 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 디버깅: 특정 사용자의 읽지 않은 알림 조회 (인증 없이 테스트)
+     */
+    @Operation(summary = "[디버깅] 특정 사용자의 읽지 않은 알림 조회",
+            description = "memberId를 직접 지정하여 읽지 않은 알림을 조회합니다.")
+    @GetMapping("/alerts/unread/{memberId}")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ApiResponse<List<AlertDebugInfo>> getUnreadAlertsByMember(@PathVariable Long memberId) {
+        List<com.monito.domains.alert.domain.Alert> alerts =
+            alertRepository.findByMemberIdAndIsReadFalseOrderByCreatedAtDesc(memberId);
+
+        List<AlertDebugInfo> debugInfos = alerts.stream()
+                .map(a -> {
+                    String containerName = "N/A";
+                    try {
+                        if (a.getContainer() != null) {
+                            containerName = a.getContainer().getName();
+                        }
+                    } catch (Exception e) {
+                        log.warn("Container 로딩 실패: alertId={}", a.getId());
+                    }
+
+                    return new AlertDebugInfo(
+                            a.getId(),
+                            a.getMember().getId(),
+                            containerName,
+                            a.getMessage(),
+                            a.getIsRead(),
+                            a.getIsDeleted(),
+                            a.getCreatedAt()
+                    );
+                })
+                .toList();
+
+        return ApiResponse.ok(debugInfos, "memberId=" + memberId + "의 읽지 않은 알림 " + debugInfos.size() + "개 조회 완료");
+    }
+
+    /**
+     * 디버깅: 모든 알림 데이터 조회 (isRead, isDeleted 포함)
+     */
+    @Operation(summary = "[디버깅] 모든 알림 원본 데이터 조회",
+            description = "DB에 저장된 모든 알림의 원본 데이터를 조회합니다. (isRead, isDeleted 값 포함)")
+    @GetMapping("/alerts/debug")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ApiResponse<List<AlertDebugInfo>> getAllAlertsDebug() {
+        List<com.monito.domains.alert.domain.Alert> alerts =
+            alertRepository.findAll();
+
+        List<AlertDebugInfo> debugInfos = alerts.stream()
+                .map(a -> {
+                    String containerName = "N/A";
+                    try {
+                        if (a.getContainer() != null) {
+                            containerName = a.getContainer().getName();
+                        }
+                    } catch (Exception e) {
+                        log.warn("Container 로딩 실패: alertId={}", a.getId());
+                    }
+
+                    return new AlertDebugInfo(
+                            a.getId(),
+                            a.getMember().getId(),
+                            containerName,
+                            a.getMessage(),
+                            a.getIsRead(),
+                            a.getIsDeleted(),
+                            a.getCreatedAt()
+                    );
+                })
+                .toList();
+
+        return ApiResponse.ok(debugInfos, "알림 디버그 데이터 " + debugInfos.size() + "개 조회 완료");
+    }
+
     // DTO for container info
     public record ContainerInfo(
             Long id,
             String name,
             String containerHash,
             Long agentId
+    ) {}
+
+    // DTO for alert debug info
+    public record AlertDebugInfo(
+            Long alertId,
+            Long memberId,
+            String containerName,
+            String message,
+            Boolean isRead,
+            Boolean isDeleted,
+            LocalDateTime createdAt
     ) {}
 }
