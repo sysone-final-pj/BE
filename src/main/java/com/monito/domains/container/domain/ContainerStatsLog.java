@@ -133,6 +133,9 @@ public class ContainerStatsLog {
     private Long txPackets;
 
     @Column(nullable = false)
+    private Long networkTotalBytes;
+
+    @Column(nullable = false)
     private Long rxBytesPerSec;
 
     @Column(nullable = false)

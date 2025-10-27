@@ -416,6 +416,7 @@ public class ContainerMetricsCalculator {
                 .txBytes(metrics.getTxBytes())
                 .rxPackets(metrics.getRxPackets())
                 .txPackets(metrics.getTxPackets())
+                .networkTotalBytes(metrics.getRxBytes() + metrics.getTxBytes())
                 .rxErrors(metrics.getRxErrors())
                 .txErrors(metrics.getTxErrors())
                 .rxDropped(metrics.getRxDropped())
