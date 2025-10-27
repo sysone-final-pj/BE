@@ -106,6 +106,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .txBytesPerSec(statsLog.getTxBytesPerSec())
                     .rxPps(statsLog.getRxPps())
                     .txPps(statsLog.getTxPps())
+                    .rxFailureRate(statsLog.getRxFailureRate())
+                    .txFailureRate(statsLog.getTxFailureRate())
                     .rxErrors(statsLog.getRxErrors())
                     .txErrors(statsLog.getTxErrors())
                     .rxDropped(statsLog.getRxDropped())

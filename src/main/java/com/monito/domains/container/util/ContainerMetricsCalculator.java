@@ -189,6 +189,41 @@ public class ContainerMetricsCalculator {
     }
 
     /**
+     * 네트워크 장애율 계산 (에러 + 드롭)
+     * Failure Rate = (Δerrors + Δdropped) / Δpackets × 100
+     *
+     * @return 장애율 (0.00 ~ 100.00), 패킷이 없으면 0.00
+     */
+    public BigDecimal calculateNetworkFailureRate(
+            Integer currentErrors,
+            Integer previousErrors,
+            Integer currentDropped,
+            Integer previousDropped,
+            Long currentPackets,
+            Long previousPackets
+    ) {
+        if (previousErrors == null || previousDropped == null || previousPackets == null) {
+            return BigDecimal.ZERO;
+        }
+
+        long deltaErrors = currentErrors - previousErrors;
+        long deltaDropped = currentDropped - previousDropped;
+        long deltaPackets = currentPackets - previousPackets;
+
+        // 패킷이 없으면 0% (의미 없는 지표)
+        if (deltaPackets == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        long totalFailures = deltaErrors + deltaDropped;
+
+        return BigDecimal.valueOf(totalFailures)
+                .divide(BigDecimal.valueOf(deltaPackets), 6, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
      * 네트워크 수신 패킷 속도 계산 (PPS - Packets Per Second)
      * 실제 패킷 수를 사용하여 정확한 PPS 계산
      */
@@ -320,6 +355,25 @@ public class ContainerMetricsCalculator {
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
+        // 네트워크 장애율 계산 (에러 + 드롭)
+        BigDecimal rxFailureRate = calculateNetworkFailureRate(
+                metrics.getRxErrors(),
+                previousStats != null ? previousStats.getRxErrors() : null,
+                metrics.getRxDropped(),
+                previousStats != null ? previousStats.getRxDropped() : null,
+                metrics.getRxPackets(),
+                previousStats != null ? previousStats.getRxPackets() : null
+        );
+
+        BigDecimal txFailureRate = calculateNetworkFailureRate(
+                metrics.getTxErrors(),
+                previousStats != null ? previousStats.getTxErrors() : null,
+                metrics.getTxDropped(),
+                previousStats != null ? previousStats.getTxDropped() : null,
+                metrics.getTxPackets(),
+                previousStats != null ? previousStats.getTxPackets() : null
+        );
+
         return ContainerStatsLog.builder()
                 .containerHash(metrics.getContainerHash())
                 .state(metrics.getState())
@@ -355,6 +409,8 @@ public class ContainerMetricsCalculator {
                 .txBytesPerSec(txBytesPerSec)
                 .rxPps(rxPps)
                 .txPps(txPps)
+                .rxFailureRate(rxFailureRate)
+                .txFailureRate(txFailureRate)
                 // Network raw 값
                 .rxBytes(metrics.getRxBytes())
                 .txBytes(metrics.getTxBytes())

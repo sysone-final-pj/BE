@@ -144,6 +144,12 @@ public class ContainerStatsLog {
     @Column(nullable = false)
     private Long txPps;
 
+    @Column(precision = 6, scale = 2)
+    private BigDecimal rxFailureRate;
+
+    @Column(precision = 6, scale = 2)
+    private BigDecimal txFailureRate;
+
     @Column(nullable = false)
     private Integer rxErrors;
 
