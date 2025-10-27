@@ -96,6 +96,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .memMaxUsage(statsLog.getMemMaxUsage())
                     .blkRead(statsLog.getBlkRead())
                     .blkWrite(statsLog.getBlkWrite())
+                    .blkReadPerSec(statsLog.getBlkReadPerSec())
+                    .blkWritePerSec(statsLog.getBlkWritePerSec())
                     .rxBytes(statsLog.getRxBytes())
                     .txBytes(statsLog.getTxBytes())
                     .rxPackets(statsLog.getRxPackets())

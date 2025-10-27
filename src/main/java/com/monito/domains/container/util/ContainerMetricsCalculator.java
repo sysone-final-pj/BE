@@ -164,45 +164,21 @@ public class ContainerMetricsCalculator {
     }
 
     /**
-     * 네트워크 수신 속도 계산 (Bytes per second)
-     * BytesPerSec = ΔrxBytes / timeDiffSeconds
+     * 범용 Throughput 계산 (Bytes per second)
+     * Network, Block I/O 등 모든 bytes 기반 throughput에 사용
+     * Throughput = Δbytes / Δtime
      */
-    public Long calculateRxBytesPerSec(
-            Long currentRxBytes,
-            Long previousRxBytes,
+    public Long calculateBytesPerSec(
+            Long currentBytes,
+            Long previousBytes,
             LocalDateTime currentTime,
             LocalDateTime previousTime
     ) {
-        if (previousRxBytes == null || previousTime == null) {
+        if (previousBytes == null || previousTime == null) {
             return 0L;
         }
 
-        long deltaBytes = currentRxBytes - previousRxBytes;
-        long timeDiffSeconds = Duration.between(previousTime, currentTime).getSeconds();
-
-        if (timeDiffSeconds == 0) {
-            return 0L;
-        }
-
-        // bytes per second
-        return deltaBytes / timeDiffSeconds;
-    }
-
-    /**
-     * 네트워크 송신 속도 계산 (Bytes per second)
-     * BytesPerSec = ΔtxBytes / timeDiffSeconds
-     */
-    public Long calculateTxBytesPerSec(
-            Long currentTxBytes,
-            Long previousTxBytes,
-            LocalDateTime currentTime,
-            LocalDateTime previousTime
-    ) {
-        if (previousTxBytes == null || previousTime == null) {
-            return 0L;
-        }
-
-        long deltaBytes = currentTxBytes - previousTxBytes;
+        long deltaBytes = currentBytes - previousBytes;
         long timeDiffSeconds = Duration.between(previousTime, currentTime).getSeconds();
 
         if (timeDiffSeconds == 0) {
@@ -300,16 +276,31 @@ public class ContainerMetricsCalculator {
         );
 
         // 네트워크 속도 계산 (Bytes per second)
-        Long rxBytesPerSec = calculateRxBytesPerSec(
+        Long rxBytesPerSec = calculateBytesPerSec(
                 metrics.getRxBytes(),
                 previousStats != null ? previousStats.getRxBytes() : null,
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
-        Long txBytesPerSec = calculateTxBytesPerSec(
+        Long txBytesPerSec = calculateBytesPerSec(
                 metrics.getTxBytes(),
                 previousStats != null ? previousStats.getTxBytes() : null,
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
+        );
+
+        // Block I/O 속도 계산 (Bytes per second)
+        Long blkReadPerSec = calculateBytesPerSec(
+                metrics.getBlkRead(),
+                previousStats != null ? previousStats.getBlkRead() : null,
+                collectedAt,
+                previousStats != null ? previousStats.getCollectedAt() : null
+        );
+
+        Long blkWritePerSec = calculateBytesPerSec(
+                metrics.getBlkWrite(),
+                previousStats != null ? previousStats.getBlkWrite() : null,
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
@@ -353,9 +344,12 @@ public class ContainerMetricsCalculator {
                 .memUsage(metrics.getMemUsage())
                 .memLimit(metrics.getMemLimit())
                 .memMaxUsage(memMaxUsage)
-                // Block I/O
+                // Block I/O raw 값
                 .blkRead(metrics.getBlkRead())
                 .blkWrite(metrics.getBlkWrite())
+                // Block I/O 계산 값
+                .blkReadPerSec(blkReadPerSec)
+                .blkWritePerSec(blkWritePerSec)
                 // Network 계산 값
                 .rxBytesPerSec(rxBytesPerSec)
                 .txBytesPerSec(txBytesPerSec)

@@ -113,6 +113,12 @@ public class ContainerStatsLog {
     @Column(nullable = false)
     private Long blkWrite;
 
+    @Column(nullable = false)
+    private Long blkReadPerSec;
+
+    @Column(nullable = false)
+    private Long blkWritePerSec;
+
     // Network 관련
     @Column(nullable = false)
     private Long rxBytes;
