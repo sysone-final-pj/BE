@@ -60,6 +60,9 @@ public class ContainerStatsLog {
     @Column(precision = 6, scale = 2)
     private BigDecimal cpuPercent;
 
+    @Column(precision = 6, scale = 2)
+    private BigDecimal cpuCoreUsage;
+
     @Column(nullable = false)
     private Long hostCpuUsageTotal;
 
@@ -77,9 +80,6 @@ public class ContainerStatsLog {
 
     @Column(nullable = false)
     private Long cpuPeriod;
-
-    @Column(nullable = false)
-    private Long cpuLimit;
 
     @Column(nullable = false)
     private Integer onlineCpus;
@@ -119,6 +119,12 @@ public class ContainerStatsLog {
 
     @Column(nullable = false)
     private Long txBytes;
+
+    @Column(nullable = false)
+    private Long rxPackets;
+
+    @Column(nullable = false)
+    private Long txPackets;
 
     @Column(nullable = false)
     private Long rxBytesPerSec;

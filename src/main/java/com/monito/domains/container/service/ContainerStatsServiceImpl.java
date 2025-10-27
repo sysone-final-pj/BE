@@ -11,6 +11,7 @@ import com.monito.domains.container.util.ContainerMetricsCalculator;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -78,13 +79,13 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .state(statsLog.getState())
                     .collectedAt(statsLog.getCollectedAt())
                     .cpuPercent(statsLog.getCpuPercent())
+                    .cpuCoreUsage(statsLog.getCpuCoreUsage())
                     .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
                     .cpuUsageTotal(statsLog.getCpuUsageTotal())
                     .cpuUser(statsLog.getCpuUser())
                     .cpuSystem(statsLog.getCpuSystem())
                     .cpuQuota(statsLog.getCpuQuota())
                     .cpuPeriod(statsLog.getCpuPeriod())
-                    .cpuLimit(statsLog.getCpuLimit())
                     .onlineCpus(statsLog.getOnlineCpus())
                     .throttlingPeriods(statsLog.getThrottlingPeriods())
                     .throttledPeriods(statsLog.getThrottledPeriods())
@@ -97,6 +98,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .blkWrite(statsLog.getBlkWrite())
                     .rxBytes(statsLog.getRxBytes())
                     .txBytes(statsLog.getTxBytes())
+                    .rxPackets(statsLog.getRxPackets())
+                    .txPackets(statsLog.getTxPackets())
                     .rxBytesPerSec(statsLog.getRxBytesPerSec())
                     .txBytesPerSec(statsLog.getTxBytesPerSec())
                     .rxPps(statsLog.getRxPps())
@@ -143,21 +146,27 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
      * 새 컨테이너 생성
      */
     private Container createNewContainer(Agent agent, ContainerMetricsRequestDTO metricsDto) {
+        // CPU Limit Cores 계산
+        BigDecimal cpuLimitCores = metricsCalculator.calculateCpuLimitCores(
+                metricsDto.getCpuQuota(),
+                metricsDto.getCpuPeriod()
+        );
+
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(metricsDto.getContainerHash())
                 .name(metricsDto.getContainerHash().substring(0, 12)) // 기본 이름 (해시 앞 12자리)
                 .cpuQuota(metricsDto.getCpuQuota())
                 .cpuPeriod(metricsDto.getCpuPeriod())
-                .cpuLimit(metricsDto.getCpuLimit())
+                .cpuLimitCores(cpuLimitCores)
                 .onlineCpus(metricsDto.getOnlineCpus())
                 .memLimit(metricsDto.getMemLimit())
                 .build();
 
         container = containerRepository.save(container);
 
-        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}",
-                agent.getAgentKey(), metricsDto.getContainerHash());
+        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores",
+                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores);
 
         return container;
     }

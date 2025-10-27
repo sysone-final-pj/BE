@@ -52,7 +52,6 @@ public class ContainerMetricsRawRequestDTO {
                 .cpuSystem(cpu != null ? cpu.getCpuSystem() : null)
                 .cpuQuota(cpu != null ? cpu.getCpuQuota() : 0L)
                 .cpuPeriod(cpu != null ? cpu.getCpuPeriod() : 0L)
-                .cpuLimit(cpu != null ? calculateCpuLimit(cpu.getCpuQuota(), cpu.getCpuPeriod()) : 0L)
                 .onlineCpus(cpu != null ? cpu.getOnlineCpus() : 1)
                 .throttlingPeriods(cpu != null ? cpu.getThrottlingPeriods() : 0L)
                 .throttledPeriods(cpu != null ? cpu.getThrottledPeriods() : 0L)
@@ -63,6 +62,8 @@ public class ContainerMetricsRawRequestDTO {
                 // Network
                 .rxBytes(network != null ? network.getRxBytes() : null)
                 .txBytes(network != null ? network.getTxBytes() : null)
+                .rxPackets(network != null ? network.getRxPackets() : null)
+                .txPackets(network != null ? network.getTxPackets() : null)
                 .rxErrors(network != null ? network.getRxErrors() : null)
                 .txErrors(network != null ? network.getTxErrors() : null)
                 .rxDropped(network != null ? network.getRxDropped() : null)
@@ -81,12 +82,5 @@ public class ContainerMetricsRawRequestDTO {
         } catch (IllegalArgumentException e) {
             return ContainerState.DEAD;
         }
-    }
-
-    private Long calculateCpuLimit(Long cpuQuota, Long cpuPeriod) {
-        if (cpuQuota == null || cpuPeriod == null || cpuQuota <= 0 || cpuPeriod <= 0) {
-            return 0L;
-        }
-        return cpuQuota;
     }
 }

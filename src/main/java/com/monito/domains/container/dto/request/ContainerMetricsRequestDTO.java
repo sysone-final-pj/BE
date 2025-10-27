@@ -26,7 +26,6 @@ public class ContainerMetricsRequestDTO {
     private Long cpuSystem;
     private Long cpuQuota;
     private Long cpuPeriod;
-    private Long cpuLimit;
     private Integer onlineCpus;
     private Long throttlingPeriods;
     private Long throttledPeriods;
@@ -43,6 +42,8 @@ public class ContainerMetricsRequestDTO {
     // Network 관련
     private Long rxBytes;
     private Long txBytes;
+    private Long rxPackets;
+    private Long txPackets;
     private Integer rxErrors;
     private Integer txErrors;
     private Integer rxDropped;

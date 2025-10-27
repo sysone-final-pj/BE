@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,18 +48,30 @@ public class Container extends BaseEntity {
     private String name;
 
     /**
-     리소스 제한 설정 (default 100,000 µs) -> 0.1초 단위로 CPU 할당 계산
-    */
+     * CPU 할당 시간 제한 (µs 단위)
+     * 예: 150000 = 150ms (1.5 코어 분량)
+     */
     @Column(nullable = false)
     private Long cpuQuota;
 
-    // 주기 내 사용 가능한 CPU 시간 (µs 단위)
+    /**
+     * CPU 스케줄링 주기 (µs 단위, default 100000 = 100ms)
+     */
     @Column(nullable = false)
     private Long cpuPeriod;
 
-    @Column(nullable = false)
-    private Long cpuLimit;
+    /**
+     * CPU 제한 (코어 단위)
+     * cpuQuota / cpuPeriod로 계산
+     * 예: 1.5 (1.5 코어)
+     */
+    @Column(precision = 6, scale = 2)
+    private BigDecimal cpuLimitCores;
 
+    /**
+     * 컨테이너가 스케줄링될 수 있는 CPU 코어 수
+     * (일반적으로 호스트 전체 코어, cpuset 제한 시 다를 수 있음)
+     */
     @Column(nullable = false)
     private Integer onlineCpus;
 

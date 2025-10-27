@@ -213,55 +213,51 @@ public class ContainerMetricsCalculator {
     }
 
     /**
-     * 네트워크 수신 패킷 속도 계산 (PPS)
-     * 패킷 수를 직접 받지 않으므로, 평균 패킷 크기로 추정
-     * 평균 패킷 크기를 1500 bytes로 가정
+     * 네트워크 수신 패킷 속도 계산 (PPS - Packets Per Second)
+     * 실제 패킷 수를 사용하여 정확한 PPS 계산
      */
     public Long calculateRxPps(
-            Long currentRxBytes,
-            Long previousRxBytes,
+            Long currentRxPackets,
+            Long previousRxPackets,
             LocalDateTime currentTime,
             LocalDateTime previousTime
     ) {
-        if (previousRxBytes == null || previousTime == null) {
+        if (previousRxPackets == null || previousTime == null) {
             return 0L;
         }
 
-        long deltaBytes = currentRxBytes - previousRxBytes;
+        long deltaPackets = currentRxPackets - previousRxPackets;
         long timeDiffSeconds = Duration.between(previousTime, currentTime).getSeconds();
 
         if (timeDiffSeconds == 0) {
             return 0L;
         }
 
-        // 평균 패킷 크기 1500 bytes로 가정
-        long avgPacketSize = 1500;
-
-        return deltaBytes / (timeDiffSeconds * avgPacketSize);
+        return deltaPackets / timeDiffSeconds;
     }
 
     /**
-     * 네트워크 송신 패킷 속도 계산 (PPS)
+     * 네트워크 송신 패킷 속도 계산 (PPS - Packets Per Second)
+     * 실제 패킷 수를 사용하여 정확한 PPS 계산
      */
     public Long calculateTxPps(
-            Long currentTxBytes,
-            Long previousTxBytes,
+            Long currentTxPackets,
+            Long previousTxPackets,
             LocalDateTime currentTime,
             LocalDateTime previousTime
     ) {
-        if (previousTxBytes == null || previousTime == null) {
+        if (previousTxPackets == null || previousTime == null) {
             return 0L;
         }
 
-        long deltaBytes = currentTxBytes - previousTxBytes;
+        long deltaPackets = currentTxPackets - previousTxPackets;
         long timeDiffSeconds = Duration.between(previousTime, currentTime).getSeconds();
 
         if (timeDiffSeconds == 0) {
             return 0L;
         }
 
-        long avgPacketSize = 1500;
-        return deltaBytes / (timeDiffSeconds * avgPacketSize);
+        return deltaPackets / timeDiffSeconds;
     }
 
     /**
@@ -283,6 +279,12 @@ public class ContainerMetricsCalculator {
                 metrics.getOnlineCpus(),
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
+        );
+
+        // CPU 코어 사용량 계산 (코어 단위)
+        BigDecimal cpuCoreUsage = calculateCoreUsage(
+                cpuPercent,
+                metrics.getOnlineCpus()
         );
 
         // Memory 사용률 계산
@@ -312,16 +314,17 @@ public class ContainerMetricsCalculator {
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
+        // PPS 계산 (실제 패킷 수 사용)
         Long rxPps = calculateRxPps(
-                metrics.getRxBytes(),
-                previousStats != null ? previousStats.getRxBytes() : null,
+                metrics.getRxPackets(),
+                previousStats != null ? previousStats.getRxPackets() : null,
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
         Long txPps = calculateTxPps(
-                metrics.getTxBytes(),
-                previousStats != null ? previousStats.getTxBytes() : null,
+                metrics.getTxPackets(),
+                previousStats != null ? previousStats.getTxPackets() : null,
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
@@ -332,6 +335,7 @@ public class ContainerMetricsCalculator {
                 .collectedAt(collectedAt)
                 // CPU 계산 값
                 .cpuPercent(cpuPercent)
+                .cpuCoreUsage(cpuCoreUsage)
                 // CPU raw 값
                 .hostCpuUsageTotal(metrics.getHostCpuUsageTotal())
                 .cpuUsageTotal(metrics.getCpuUsageTotal())
@@ -339,7 +343,6 @@ public class ContainerMetricsCalculator {
                 .cpuSystem(metrics.getCpuSystem())
                 .cpuQuota(metrics.getCpuQuota())
                 .cpuPeriod(metrics.getCpuPeriod())
-                .cpuLimit(metrics.getCpuLimit())
                 .onlineCpus(metrics.getOnlineCpus())
                 .throttlingPeriods(metrics.getThrottlingPeriods())
                 .throttledPeriods(metrics.getThrottledPeriods())
@@ -361,6 +364,8 @@ public class ContainerMetricsCalculator {
                 // Network raw 값
                 .rxBytes(metrics.getRxBytes())
                 .txBytes(metrics.getTxBytes())
+                .rxPackets(metrics.getRxPackets())
+                .txPackets(metrics.getTxPackets())
                 .rxErrors(metrics.getRxErrors())
                 .txErrors(metrics.getTxErrors())
                 .rxDropped(metrics.getRxDropped())
