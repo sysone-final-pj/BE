@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MetricType {
     CPU("CPU"),
-    RAM("RAM"),
+    MEMORY("MEMORY"),
     NETWORK("NETWORK");
 
     private final String description;
