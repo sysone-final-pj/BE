@@ -25,8 +25,8 @@ public class AgentMetadataCache {
      */
     public void updateMetadata(String agentKey, AgentMetadata metadata) {
         cache.put(agentKey, metadata);
-        log.info("[CACHE] Agent 메타데이터 업데이트 - agentKey: {}, hostTotalMemory: {} bytes, hostCpuCores: {}",
-                agentKey, metadata.getHostTotalMemory(), metadata.getHostCpuCores());
+        log.info("[CACHE] Agent 메타데이터 업데이트 - agentKey: {}, hostTotalMemory: {} bytes, hostCpuCores: {}, hostTotalDiskSpace: {} bytes",
+                agentKey, metadata.getHostTotalMemory(), metadata.getHostCpuCores(), metadata.getHostTotalDiskSpace());
     }
 
     /**
@@ -56,6 +56,16 @@ public class AgentMetadataCache {
     public Integer getHostCpuCores(String agentKey) {
         AgentMetadata metadata = cache.get(agentKey);
         return metadata != null ? metadata.getHostCpuCores() : null;
+    }
+
+    /**
+     * Host 전체 디스크 공간 조회
+     * @param agentKey Agent 식별 키
+     * @return hostTotalDiskSpace (없으면 null)
+     */
+    public Long getHostTotalDiskSpace(String agentKey) {
+        AgentMetadata metadata = cache.get(agentKey);
+        return metadata != null ? metadata.getHostTotalDiskSpace() : null;
     }
 
     /**

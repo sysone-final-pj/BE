@@ -31,6 +31,11 @@ public class AgentMetadata {
     private Integer hostCpuCores;
 
     /**
+     * Host 전체 디스크 공간 (bytes)
+     */
+    private Long hostTotalDiskSpace;
+
+    /**
      * 호스트명 (선택)
      */
     private String hostname;

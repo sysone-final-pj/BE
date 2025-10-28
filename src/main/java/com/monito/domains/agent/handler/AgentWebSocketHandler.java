@@ -257,6 +257,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                     .agentKey(agentKey)
                     .hostTotalMemory(agentInfo.getHost().getTotalMemory())
                     .hostCpuCores(agentInfo.getHost().getCpuCores())
+                    .hostTotalDiskSpace(agentInfo.getHost().getTotalDisk())
                     .hostname(agentInfo.getHost().getHostname())
                     .osType(agentInfo.getHost().getOsType())
                     .lastUpdatedAt(System.currentTimeMillis())
@@ -271,6 +272,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                     metadata.getHostTotalMemory(),
                     metadata.getHostTotalMemory() / (1024.0 * 1024.0 * 1024.0));
             log.info("   Host CPU Cores: {}", metadata.getHostCpuCores());
+            log.info("   Host Total Disk: {} bytes ({} GB)",
+                    metadata.getHostTotalDiskSpace(),
+                    metadata.getHostTotalDiskSpace() / (1024.0 * 1024.0 * 1024.0));
             log.info("   시각: {}", getCurrentTime());
             log.info("═══════════════════════════════════════");
 

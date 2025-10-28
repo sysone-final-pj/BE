@@ -42,4 +42,9 @@ public class AgentInfoDetailRequestDTO {
      * OS 타입 - 선택
      */
     private String osType;
+
+    /**
+     * 전체 디스크 공간 (bytes) - 선택
+     */
+    private Long totalDisk;
 }
