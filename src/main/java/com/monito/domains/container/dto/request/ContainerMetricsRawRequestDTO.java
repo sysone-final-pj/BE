@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
  *   "memory": {...},
  *   "network": {...},
  *   "blockIO": {...}
+ *   "storage": {...}
  * }
  */
 @Getter
@@ -35,6 +36,7 @@ public class ContainerMetricsRawRequestDTO {
     private NetworkMetricsRequestDTO network;
     @JsonProperty("blockIO")
     private BlockIOMetricsRequestDTO blockIO;
+    private StorageMetricsRequestDTO storage;
 
     /**
      * Flat 구조의 ContainerMetricsRequestDTO로 변환
@@ -71,6 +73,11 @@ public class ContainerMetricsRawRequestDTO {
                 // Block I/O
                 .blkRead(blockIO != null ? blockIO.getBlkRead() : null)
                 .blkWrite(blockIO != null ? blockIO.getBlkWrite() : null)
+                // Storage
+                .sizeRw(storage != null ? storage.getSizeRw() : 0L)
+                .sizeRootFs(storage != null ? storage.getSizeRootFs() : 0L)
+                .imageSize(storage != null ? storage.getImageSize() : null)
+                .imageName(storage != null ? storage.getImageName() : null)
                 .build();
     }
 

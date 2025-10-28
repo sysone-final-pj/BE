@@ -48,4 +48,10 @@ public class ContainerMetricsRequestDTO {
     private Integer txErrors;
     private Integer rxDropped;
     private Integer txDropped;
+
+    // Storage 관련
+    private Long sizeRw;         // Read-Write Layer 크기
+    private Long sizeRootFs;     // 전체 파일시스템 크기 (imageSize + sizeRw)
+    private Long imageSize;      // 이미지 크기
+    private String imageName;    // 이미지 이름
 }

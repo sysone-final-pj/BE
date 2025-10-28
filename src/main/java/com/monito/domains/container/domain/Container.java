@@ -81,6 +81,20 @@ public class Container extends BaseEntity {
     @Column(nullable = false)
     private Integer oomKills;
 
+    /**
+     * 컨테이너 이미지 이름
+     * 예: "nginx:latest", "ubuntu:20.04"
+     */
+    @Column(length = 255)
+    private String imageName;
+
+    /**
+     * 컨테이너 이미지 크기 (bytes)
+     * 컨테이너 생성 시점에 결정되며 변경되지 않음
+     */
+    @Column
+    private Long imageSize;
+
     @PrePersist
     private void prePersist() {
         if (this.oomKills == null) {

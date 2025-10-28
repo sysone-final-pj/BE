@@ -396,7 +396,6 @@ public class ContainerMetricsCalculator {
                 .memPercent(memPercent)
                 // Memory raw 값
                 .memUsage(metrics.getMemUsage())
-                .memLimit(metrics.getMemLimit())
                 .memMaxUsage(memMaxUsage)
                 // Block I/O raw 값
                 .blkRead(metrics.getBlkRead())
@@ -421,6 +420,9 @@ public class ContainerMetricsCalculator {
                 .txErrors(metrics.getTxErrors())
                 .rxDropped(metrics.getRxDropped())
                 .txDropped(metrics.getTxDropped())
+                // Storage raw 값
+                .sizeRw(metrics.getSizeRw())
+                .sizeRootFs(metrics.getSizeRootFs())
                 .build();
     }
 }

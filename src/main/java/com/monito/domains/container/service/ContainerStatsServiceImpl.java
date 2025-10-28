@@ -92,7 +92,6 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .throttledTime(statsLog.getThrottledTime())
                     .memPercent(statsLog.getMemPercent())
                     .memUsage(statsLog.getMemUsage())
-                    .memLimit(statsLog.getMemLimit())
                     .memMaxUsage(statsLog.getMemMaxUsage())
                     .blkRead(statsLog.getBlkRead())
                     .blkWrite(statsLog.getBlkWrite())
@@ -113,6 +112,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .txErrors(statsLog.getTxErrors())
                     .rxDropped(statsLog.getRxDropped())
                     .txDropped(statsLog.getTxDropped())
+                    .sizeRw(statsLog.getSizeRw())
+                    .sizeRootFs(statsLog.getSizeRootFs())
                     .build();
 
             // 7. INSERT (UPDATE 없음)
@@ -166,6 +167,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .cpuLimitCores(cpuLimitCores)
                 .onlineCpus(metricsDto.getOnlineCpus())
                 .memLimit(metricsDto.getMemLimit())
+                .imageName(metricsDto.getImageName())
+                .imageSize(metricsDto.getImageSize())
                 .build();
 
         container = containerRepository.save(container);

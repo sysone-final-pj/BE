@@ -101,9 +101,6 @@ public class ContainerStatsLog {
     private Long memUsage;
 
     @Column(nullable = false)
-    private Long memLimit;
-
-    @Column(nullable = false)
     private Long memMaxUsage;
 
     // Block I/O 관련
@@ -164,6 +161,14 @@ public class ContainerStatsLog {
 
     @Column(nullable = false)
     private Integer txDropped;
+
+    // 컨테이너가 실행 중 생성/수정한 데이터의 크기
+    @Column(nullable = false)
+    private Long sizeRw;
+
+    // 컨테이너의 전체 파일시스템 크기 (bytes)
+    @Column(nullable = false)
+    private Long sizeRootFs;
 
     // 메트릭 수집 시간 (Agent에서 실제로 수집한 시간)
     @Column(nullable = false)
