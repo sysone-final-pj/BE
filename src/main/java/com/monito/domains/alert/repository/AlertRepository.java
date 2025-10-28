@@ -3,6 +3,7 @@ package com.monito.domains.alert.repository;
 import com.monito.domains.alert.domain.Alert;
 import com.monito.domains.alert.domain.AlertLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface AlertRepository extends JpaRepository<Alert, Long> {
+public interface AlertRepository extends JpaRepository<Alert, Long>, JpaSpecificationExecutor<Alert> {
     /**
      * 특정 사용자의 읽지 않은 알림 조회 (최신순)
      */

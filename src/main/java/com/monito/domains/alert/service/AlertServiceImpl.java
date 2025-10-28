@@ -6,12 +6,14 @@ import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.domain.AlertRule;
 import com.monito.domains.alert.dto.internal.AlertCreationDTO;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
+import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 import com.monito.domains.alert.dto.response.AlertMessageResponseDTO;
 import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
+import com.monito.domains.alert.repository.AlertSpecification;
 import com.monito.domains.alert.websocket.handler.AlertWebSocketHandler;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
@@ -329,5 +331,17 @@ public class AlertServiceImpl implements AlertService {
         } catch (Exception e) {
             log.error("삭제 알림 전송 실패: memberId={}, alertId={}", memberId, alertId, e);
         }
+    }
+
+    /**
+     * 필터 조건에 따른 알림 조회
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<AlertListItemResponseDTO> getAlertsWithFilter(Long memberId, AlertFilterDTO filter) {
+        return alertRepository.findAll(AlertSpecification.withFilter(memberId, filter))
+                .stream()
+                .map(AlertListItemResponseDTO::from)
+                .collect(Collectors.toList());
     }
 }
