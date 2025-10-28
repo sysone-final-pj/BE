@@ -10,8 +10,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,19 +47,58 @@ public class Container extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
-    // 리소스 제한 설정 (정적 데이터 - 컨테이너 생성 시 설정되고 거의 변하지 않음)
+    /**
+     * CPU 할당 시간 제한 (µs 단위)
+     * 예: 150000 = 150ms (1.5 코어 분량)
+     */
     @Column(nullable = false)
     private Long cpuQuota;
 
+    /**
+     * CPU 스케줄링 주기 (µs 단위, default 100000 = 100ms)
+     */
     @Column(nullable = false)
     private Long cpuPeriod;
 
-    @Column(nullable = false)
-    private Long cpuLimit;
+    /**
+     * CPU 제한 (코어 단위)
+     * cpuQuota / cpuPeriod로 계산
+     * 예: 1.5 (1.5 코어)
+     */
+    @Column(precision = 6, scale = 2)
+    private BigDecimal cpuLimitCores;
 
+    /**
+     * 컨테이너가 스케줄링될 수 있는 CPU 코어 수
+     * (일반적으로 호스트 전체 코어, cpuset 제한 시 다를 수 있음)
+     */
     @Column(nullable = false)
     private Integer onlineCpus;
 
     @Column(nullable = false)
     private Long memLimit;
+
+    @Column(nullable = false)
+    private Integer oomKills;
+
+    /**
+     * 컨테이너 이미지 이름
+     * 예: "nginx:latest", "ubuntu:20.04"
+     */
+    @Column(length = 255)
+    private String imageName;
+
+    /**
+     * 컨테이너 이미지 크기 (bytes)
+     * 컨테이너 생성 시점에 결정되며 변경되지 않음
+     */
+    @Column
+    private Long imageSize;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.oomKills == null) {
+            this.oomKills = 0;
+        }
+    }
 }

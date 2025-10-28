@@ -1,6 +1,7 @@
 package com.monito.domains.container.dto.request;
 
 import com.monito.domains.container.domain.ContainerState;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ public class ContainerMetricsRequestDTO {
     private String containerHash;
     private String containerName;
     private ContainerState state;
+    private LocalDateTime collectedAt;  // Agent에서 메트릭을 수집한 시간
 
     // CPU 관련
     private Long hostCpuUsageTotal;
@@ -24,19 +26,14 @@ public class ContainerMetricsRequestDTO {
     private Long cpuSystem;
     private Long cpuQuota;
     private Long cpuPeriod;
-    private Long cpuLimit;
     private Integer onlineCpus;
     private Long throttlingPeriods;
     private Long throttledPeriods;
     private Long throttledTime;
-    private Integer oomKills;
 
     // Memory 관련
     private Long memUsage;
     private Long memLimit;
-    private Long memMaxUsage;
-    private Long memRss;
-    private Long memCache;
 
     // Block I/O 관련
     private Long blkRead;
@@ -45,8 +42,16 @@ public class ContainerMetricsRequestDTO {
     // Network 관련
     private Long rxBytes;
     private Long txBytes;
+    private Long rxPackets;
+    private Long txPackets;
     private Integer rxErrors;
     private Integer txErrors;
     private Integer rxDropped;
     private Integer txDropped;
+
+    // Storage 관련
+    private Long sizeRw;         // Read-Write Layer 크기
+    private Long sizeRootFs;     // 전체 파일시스템 크기 (imageSize + sizeRw)
+    private Long imageSize;      // 이미지 크기
+    private String imageName;    // 이미지 이름
 }

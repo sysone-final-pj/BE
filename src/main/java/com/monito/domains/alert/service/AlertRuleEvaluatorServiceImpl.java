@@ -81,9 +81,9 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
             case MEMORY -> containerStats.getMemPercent();
             case NETWORK -> {
                 // 네트워크는 RX + TX 합계 (Mbps)
-                Long rxMbps = containerStats.getRxMbps() != null ? containerStats.getRxMbps() : 0L;
-                Long txMbps = containerStats.getTxMbps() != null ? containerStats.getTxMbps() : 0L;
-                yield BigDecimal.valueOf(rxMbps + txMbps);
+                Long rxBytesPerSec = containerStats.getBlkReadPerSec() != null ? containerStats.getRxBytesPerSec() : 0L;
+                Long txBytesPerSec = containerStats.getTxBytesPerSec() != null ? containerStats.getTxBytesPerSec() : 0L;
+                yield BigDecimal.valueOf(rxBytesPerSec + txBytesPerSec);
             }
             default -> null;
         };

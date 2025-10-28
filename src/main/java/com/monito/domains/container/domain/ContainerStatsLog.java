@@ -60,6 +60,9 @@ public class ContainerStatsLog {
     @Column(precision = 6, scale = 2)
     private BigDecimal cpuPercent;
 
+    @Column(precision = 6, scale = 2)
+    private BigDecimal cpuCoreUsage;
+
     @Column(nullable = false)
     private Long hostCpuUsageTotal;
 
@@ -79,9 +82,6 @@ public class ContainerStatsLog {
     private Long cpuPeriod;
 
     @Column(nullable = false)
-    private Long cpuLimit;
-
-    @Column(nullable = false)
     private Integer onlineCpus;
 
     @Column(nullable = false)
@@ -93,9 +93,6 @@ public class ContainerStatsLog {
     @Column(nullable = false)
     private Long throttledTime;
 
-    @Column(nullable = false)
-    private Integer oomKills;
-
     // Memory 관련
     @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal memPercent;
@@ -104,16 +101,7 @@ public class ContainerStatsLog {
     private Long memUsage;
 
     @Column(nullable = false)
-    private Long memLimit;
-
-    @Column(nullable = false)
     private Long memMaxUsage;
-
-    @Column(nullable = false)
-    private Long memRss;
-
-    @Column(nullable = false)
-    private Long memCache;
 
     // Block I/O 관련
     @Column(nullable = false)
@@ -121,6 +109,12 @@ public class ContainerStatsLog {
 
     @Column(nullable = false)
     private Long blkWrite;
+
+    @Column(nullable = false)
+    private Long blkReadPerSec;
+
+    @Column(nullable = false)
+    private Long blkWritePerSec;
 
     // Network 관련
     @Column(nullable = false)
@@ -130,16 +124,31 @@ public class ContainerStatsLog {
     private Long txBytes;
 
     @Column(nullable = false)
-    private Long rxMbps;
+    private Long rxPackets;
 
     @Column(nullable = false)
-    private Long txMbps;
+    private Long txPackets;
+
+    @Column(nullable = false)
+    private Long networkTotalBytes;
+
+    @Column(nullable = false)
+    private Long rxBytesPerSec;
+
+    @Column(nullable = false)
+    private Long txBytesPerSec;
 
     @Column(nullable = false)
     private Long rxPps;
 
     @Column(nullable = false)
     private Long txPps;
+
+    @Column(precision = 6, scale = 2)
+    private BigDecimal rxFailureRate;
+
+    @Column(precision = 6, scale = 2)
+    private BigDecimal txFailureRate;
 
     @Column(nullable = false)
     private Integer rxErrors;
@@ -153,6 +162,19 @@ public class ContainerStatsLog {
     @Column(nullable = false)
     private Integer txDropped;
 
+    // 컨테이너가 실행 중 생성/수정한 데이터의 크기
+    @Column(nullable = false)
+    private Long sizeRw;
+
+    // 컨테이너의 전체 파일시스템 크기 (bytes)
+    @Column(nullable = false)
+    private Long sizeRootFs;
+
+    // 메트릭 수집 시간 (Agent에서 실제로 수집한 시간)
+    @Column(nullable = false)
+    private LocalDateTime collectedAt;
+
+    // DB 저장 시간 (Backend에서 INSERT한 시간)
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

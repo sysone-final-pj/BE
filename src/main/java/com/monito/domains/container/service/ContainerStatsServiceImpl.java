@@ -12,6 +12,7 @@ import com.monito.domains.container.util.ContainerMetricsCalculator;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,21 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .findLatestByContainerHash(metricsDto.getContainerHash())
                     .orElse(null);
 
+            // [DEBUG] 이전 데이터 확인
+            if (previousStats == null) {
+                log.info("[CPU DEBUG] 이전 통계 없음 - 첫 수집 (containerHash: {})", metricsDto.getContainerHash());
+            } else {
+                log.info("[CPU DEBUG] 이전 통계 조회 성공 - containerHash: {}, prevCpuUsage: {}, prevHostCpuUsage: {}, createdAt: {}",
+                        metricsDto.getContainerHash(),
+                        previousStats.getCpuUsageTotal(),
+                        previousStats.getHostCpuUsageTotal(),
+                        previousStats.getCreatedAt());
+            }
+            log.info("[CPU DEBUG] 현재 메트릭 - cpuUsage: {}, hostCpuUsage: {}, onlineCpus: {}",
+                    metricsDto.getCpuUsageTotal(),
+                    metricsDto.getHostCpuUsageTotal(),
+                    metricsDto.getOnlineCpus());
+
             // 5. 메트릭 계산 및 StatsLog 생성
             ContainerStatsLog statsLog = metricsCalculator.calculateAndBuild(
                     metricsDto,
@@ -63,37 +79,43 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .container(container)
                     .containerHash(statsLog.getContainerHash())
                     .state(statsLog.getState())
+                    .collectedAt(statsLog.getCollectedAt())
                     .cpuPercent(statsLog.getCpuPercent())
+                    .cpuCoreUsage(statsLog.getCpuCoreUsage())
                     .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
                     .cpuUsageTotal(statsLog.getCpuUsageTotal())
                     .cpuUser(statsLog.getCpuUser())
                     .cpuSystem(statsLog.getCpuSystem())
                     .cpuQuota(statsLog.getCpuQuota())
                     .cpuPeriod(statsLog.getCpuPeriod())
-                    .cpuLimit(statsLog.getCpuLimit())
                     .onlineCpus(statsLog.getOnlineCpus())
                     .throttlingPeriods(statsLog.getThrottlingPeriods())
                     .throttledPeriods(statsLog.getThrottledPeriods())
                     .throttledTime(statsLog.getThrottledTime())
-                    .oomKills(statsLog.getOomKills())
                     .memPercent(statsLog.getMemPercent())
                     .memUsage(statsLog.getMemUsage())
-                    .memLimit(statsLog.getMemLimit())
                     .memMaxUsage(statsLog.getMemMaxUsage())
-                    .memRss(statsLog.getMemRss())
-                    .memCache(statsLog.getMemCache())
                     .blkRead(statsLog.getBlkRead())
                     .blkWrite(statsLog.getBlkWrite())
+                    .blkReadPerSec(statsLog.getBlkReadPerSec())
+                    .blkWritePerSec(statsLog.getBlkWritePerSec())
                     .rxBytes(statsLog.getRxBytes())
                     .txBytes(statsLog.getTxBytes())
-                    .rxMbps(statsLog.getRxMbps())
-                    .txMbps(statsLog.getTxMbps())
+                    .rxPackets(statsLog.getRxPackets())
+                    .txPackets(statsLog.getTxPackets())
+                    .networkTotalBytes(statsLog.getNetworkTotalBytes())
+                    .rxBytesPerSec(statsLog.getRxBytesPerSec())
+                    .txBytesPerSec(statsLog.getTxBytesPerSec())
                     .rxPps(statsLog.getRxPps())
                     .txPps(statsLog.getTxPps())
+                    .rxFailureRate(statsLog.getRxFailureRate())
+                    .txFailureRate(statsLog.getTxFailureRate())
                     .rxErrors(statsLog.getRxErrors())
                     .txErrors(statsLog.getTxErrors())
                     .rxDropped(statsLog.getRxDropped())
                     .txDropped(statsLog.getTxDropped())
+                    .sizeRw(statsLog.getSizeRw())
+                    .sizeRootFs(statsLog.getSizeRootFs())
                     .build();
 
             // 7. INSERT (UPDATE 없음)
@@ -141,21 +163,29 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
      * 새 컨테이너 생성
      */
     private Container createNewContainer(Agent agent, ContainerMetricsRequestDTO metricsDto) {
+        // CPU Limit Cores 계산
+        BigDecimal cpuLimitCores = metricsCalculator.calculateCpuLimitCores(
+                metricsDto.getCpuQuota(),
+                metricsDto.getCpuPeriod()
+        );
+
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(metricsDto.getContainerHash())
                 .name(metricsDto.getContainerHash().substring(0, 12)) // 기본 이름 (해시 앞 12자리)
                 .cpuQuota(metricsDto.getCpuQuota())
                 .cpuPeriod(metricsDto.getCpuPeriod())
-                .cpuLimit(metricsDto.getCpuLimit())
+                .cpuLimitCores(cpuLimitCores)
                 .onlineCpus(metricsDto.getOnlineCpus())
                 .memLimit(metricsDto.getMemLimit())
+                .imageName(metricsDto.getImageName())
+                .imageSize(metricsDto.getImageSize())
                 .build();
 
         container = containerRepository.save(container);
 
-        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}",
-                agent.getAgentKey(), metricsDto.getContainerHash());
+        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores",
+                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores);
 
         return container;
     }

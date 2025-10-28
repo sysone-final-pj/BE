@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import java.time.LocalDateTime;
 
 /**
  * Agent가 보내는 개별 컨테이너 메트릭 (중첩 구조 그대로)
@@ -17,6 +18,7 @@ import lombok.Getter;
  *   "memory": {...},
  *   "network": {...},
  *   "blockIO": {...}
+ *   "storage": {...}
  * }
  */
 @Getter
@@ -27,12 +29,14 @@ public class ContainerMetricsRawRequestDTO {
     private String containerName;
     private String status;
     private String state;
+    private LocalDateTime collectedAt;  // Agent 메트릭 수집 시간
 
     private CpuMetricsRequestDTO cpu;
     private MemoryMetricsRequestDTO memory;
     private NetworkMetricsRequestDTO network;
     @JsonProperty("blockIO")
     private BlockIOMetricsRequestDTO blockIO;
+    private StorageMetricsRequestDTO storage;
 
     /**
      * Flat 구조의 ContainerMetricsRequestDTO로 변환
@@ -42,6 +46,7 @@ public class ContainerMetricsRawRequestDTO {
                 .containerHash(containerHash)
                 .containerName(containerName)
                 .state(parseState(state))
+                .collectedAt(collectedAt)  // Agent 수집 시간 전달
                 // CPU
                 .hostCpuUsageTotal(cpu != null ? cpu.getSystemCpuUsage() : null)
                 .cpuUsageTotal(cpu != null ? cpu.getCpuUsageTotal() : null)
@@ -49,21 +54,18 @@ public class ContainerMetricsRawRequestDTO {
                 .cpuSystem(cpu != null ? cpu.getCpuSystem() : null)
                 .cpuQuota(cpu != null ? cpu.getCpuQuota() : 0L)
                 .cpuPeriod(cpu != null ? cpu.getCpuPeriod() : 0L)
-                .cpuLimit(cpu != null ? calculateCpuLimit(cpu.getCpuQuota(), cpu.getCpuPeriod()) : 0L)
                 .onlineCpus(cpu != null ? cpu.getOnlineCpus() : 1)
                 .throttlingPeriods(cpu != null ? cpu.getThrottlingPeriods() : 0L)
                 .throttledPeriods(cpu != null ? cpu.getThrottledPeriods() : 0L)
                 .throttledTime(cpu != null ? cpu.getThrottledTime() : 0L)
-                .oomKills(0) // Agent에서 제공하지 않음
                 // Memory
                 .memUsage(memory != null ? memory.getMemUsage() : null)
                 .memLimit(memory != null ? memory.getMemLimit() : null)
-                .memMaxUsage(memory != null ? memory.getMemMaxUsage() : null)
-                .memRss(0L) // Agent에서 제공하지 않음
-                .memCache(0L) // Agent에서 제공하지 않음
                 // Network
                 .rxBytes(network != null ? network.getRxBytes() : null)
                 .txBytes(network != null ? network.getTxBytes() : null)
+                .rxPackets(network != null ? network.getRxPackets() : null)
+                .txPackets(network != null ? network.getTxPackets() : null)
                 .rxErrors(network != null ? network.getRxErrors() : null)
                 .txErrors(network != null ? network.getTxErrors() : null)
                 .rxDropped(network != null ? network.getRxDropped() : null)
@@ -71,6 +73,11 @@ public class ContainerMetricsRawRequestDTO {
                 // Block I/O
                 .blkRead(blockIO != null ? blockIO.getBlkRead() : null)
                 .blkWrite(blockIO != null ? blockIO.getBlkWrite() : null)
+                // Storage
+                .sizeRw(storage != null ? storage.getSizeRw() : 0L)
+                .sizeRootFs(storage != null ? storage.getSizeRootFs() : 0L)
+                .imageSize(storage != null ? storage.getImageSize() : null)
+                .imageName(storage != null ? storage.getImageName() : null)
                 .build();
     }
 
@@ -82,12 +89,5 @@ public class ContainerMetricsRawRequestDTO {
         } catch (IllegalArgumentException e) {
             return ContainerState.DEAD;
         }
-    }
-
-    private Long calculateCpuLimit(Long cpuQuota, Long cpuPeriod) {
-        if (cpuQuota == null || cpuPeriod == null || cpuQuota <= 0 || cpuPeriod <= 0) {
-            return 0L;
-        }
-        return cpuQuota;
     }
 }

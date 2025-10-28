@@ -38,7 +38,7 @@ public class ContainerListResponseDTO {
     private Long blkRead;
     private Long blkWrite;
 
-    // Network
-    private Long rxMbps;  // download speed
-    private Long txMbps;  // upload speed
+    // Network (bytes per second)
+    private Long rxBytesPerSec;  // download speed (bytes/s)
+    private Long txBytesPerSec;  // upload speed (bytes/s)
 }

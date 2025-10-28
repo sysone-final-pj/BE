@@ -1,7 +1,8 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: update
+#      ddl-auto: create-drop
+          ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.OracleDialect
@@ -11,4 +12,4 @@ spring:
     show-sql: true
 
 server:
-  port: 8080
+  port: 8081

@@ -14,5 +14,4 @@ import lombok.Getter;
 public class MemoryMetricsRequestDTO {
     private Long memUsage;
     private Long memLimit;
-    private Long memMaxUsage;
 }
