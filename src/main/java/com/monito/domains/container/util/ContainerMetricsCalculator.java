@@ -86,7 +86,6 @@ public class ContainerMetricsCalculator {
      * CPU Limit = cpuQuota / cpuPeriod
      * 예: 50000 / 100000 = 0.5 코어
      */
-    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
     public BigDecimal calculateCpuLimitCores(Long cpuQuota, Long cpuPeriod) {
         if (cpuQuota == null || cpuPeriod == null || cpuPeriod == 0 || cpuQuota <= 0) {
             return null; // 무제한
@@ -100,7 +99,6 @@ public class ContainerMetricsCalculator {
      * Throttling 비율 계산 (Period 기반)
      * Throttling % = (throttledPeriods / throttlingPeriods) * 100
      */
-    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
     public BigDecimal calculateThrottlingPercent(Long throttledPeriods, Long throttlingPeriods) {
         if (throttlingPeriods == null || throttlingPeriods == 0) {
             return BigDecimal.ZERO;
@@ -117,7 +115,6 @@ public class ContainerMetricsCalculator {
      * Throttling % = (throttledTime / totalAvailableTime) * 100
      * totalAvailableTime = timeDiff * onlineCpus (나노초)
      */
-    // todo: responseDTO 혹은 statsLogs 테이블에 CpuLimitCore 추가 (DB테이블에 데이터 추가가 적합해 보임)
     public BigDecimal calculateThrottlingPercentByTime(
             Long throttledTime,
             Long timeDiffNanos,
