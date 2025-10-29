@@ -14,15 +14,18 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "members")
 @SuperBuilder
+@NoArgsConstructor(force = true)
 @SQLRestriction("is_deleted = 0")
 @Getter
-@NoArgsConstructor
+//@NoArgsConstructor
+@ToString
 @AllArgsConstructor
 public class Member extends BaseEntity {
 
@@ -45,8 +48,26 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 20)
     private Role role;
 
-    @Column(nullable = false, unique = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String email;
+
+    @Column(length = 100)
+    private String companyName;
+
+    @Column(length = 25)
+    private String position;
+
+    @Column(length = 20)
+    private String mobileNumber;
+
+    @Column(length = 20)
+    private String officePhone;
+
+    @Column(nullable = false, length = 50)
+    private String name;
+
+    @Column(length = 255)
+    private String note;
 
     public void updateInfo(String email, String password, String role){
         if(email != null) this.email = email;
