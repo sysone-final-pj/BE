@@ -21,10 +21,9 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @Table(name = "members")
 @SuperBuilder
-@NoArgsConstructor(force = true)
 @SQLRestriction("is_deleted = 0")
 @Getter
-//@NoArgsConstructor
+@NoArgsConstructor
 @ToString
 @AllArgsConstructor
 public class Member extends BaseEntity {
@@ -69,9 +68,17 @@ public class Member extends BaseEntity {
     @Column(length = 255)
     private String note;
 
-    public void updateInfo(String email, String password, String role){
-        if(email != null) this.email = email;
-        if(password != null) this.password = password;
-        if(role != null) this.role = Role.valueOf(role.toUpperCase());
+    public void updateInfo(String email, String password, String name, String companyName,
+                           String position, String mobileNumber, String officePhone,
+                           String note, String role) {
+        if (email != null) this.email = email;
+        if (password != null) this.password = password;
+        if (name != null) this.name = name;
+        if (companyName != null) this.companyName = companyName;
+        if (position != null) this.position = position;
+        if (mobileNumber != null) this.mobileNumber = mobileNumber;
+        if (officePhone != null) this.officePhone = officePhone;
+        if (note != null) this.note = note;
+        if (role != null) this.role = Role.valueOf(role.toUpperCase());
     }
 }

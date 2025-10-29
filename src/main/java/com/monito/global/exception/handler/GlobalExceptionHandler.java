@@ -1,10 +1,10 @@
 package com.monito.global.exception.handler;
 
 import com.monito.global.exception.AuthenticationException;
+import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ConflictException;
 import com.monito.global.exception.ForbiddenException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
