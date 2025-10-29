@@ -8,14 +8,7 @@ import com.monito.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/members")
@@ -47,6 +40,9 @@ public class MemberController {
     @GetMapping
     public ApiResponse<List<Member>> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
+
+        members.forEach(m -> System.out.println(">>> " + m.toString()));
+
         return ApiResponse.ok(members, "사용자 목록 조회 성공");
     }
 
@@ -68,5 +64,14 @@ public class MemberController {
     public ApiResponse<Void> deleteMember(@PathVariable Long id) {
         memberService.deleteMember(id);
         return ApiResponse.ok("사용자가 성공적으로 삭제되었습니다.");
+    }
+
+    /**
+     * 사용자 username 찾기
+     */
+    @GetMapping("/check-username")
+    public ApiResponse<Member> existsByUsername(@RequestParam String username) {
+        memberService.existsByUsername(username);
+        return ApiResponse.ok("중복 확인 성공");
     }
 }

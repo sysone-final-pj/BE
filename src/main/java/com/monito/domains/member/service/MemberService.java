@@ -11,4 +11,5 @@ public interface MemberService {
     List<Member> getAllMembers();
     void updateMember(Long id, MemberUpdateRequestDTO memberUpdateRequestDTO);
     void deleteMember(Long id);
+    void existsByUsername(String username);
 }
