@@ -43,6 +43,10 @@ dependencies {
     // 비동기 HTTP 통신을 위한 WebClient
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
+    // Flyway 마이그레이션
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-oracle'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
