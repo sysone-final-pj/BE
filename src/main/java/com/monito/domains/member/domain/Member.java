@@ -21,10 +21,9 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @Table(name = "members")
 @SuperBuilder
-@NoArgsConstructor(force = true)
 @SQLRestriction("is_deleted = 0")
 @Getter
-//@NoArgsConstructor
+@NoArgsConstructor
 @ToString
 @AllArgsConstructor
 public class Member extends BaseEntity {
