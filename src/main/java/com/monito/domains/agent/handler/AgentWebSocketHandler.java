@@ -5,9 +5,11 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.dto.request.AgentInfoRequestDTO;
 import com.monito.domains.agent.service.AgentService;
-import com.monito.domains.container.dto.request.AgentMetricsRequestDTO;
+import com.monito.domains.agent.dto.request.AgentLogsRequestDTO;
+import com.monito.domains.agent.dto.request.AgentMetricsRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRawRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.service.ContainerLogService;
 import com.monito.domains.container.service.ContainerStatsService;
 import com.monito.global.cache.AgentMetadata;
 import com.monito.global.cache.AgentMetadataCache;
@@ -30,6 +32,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;
+    private final ContainerLogService containerLogService;
     private final AgentMetadataCache metadataCache;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
@@ -74,6 +77,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                     break;
                 case "METRICS":
                     handleMetrics(session, data);
+                    break;
+                case "LOGS":
+                    handleLogs(session, data);
                     break;
                 case "PING":
                     handlePing(session);
@@ -222,6 +228,69 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             sendMessage(session, Map.of(
                     "type", "ERROR",
                     "message", "Failed to process metrics: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 컨테이너 로그 처리 (LOGS)
+     * - Agent로부터 수집된 컨테이너 로그를 처리하여 DB에 저장
+     */
+    private void handleLogs(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 로그 전송 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> logsData = (Map<String, Object>) data.get("data");
+            AgentLogsRequestDTO agentLogs = objectMapper.convertValue(
+                    logsData,
+                    AgentLogsRequestDTO.class
+            );
+
+            int totalContainers = agentLogs.getLogs() != null ? agentLogs.getLogs().size() : 0;
+            int totalLogs = 0;
+            if (agentLogs.getLogs() != null) {
+                totalLogs = agentLogs.getLogs().values().stream()
+                        .mapToInt(list -> list != null ? list.size() : 0)
+                        .sum();
+            }
+
+            log.info("═══════════════════════════════════════");
+            log.info("📝 로그 수신");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   컨테이너 개수: {}", totalContainers);
+            log.info("   총 로그 개수: {}", totalLogs);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            // 로그 처리 (DB 저장)
+            containerLogService.processLogs(agentKey, agentLogs);
+
+            log.info("로그 처리 완료 - 총 로그: {}개", totalLogs);
+
+            sendMessage(session, Map.of(
+                    "type", "LOGS_ACK",
+                    "message", String.format("Logs processed: %d logs from %d containers", totalLogs, totalContainers),
+                    "totalContainers", totalContainers,
+                    "totalLogs", totalLogs,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
+        } catch (Exception e) {
+            log.error("로그 처리 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to process logs: " + e.getMessage()
             ));
         }
     }

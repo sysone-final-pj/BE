@@ -55,10 +55,7 @@ public class ContainerLog {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private LogLevel logLevel;
-
-    @Column(length = 20)
-    private String source;
+    private LogSource source;
 
     @Column(nullable = false)
     private LocalDateTime loggedAt;

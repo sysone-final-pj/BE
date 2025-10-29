@@ -1,6 +1,8 @@
-package com.monito.domains.container.dto.request;
+package com.monito.domains.agent.dto.request;
 
 import java.util.List;
+
+import com.monito.domains.container.dto.request.ContainerMetricsRawRequestDTO;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

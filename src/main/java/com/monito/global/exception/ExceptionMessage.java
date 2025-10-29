@@ -83,11 +83,16 @@ public enum ExceptionMessage {
     // Agent 관련
     AGENT_NOT_MATCH_PASSWORD("agentkey에 할당된 비밀번호가 일치하지 않습니다."),
     AGENT_NOT_FOUND("Agent를 찾을 수 없습니다."),
+    AGENT_KEY_REQUIRED("Agent Key가 필요합니다."),
 
     // Container 관련
     CONTAINER_NOT_FOUND("컨테이너를 찾을 수 없습니다."),
     CONTAINER_HASH_INVALID("유효하지 않은 컨테이너 해시입니다."),
-    CONTAINER_METRICS_PROCESSING_FAILED("컨테이너 메트릭 처리 중 오류가 발생했습니다.");
+    CONTAINER_METRICS_PROCESSING_FAILED("컨테이너 메트릭 처리 중 오류가 발생했습니다."),
+    CONTAINER_LOGS_PROCESSING_FAILED("컨테이너 로그 처리 중 오류가 발생했습니다."),
+
+    // 입력값 검증
+    INVALID_INPUT_VALUE("입력값이 유효하지 않습니다.");
 
     private final String message;
 }
