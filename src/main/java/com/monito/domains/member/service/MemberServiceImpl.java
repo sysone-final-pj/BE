@@ -61,16 +61,16 @@ public class MemberServiceImpl implements MemberService{
                 ? passwordEncoder.encode(dto.getPassword())
                 : null;
 
-//        member.updateInfo(
-//                dto.getEmail(),
-//                encodedPassword,
-//                dto.getName(),
-//                dto.getCompanyName(),
-//                dto.getPosition(),
-//                dto.getMobileNumber(),
-//                dto.getOfficePhone(),
-//                dto.getNote(),
-//                dto.getRole());
+        member.updateInfo(
+                dto.getEmail(),
+                encodedPassword,
+                dto.getName(),
+                dto.getCompanyName(),
+                dto.getPosition(),
+                dto.getMobileNumber(),
+                dto.getOfficePhone(),
+                dto.getNote(),
+                dto.getRole());
     }
 
     @Override

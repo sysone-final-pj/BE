@@ -49,7 +49,7 @@ public class MemberController {
     /**
      * 사용자 수정
      */
-    @PutMapping("/{id}")
+    @PostMapping("/{id}")
     public ApiResponse<Void> updateMember(
             @PathVariable Long id,
             @Valid @RequestBody MemberUpdateRequestDTO memberUpdateRequestDTO) {
