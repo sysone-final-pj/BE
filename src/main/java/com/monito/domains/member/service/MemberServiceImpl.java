@@ -26,10 +26,6 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     public Member createMember(MemberCreateRequestDTO memberCreateRequestDTO) {
-        // account_id 중복 체크
-//        if (memberRepository.existsByUsername(memberCreateRequestDTO.getUsername())) {
-//            throw new BadRequestException(ExceptionMessage.DUPLICATE_ACCOUNT_ID);
-//        }
         memberCreateRequestDTO.setRole(Role.USER);
 
         // 비밀번호 암호화
