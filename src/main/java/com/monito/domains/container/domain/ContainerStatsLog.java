@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
@@ -26,10 +27,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(
         name = "container_stats_logs",
         indexes = {
-                @jakarta.persistence.Index(name = "IDX_CONTAINER_STATS_CREATED_AT", columnList = "created_at"),
-                @jakarta.persistence.Index(name = "IDX_CONTAINER_STATS_CONTAINER_CREATED_AT", columnList = "container_id, created_at")
+                @jakarta.persistence.Index(name = "IDX_CONTAINER_STATS_COLLECTED_AT", columnList = "collected_at"),
+                @jakarta.persistence.Index(name = "IDX_CONTAINER_STATS_CONTAINER_COLLECTED_AT", columnList = "container_id, collected_at")
         }
 )
+@IdClass(ContainerStatsLogId.class)
 @SuperBuilder
 @Getter
 @NoArgsConstructor
@@ -171,6 +173,7 @@ public class ContainerStatsLog {
     private Long sizeRootFs;
 
     // 메트릭 수집 시간 (Agent에서 실제로 수집한 시간)
+    @Id
     @Column(nullable = false)
     private LocalDateTime collectedAt;
 

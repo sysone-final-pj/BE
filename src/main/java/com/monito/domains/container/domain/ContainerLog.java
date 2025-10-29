@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
@@ -30,6 +31,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
                 @jakarta.persistence.Index(name = "IDX_CONTAINER_LOG_CONTAINER_LOGGED_AT", columnList = "container_id, logged_at")
         }
 )
+@IdClass(ContainerLogId.class)
 @SuperBuilder
 @Getter
 @NoArgsConstructor
@@ -57,6 +59,7 @@ public class ContainerLog {
     @Column(length = 20)
     private LogSource source;
 
+    @Id
     @Column(nullable = false)
     private LocalDateTime loggedAt;
 
