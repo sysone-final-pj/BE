@@ -26,8 +26,6 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     public Member createMember(MemberCreateRequestDTO memberCreateRequestDTO) {
-        memberCreateRequestDTO.setRole(Role.USER);
-
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(memberCreateRequestDTO.getPassword());
 

@@ -43,12 +43,11 @@ public class MemberCreateRequestDTO {
     @Size(max = 255, message = "기타 사항은 255자 이하여야 합니다")
     private String note;
 
-
     public Member toEntity(String encodedPassword){
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
-                .role(role)
+                .role(Role.USER)
                 .email(email)
                 .name(name)
                 .companyName(companyName)

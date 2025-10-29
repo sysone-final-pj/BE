@@ -40,9 +40,6 @@ public class MemberController {
     @GetMapping
     public ApiResponse<List<Member>> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
-
-        members.forEach(m -> System.out.println(">>> " + m.toString()));
-
         return ApiResponse.ok(members, "사용자 목록 조회 성공");
     }
 
@@ -70,8 +67,8 @@ public class MemberController {
      * 사용자 username 찾기
      */
     @GetMapping("/check-username")
-    public ApiResponse<Member> existsByUsername(@RequestParam String username) {
+    public ApiResponse<Void> validateUsername(@RequestParam String username) {
         memberService.existsByUsername(username);
-        return ApiResponse.ok("중복 확인 성공");
+        return ApiResponse.ok("사용 가능한 아이디입니다.");
     }
 }
