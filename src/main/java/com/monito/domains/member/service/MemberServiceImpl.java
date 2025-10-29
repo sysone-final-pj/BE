@@ -1,7 +1,6 @@
 package com.monito.domains.member.service;
 
 import com.monito.domains.member.domain.Member;
-import com.monito.domains.member.domain.Role;
 import com.monito.domains.member.dto.request.MemberCreateRequestDTO;
 import com.monito.domains.member.dto.request.MemberUpdateRequestDTO;
 import com.monito.domains.member.repository.MemberRepository;
@@ -10,7 +9,6 @@ import com.monito.global.exception.ExceptionMessage;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
