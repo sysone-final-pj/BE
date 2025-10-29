@@ -24,12 +24,38 @@ public class MemberCreateRequestDTO {
 
     private Role role;
 
+    @NotBlank(message = "이름은 필수입니다")
+    @Size(max = 50, message = "이름은 50자 이하여야 합니다")
+    private String name;
+
+    @Size(max = 100, message = "회사 명은 100자 이하여야 합니다")
+    private String companyName;
+
+    @Size(max = 25, message = "직함은 25자 이하여야 합니다")
+    private String position;
+
+    @Size(max = 20, message = "전화번호는 20자 이하여야 합니다")
+    private String mobileNumber;
+
+    @Size(max = 20, message = "사무실 전화번호는 20자 이하여야 합니다")
+    private String officePhone;
+
+    @Size(max = 255, message = "기타 사항은 255자 이하여야 합니다")
+    private String note;
+
+
     public Member toEntity(String encodedPassword){
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
                 .role(role)
                 .email(email)
+                .name(name)
+                .companyName(companyName)
+                .position(position)
+                .mobileNumber(mobileNumber)
+                .officePhone(officePhone)
+                .note(note)
                 .build();
     }
 }
