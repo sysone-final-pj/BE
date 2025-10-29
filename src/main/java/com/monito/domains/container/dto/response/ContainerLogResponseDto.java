@@ -1,6 +1,6 @@
 package com.monito.domains.container.dto.response;
 
-import com.monito.domains.container.domain.LogLevel;
+import com.monito.domains.container.domain.LogSource;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +18,6 @@ public class ContainerLogResponseDto {
 
     private String containerHash;
     private LocalDateTime timestamp;
-    private LogLevel logLevel;
+    private LogSource logSource;
     private String message;
 }

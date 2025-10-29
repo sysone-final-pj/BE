@@ -5,12 +5,10 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum LogLevel {
-    DEBUG("디버그"),
-    INFO("정보"),
-    WARN("경고"),
-    ERROR("에러"),
-    FATAL("치명적");
+public enum LogSource {
+    STDOUT("표준 출력"),
+    STDERR("표준 에러"),
+    RAW("원시 로그");
 
     private final String description;
 }
