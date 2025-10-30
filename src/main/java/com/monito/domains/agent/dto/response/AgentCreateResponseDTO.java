@@ -13,9 +13,7 @@ import lombok.Getter;
 public class AgentCreateResponseDTO {
     private Long id;
     private String agentName;
-    private String osType;
     private String agentKey;
-    private String dockerVersion;
     private AgentStatus agentStatus;
 
     public static AgentCreateResponseDTO from(Agent agent) {

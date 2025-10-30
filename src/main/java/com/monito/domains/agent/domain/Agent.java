@@ -57,9 +57,10 @@ public class Agent extends BaseEntity {
         this.agentStatus = status;
     }
 
-    public void updateAgentInfo(String agentName) {
+    public void updateAgentName(String agentName) {
         if (agentName != null) this.agentName = agentName;
     }
+    public void updateDescription(String description) { if (description != null) this.description = description; }
 
     @PrePersist
     public void generateAgentKey() {
