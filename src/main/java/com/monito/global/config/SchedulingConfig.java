@@ -14,30 +14,21 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableAsync
 public class SchedulingConfig {
 
-    @Value("${app.scheduler.thread-pool.core-size}")
-    private int threadPoolCoreSize;
-
-    @Value("${app.scheduler.thread-pool.max-size}")
-    private int threadPoolMaxSize;
-
-    @Value("${app.scheduler.thread-pool.queue-capacity}")
-    private int threadPoolQueueCapacity;
-
     /**
-     * Agent 폴링을 위한 비동기 실행 스레드 풀
-     * - 각 Agent별로 비동기로 데이터 수집
-     * - application.properties 파일에서 환경변수로 조정 가능
+     * 파티션 정리를 위한 전용 스레드 풀
+     * - 매일 정해진 시간에 오래된 파티션 삭제
+     * - 단일 스레드로 순차 처리하여 DB 부하 최소화
      */
-    @Bean(name = "agentPollingExecutor")
-    public Executor agentPollingExecutor() {
+    @Bean(name = "partitionCleanupExecutor")
+    public Executor partitionCleanupExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(threadPoolCoreSize);
-        executor.setMaxPoolSize(threadPoolMaxSize);
-        executor.setQueueCapacity(threadPoolQueueCapacity);
-        executor.setThreadNamePrefix("agent-poll-");
+        executor.setCorePoolSize(1);  // 단일 스레드
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(10);
+        executor.setThreadNamePrefix("partition-cleanup-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
+        executor.setAwaitTerminationSeconds(300);  // 파티션 삭제는 시간이 걸릴 수 있으므로 5분
         executor.initialize();
         return executor;
     }
