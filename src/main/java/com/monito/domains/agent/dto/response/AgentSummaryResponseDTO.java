@@ -10,19 +10,20 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class AgentCreateResponseDTO {
+public class AgentSummaryResponseDTO {
     private Long id;
+
     private String agentName;
-    private String osType;
-    private String agentKey;
-    private String dockerVersion;
+
+    private String description;
+
     private AgentStatus agentStatus;
 
-    public static AgentCreateResponseDTO from(Agent agent) {
-        return AgentCreateResponseDTO.builder()
+    public static AgentSummaryResponseDTO from(Agent agent) {
+        return AgentSummaryResponseDTO.builder()
                 .id(agent.getId())
-                .agentKey(agent.getAgentKey())
                 .agentName(agent.getAgentName())
+                .description(agent.getDescription())
                 .agentStatus(agent.getAgentStatus())
                 .build();
     }

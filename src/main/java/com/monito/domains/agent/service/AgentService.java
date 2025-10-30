@@ -4,8 +4,23 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
+import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
+import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
+
+import java.util.List;
 
 public interface AgentService {
+
+    /**
+     * @param id Agent 기본 키
+     * @return id로 조회 가능한 경우 AgentDetailResponseDTO 반환
+     */
+    AgentDetailResponseDTO getAgent(Long id);
+
+    /**
+     * @return 조회 가능한 모든 Agent AgentSummaryResponseDTO 형식으로 반환
+     */
+    List<AgentSummaryResponseDTO> getAgentList();
 
     /**
      * AgentKey로 Agent 인증 (WebSocket용)

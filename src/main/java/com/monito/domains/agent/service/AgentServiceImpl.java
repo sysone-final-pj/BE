@@ -4,6 +4,8 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
+import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
+import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -12,11 +14,31 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
+
+    @Override
+    public AgentDetailResponseDTO getAgent(Long id) {
+        Agent agent = agentRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(ExceptionMessage.DATA_NOT_FOUND)
+                );
+
+        return AgentDetailResponseDTO.from(agent);
+    }
+
+    @Override
+    public List<AgentSummaryResponseDTO> getAgentList() {
+        return agentRepository.findAll().stream()
+                .map(AgentSummaryResponseDTO::from)
+                .toList();
+    }
 
     @Override
     @Transactional(readOnly = true)

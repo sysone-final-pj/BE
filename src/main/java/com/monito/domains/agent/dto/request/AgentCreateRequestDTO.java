@@ -12,16 +12,14 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class AgentCreateRequestDTO {
     private String agentName;
-    private String osType;
-    private String dockerVersion;
     private AgentStatus agentStatus;
+    private String description;
 
     public Agent toEntity() {
         return Agent.builder()
                 .agentName(agentName)
-                .osType(osType)
-                .dockerVersion(dockerVersion)
                 .agentStatus(agentStatus)
+                .description(description)
                 .build();
     }
 }

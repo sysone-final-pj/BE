@@ -2,13 +2,14 @@ package com.monito.domains.agent.controller;
 
 import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
+import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
+import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.service.AgentService;
 import com.monito.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/agents")
@@ -16,6 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgentController {
 
     private final AgentService agentService;
+
+    @GetMapping
+    public ApiResponse<List<AgentSummaryResponseDTO>> getAgentList(){
+        return ApiResponse.ok(agentService.getAgentList());
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<AgentDetailResponseDTO> getAgent(@PathVariable Long id){
+        return ApiResponse.ok(agentService.getAgent(id));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<AgentDetailResponseDTO> updateAgent(@PathVariable Long id){
+        return ApiResponse.ok(AgentDetailResponseDTO.builder().build());
+    }
 
     @PostMapping
     public ApiResponse<AgentCreateResponseDTO> createAgent(@RequestBody AgentCreateRequestDTO dto){
