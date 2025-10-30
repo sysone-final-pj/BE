@@ -34,7 +34,7 @@ public class ContainerController {
      * 전체 컨테이너 목록 조회 (최신 통계 포함)
      * @return 전체 컨테이너 목록
      */
-    @GetMapping
+    @GetMapping("/dashboard")
     public ApiResponse<List<ContainerListResponseDTO>> getAllContainers() {
         log.info("GET /api/containers");
 

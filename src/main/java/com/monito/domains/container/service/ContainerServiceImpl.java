@@ -30,7 +30,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ContainerServiceImpl implements ContainerService{
+public class ContainerServiceImpl implements ContainerService {
 
     private final ContainerRepository containerRepository;
     private final ContainerStatsLogRepository containerStatsLogRepository;

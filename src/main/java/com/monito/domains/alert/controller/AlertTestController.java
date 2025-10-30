@@ -82,10 +82,10 @@ public class AlertTestController {
                 .txBytes(0L)
                 .rxPps(0L)
                 .txPps(0L)
-                .rxErrors(0L)
-                .txErrors(0L)
-                .rxDropped(0L)
-                .txDropped(0L)
+                .rxErrors(0)
+                .txErrors(0)
+                .rxDropped(0)
+                .txDropped(0)
                 .build();
 
         // 알림 규칙 평가 (자동 알림 발생)
