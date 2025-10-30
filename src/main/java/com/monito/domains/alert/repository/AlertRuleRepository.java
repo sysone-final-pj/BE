@@ -14,33 +14,24 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
      * 활성화된 모든 규칙 조회
      */
     List<AlertRule> findByIsEnabledTrue();
+
     /**
      * 특정 사용자의 모든 규칙 조회
      */
     List<AlertRule> findByMemberId(Long memberId);
+
     /**
      * 특정 사용자의 활성화된 규칙 조회
      */
     List<AlertRule> findByMemberIdAndIsEnabledTrue(Long memberId);
-    /**
-     * 특정 컨테이너의 활성화된 규칙 조회
-     */
-    List<AlertRule> findByContainerIdAndIsEnabledTrue(Long containerId);
-    /**
-     * 특정 컨테이너 + 메트릭 타입의 활성화된 규칙 조회
-     */
-    List<AlertRule> findByContainerIdAndMetricTypeAndIsEnabledTrue(
-            Long containerId, MetricType metricType);
-    /**
-     * 특정 사용자 + 컨테이너의 규칙 조회
-     */
-    List<AlertRule> findByMemberIdAndContainerId(Long memberId, Long containerId);
+
     /**
      * 특정 메트릭 타입의 활성화된 모든 규칙 조회
      */
     List<AlertRule> findByMetricTypeAndIsEnabledTrue(MetricType metricType);
+
     /**
-     * 특정 사용자 + 컨테이너 + 메트릭 타입 규칙 존재 여부 확인
+     * 특정 사용자 + 메트릭 타입 규칙 존재 여부 확인
      */
-    boolean existsByMemberIdAndContainerIdAndMetricType(Long memberId, Long containerId, MetricType metricType);
+    boolean existsByMemberIdAndMetricType(Long memberId, MetricType metricType);
 }

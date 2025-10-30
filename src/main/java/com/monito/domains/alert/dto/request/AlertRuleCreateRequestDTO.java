@@ -22,9 +22,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class AlertRuleCreateRequestDTO {
 
-    @NotNull(message = "컨테이너 ID는 필수입니다.")
-    private Long containerId;
-
     @NotBlank(message = "규칙 이름은 필수입니다.")
     private String ruleName;
 

@@ -192,10 +192,10 @@ public class ContainerMetricsCalculator {
      * @return 장애율 (0.00 ~ 100.00), 패킷이 없으면 0.00
      */
     public BigDecimal calculateNetworkFailureRate(
-            Integer currentErrors,
-            Integer previousErrors,
-            Integer currentDropped,
-            Integer previousDropped,
+            Long currentErrors,
+            Long previousErrors,
+            Long currentDropped,
+            Long previousDropped,
             Long currentPackets,
             Long previousPackets
     ) {
