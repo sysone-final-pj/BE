@@ -46,11 +46,8 @@ public class Agent extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String agentName;
 
-    @Column(nullable = false, length = 50)
-    private String osType;
-
-    @Column(nullable = false, length = 50)
-    private String dockerVersion;
+    @Column
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
