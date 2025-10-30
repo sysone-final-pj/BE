@@ -46,11 +46,8 @@ public class Agent extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String agentName;
 
-    @Column(nullable = false, length = 50)
-    private String osType;
-
-    @Column(nullable = false, length = 50)
-    private String dockerVersion;
+    @Column
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -60,9 +57,10 @@ public class Agent extends BaseEntity {
         this.agentStatus = status;
     }
 
-    public void updateAgentInfo(String agentName) {
+    public void updateAgentName(String agentName) {
         if (agentName != null) this.agentName = agentName;
     }
+    public void updateDescription(String description) { if (description != null) this.description = description; }
 
     @PrePersist
     public void generateAgentKey() {

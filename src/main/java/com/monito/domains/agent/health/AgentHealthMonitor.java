@@ -1,4 +1,4 @@
-package com.monito.domains.agent.component;
+package com.monito.domains.agent.health;
 
 import java.time.Instant;
 import java.util.Map;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * - 마지막 성공 시간 기록
  */
 @Component
-public class AgentHealthTracker {
+public class AgentHealthMonitor {
 
     private final Map<Long, Integer> failureCounts = new ConcurrentHashMap<>();
     private final Map<Long, Instant> lastSuccessTime = new ConcurrentHashMap<>();

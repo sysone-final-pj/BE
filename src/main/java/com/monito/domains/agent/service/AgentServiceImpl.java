@@ -3,7 +3,11 @@ package com.monito.domains.agent.service;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
+import com.monito.domains.agent.dto.request.AgentUpdateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
+import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
+import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
+import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -12,11 +16,46 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public AgentDetailResponseDTO getAgent(Long id) {
+        Agent agent = agentRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(ExceptionMessage.DATA_NOT_FOUND)
+                );
+
+        return AgentDetailResponseDTO.from(agent);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AgentSummaryResponseDTO> getAgentList() {
+        return agentRepository.findAll().stream()
+                .map(AgentSummaryResponseDTO::from)
+                .toList();
+    }
+
+    @Override
+    public AgentUpdateResponseDTO updateAgent(Long id, AgentUpdateRequestDTO agentUpdateRequestDTO) {
+        Agent agent = agentRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(ExceptionMessage.DATA_NOT_FOUND)
+                );
+
+        agent.updateAgentName(agentUpdateRequestDTO.getAgentName());
+        agent.updateDescription(agentUpdateRequestDTO.getDescription());
+
+        return AgentUpdateResponseDTO.from(agent);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -31,7 +70,6 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    @Transactional
     public void updateAgentStatus(String agentKey, AgentStatus status) {
         agentRepository.findByAgentKey(agentKey)
                 .ifPresent(agent -> {
@@ -39,6 +77,16 @@ public class AgentServiceImpl implements AgentService {
                     log.info("Agent 상태 변경 - agentKey: {}, status: {} -> {}",
                             agentKey, agent.getAgentStatus(), status);
                 });
+    }
+
+    @Override
+    public void deleteAgent(Long id) {
+        Agent agent = agentRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(ExceptionMessage.DATA_NOT_FOUND)
+                );
+
+        agent.markAsDeleted();
     }
 
     @Override
