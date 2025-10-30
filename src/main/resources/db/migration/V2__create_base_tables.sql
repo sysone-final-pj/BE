@@ -88,7 +88,6 @@ CREATE TABLE dashboard_widget (
 CREATE TABLE alert_rules (
     id NUMBER PRIMARY KEY,
     member_id NUMBER NOT NULL,
-    container_id NUMBER NOT NULL,
     rule_name VARCHAR2(100) NOT NULL,
     metric_type VARCHAR2(20) NOT NULL,
     is_enabled NUMBER(1) NOT NULL,
@@ -100,8 +99,7 @@ CREATE TABLE alert_rules (
     created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
     is_deleted NUMBER(1) DEFAULT 0 NOT NULL,
-    CONSTRAINT FK_ALERT_RULE_MEMBER FOREIGN KEY (member_id) REFERENCES members(id),
-    CONSTRAINT FK_ALERT_RULE_CONTAINER FOREIGN KEY (container_id) REFERENCES containers(id)
+    CONSTRAINT FK_ALERT_RULE_MEMBER FOREIGN KEY (member_id) REFERENCES members(id)
 );
 
 -- Alerts 테이블
