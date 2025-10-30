@@ -153,16 +153,16 @@ public class ContainerStatsLog {
     private BigDecimal txFailureRate;
 
     @Column(nullable = false)
-    private Integer rxErrors;
+    private Long rxErrors;
 
     @Column(nullable = false)
-    private Integer txErrors;
+    private Long txErrors;
 
     @Column(nullable = false)
-    private Integer rxDropped;
+    private Long rxDropped;
 
     @Column(nullable = false)
-    private Integer txDropped;
+    private Long txDropped;
 
     // 컨테이너가 실행 중 생성/수정한 데이터의 크기
     @Column(nullable = false)

@@ -21,8 +21,6 @@ public class AlertRuleResponseDTO {
     private Long id;
     private Long memberId;
     private String memberUsername;
-    private Long containerId;
-    private String containerName;
     private String ruleName;
     private MetricType metricType;
     private Boolean isEnabled;
@@ -39,8 +37,6 @@ public class AlertRuleResponseDTO {
                 .id(alertRule.getId())
                 .memberId(alertRule.getMember().getId())
                 .memberUsername(alertRule.getMember().getUsername())
-                .containerId(alertRule.getContainer().getId())
-                .containerName(alertRule.getContainer().getName())
                 .ruleName(alertRule.getRuleName())
                 .metricType(alertRule.getMetricType())
                 .isEnabled(alertRule.getIsEnabled())

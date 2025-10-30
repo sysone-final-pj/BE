@@ -53,8 +53,6 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
                         // ADMIN 권한이 필요한 경로
                         .requestMatchers("/api/admin/**").hasRole("MASTER")
                         // 나머지는 인증 필요

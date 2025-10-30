@@ -9,10 +9,12 @@ import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
 import com.monito.domains.container.repository.ContainerLogRepository;
+import com.monito.domains.container.dto.response.ContainerListResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +36,17 @@ public class ContainerServiceImpl implements ContainerService{
     private final ContainerStatsLogRepository containerStatsLogRepository;
     private final ContainerLogRepository containerLogRepository;
 
+    @Override
+    public List<ContainerListResponseDTO> getAllContainers() {
+        log.info("Fetching all containers with latest stats");
+        return containerRepository.findAllContainerList();
+    }
+
+    @Override
+    public List<ContainerListResponseDTO> getContainersByAgentId(Long agentId) {
+        log.info("Fetching containers for agentId: {}", agentId);
+        return containerRepository.findContainerListByAgentId(agentId);
+    }
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(){
         List<Container> containers = containerRepository.findAll();
@@ -279,4 +292,5 @@ public class ContainerServiceImpl implements ContainerService{
                 .txFailureRate(latest != null ? latest.getTxFailureRate() : null)
                 .build();
     }
+
 }

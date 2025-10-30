@@ -39,4 +39,36 @@ public interface ContainerStatsLogRepository extends JpaRepository<ContainerStat
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    /**
+     * 특정 컨테이너의 시간 범위 내 통계 로그 조회 (Container Hash 기준)
+     * @param containerHash 컨테이너 해시
+     * @param startTime 시작 시간
+     * @param endTime 종료 시간
+     * @return 시간 범위 내 ContainerStatsLog 리스트 (시간 오름차순)
+     */
+    @Query("SELECT csl FROM ContainerStatsLog csl " +
+            "WHERE csl.containerHash = :containerHash " +
+            "AND csl.createdAt BETWEEN :startTime AND :endTime " +
+            "ORDER BY csl.createdAt ASC")
+    List<ContainerStatsLog> findByContainerHashAndTimeRange(
+            @Param("containerHash") String containerHash,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    /**
+     * 특정 컨테이너의 최근 N개 통계 로그 조회
+     * @param containerId 컨테이너 ID
+     * @param limit 조회 개수
+     * @return 최근 N개의 ContainerStatsLog 리스트 (시간 내림차순)
+     */
+    @Query("SELECT csl FROM ContainerStatsLog csl " +
+            "WHERE csl.container.id = :containerId " +
+            "ORDER BY csl.createdAt DESC " +
+            "LIMIT :limit")
+    List<ContainerStatsLog> findRecentStatsByContainerId(
+            @Param("containerId") Long containerId,
+            @Param("limit") int limit
+    );
 }

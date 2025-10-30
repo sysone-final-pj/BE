@@ -29,13 +29,14 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
 
     /**
      * 컨테이너 메트릭 평가 및 알림 생성
-     * 해당 컨테이너에 대한 모든 활성화된 AlertRule을 조회하여 평가
+     * 모든 활성화된 AlertRule을 조회하여 평가
+     * (각 사용자가 설정한 임계값에 따라 알림 발생)
      */
     @Override
     public void evaluateContainer(ContainerStatsLog containerStats) {
-        // 해당 컨테이너에 대한 활성화된 모든 규칙 조회
+        // 모든 활성화된 규칙 조회 (컨테이너와 무관)
         List<AlertRule> activeRules = alertRuleRepository
-                .findByContainerIdAndIsEnabledTrue(containerStats.getContainer().getId());
+                .findByIsEnabledTrue();
 
         log.debug("컨테이너 {} 평가: {}개 규칙 발견", containerStats.getContainer().getId(), activeRules.size());
 

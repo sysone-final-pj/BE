@@ -1,6 +1,5 @@
 package com.monito.domains.alert.domain;
 
-import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.MetricType;
 import com.monito.domains.member.domain.Member;
 import jakarta.persistence.*;
@@ -37,10 +36,6 @@ public class AlertRule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "container_id", nullable = false)
-    private Container container;
 
     @Column(nullable = false, length = 100)
     private String ruleName;

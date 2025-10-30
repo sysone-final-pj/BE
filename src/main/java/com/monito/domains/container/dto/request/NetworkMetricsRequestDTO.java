@@ -16,8 +16,8 @@ public class NetworkMetricsRequestDTO {
     private Long txBytes;
     private Long rxPackets;
     private Long txPackets;
-    private Integer rxErrors;
-    private Integer txErrors;
-    private Integer rxDropped;
-    private Integer txDropped;
+    private Long rxErrors;
+    private Long txErrors;
+    private Long rxDropped;
+    private Long txDropped;
 }
