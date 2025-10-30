@@ -39,12 +39,9 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.MEMBER_NOT_FOUND));
 
-        Container container = containerRepository.findById(request.getContainerId())
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
-
-        // 동일한 컨테이너 + 메트릭 타입 규칙이 이미 존재하는지 확인
-        boolean exists = alertRuleRepository.existsByMemberIdAndContainerIdAndMetricType(
-                memberId, request.getContainerId(), request.getMetricType());
+        // 동일한 메트릭 타입 규칙이 이미 존재하는지 확인
+        boolean exists = alertRuleRepository.existsByMemberIdAndMetricType(
+                memberId, request.getMetricType());
 
         if (exists) {
             throw new ConflictException(ExceptionMessage.ALERT_RULE_ALREADY_EXISTS);
@@ -52,7 +49,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
 
         AlertRule alertRule = AlertRule.builder()
                 .member(member)
-                .container(container)
                 .ruleName(request.getRuleName())
                 .metricType(request.getMetricType())
                 .isEnabled(true)
@@ -64,8 +60,8 @@ public class AlertRuleServiceImpl implements AlertRuleService {
                 .build();
 
         AlertRule saved = alertRuleRepository.save(alertRule);
-        log.info("알림 규칙 생성 완료: ruleId={}, memberId={}, containerId={}, metricType={}",
-                saved.getId(), memberId, request.getContainerId(), request.getMetricType());
+        log.info("알림 규칙 생성 완료: ruleId={}, memberId={}, metricType={}",
+                saved.getId(), memberId, request.getMetricType());
 
         return AlertRuleResponseDTO.from(saved);
     }
@@ -99,12 +95,12 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     }
 
     /**
-     * 특정 컨테이너의 알림 규칙 조회
+     * 특정 메트릭 타입의 알림 규칙 조회
      */
     @Override
     @Transactional(readOnly = true)
     public List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId) {
-        return alertRuleRepository.findByMemberIdAndContainerId(memberId, containerId)
+        return alertRuleRepository.findByMemberId(memberId)
                 .stream()
                 .map(AlertRuleResponseDTO::from)
                 .collect(Collectors.toList());

@@ -2,6 +2,7 @@ package com.monito.domains.alert.controller;
 
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
+import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 import com.monito.domains.alert.service.AlertService;
@@ -150,5 +151,69 @@ public class AlertController {
     public ApiResponse<Void> deleteReadAlerts(@AuthenticationPrincipal CustomUserDetails userDetails) {
         alertService.deleteReadAlerts(userDetails.getId());
         return ApiResponse.ok("읽은 알림이 모두 삭제되었습니다.");
+    }
+
+    /**
+     * 필터 조건에 따른 알림 조회
+     */
+    @Operation(
+            summary = "필터 조건으로 알림 조회",
+            description = """
+                    알림을 다양한 조건으로 필터링합니다.
+
+                    **사용 가능한 필터:**
+                    - alertLevel: 경고 레벨 (ERROR, WARNING, INFO)
+                    - metricType: 메트릭 타입 (CPU, MEMORY, DISK, NETWORK 등)
+                    - agentName: 에이전트 이름 (부분 일치)
+                    - containerName: 컨테이너 이름 (부분 일치)
+                    - collectedAtFrom/To: 수집 시간 범위 (예: 2024-10-01T00:00:00)
+                    - createdAtFrom/To: 생성 시간 범위 (예: 2024-10-01T00:00:00)
+                    - isRead: 읽음 여부 (true/false)
+                    """
+    )
+    @GetMapping("/filter")
+    public ApiResponse<List<AlertListItemResponseDTO>> getAlertsWithFilter(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @io.swagger.v3.oas.annotations.Parameter(description = "경고 레벨 (ERROR, WARNING, INFO)")
+            @RequestParam(required = false) com.monito.domains.alert.domain.AlertLevel alertLevel,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "메트릭 타입 (CPU, MEMORY, DISK, NETWORK 등)")
+            @RequestParam(required = false) com.monito.domains.container.domain.MetricType metricType,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "에이전트 이름 (부분 일치)")
+            @RequestParam(required = false) String agentName,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "컨테이너 이름 (부분 일치)")
+            @RequestParam(required = false) String containerName,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "수집 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtFrom,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "수집 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtTo,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "생성 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAtFrom,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "생성 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAtTo,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "읽음 여부 (true: 읽음, false: 안읽음)")
+            @RequestParam(required = false) Boolean isRead
+    ) {
+        AlertFilterDTO filter = AlertFilterDTO.builder()
+                .alertLevel(alertLevel)
+                .metricType(metricType)
+                .agentName(agentName)
+                .containerName(containerName)
+                .collectedAtFrom(collectedAtFrom)
+                .collectedAtTo(collectedAtTo)
+                .createdAtFrom(createdAtFrom)
+                .createdAtTo(createdAtTo)
+                .isRead(isRead)
+                .build();
+
+        List<AlertListItemResponseDTO> alerts = alertService.getAlertsWithFilter(userDetails.getId(), filter);
+        return ApiResponse.ok(alerts, "필터링된 알림 조회 성공");
     }
 }

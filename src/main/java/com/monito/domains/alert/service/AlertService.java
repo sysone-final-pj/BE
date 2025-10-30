@@ -80,4 +80,9 @@ public interface AlertService {
      * 읽지 않은 알림 개수 조회 (배지용)
      */
     long getUnreadAlertCount(Long memberId);
+
+    /**
+     * 필터 조건에 따른 알림 조회
+     */
+    List<AlertListItemResponseDTO> getAlertsWithFilter(Long memberId, com.monito.domains.alert.dto.request.AlertFilterDTO filter);
 }

@@ -32,7 +32,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         name = "alerts",
         indexes = {
                 @jakarta.persistence.Index(name = "IDX_ALERT_IS_READ", columnList = "is_read"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_MEMBER_IS_READ", columnList = "member_id, is_read")
+                @jakarta.persistence.Index(name = "IDX_ALERT_MEMBER_IS_READ", columnList = "member_id, is_read"),
+                @jakarta.persistence.Index(name = "IDX_ALERT_ALERT_LEVEL", columnList = "alert_level"),
+                @jakarta.persistence.Index(name = "IDX_ALERT_METRIC_TYPE", columnList = "metric_type"),
+                @jakarta.persistence.Index(name = "IDX_ALERT_COLLECTED_AT", columnList = "collected_at"),
+                @jakarta.persistence.Index(name = "IDX_ALERT_CONTAINER_ID", columnList = "container_id"),
+                @jakarta.persistence.Index(name = "IDX_ALERT_CREATED_AT", columnList = "created_at")
         }
 )
 @Builder

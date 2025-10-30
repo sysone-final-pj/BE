@@ -1,18 +1,22 @@
 package com.monito.domains.container.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.dto.response.ContainerListResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
+import com.monito.domains.container.websocket.DashboardWebSocketHandler;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +35,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
-
+    private final DashboardWebSocketHandler dashboardWebSocketHandler;
+    private final ObjectMapper objectMapper;
     @Override
     @Transactional
     public void processMetrics(String agentKey, ContainerMetricsRequestDTO metricsDto) {
@@ -131,9 +136,33 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             try {
                 alertEvaluationFacade.evaluateContainerStats(statsLog);
             } catch (Exception e) {
-                // 알림 평가 실패는 메트릭 저장에 영향을 주지 않도록 예외 처리
                 log.error("알림 규칙 평가 중 오류 발생 - containerHash: {}, error: {}",
                         metricsDto.getContainerHash(), e.getMessage());
+            }
+
+            // 9. WebSocket 브로드캐스트
+            try {
+                var dashboardDto = ContainerListResponseDTO.builder()
+                        .containerId(container.getId())
+                        .containerHash(container.getContainerHash())
+                        .containerName(container.getName())
+                        .agentName(agent.getAgentName())
+                        .state(statsLog.getState())
+                        .cpuPercent(statsLog.getCpuPercent())
+                        .memPercent(statsLog.getMemPercent())
+                        .memUsage(statsLog.getMemUsage())
+                        .blkRead(statsLog.getBlkRead())
+                        .blkWrite(statsLog.getBlkWrite())
+                        .rxBytesPerSec(statsLog.getRxBytesPerSec())
+                        .txBytesPerSec(statsLog.getTxBytesPerSec())
+                        .build();
+
+                String json = objectMapper.writeValueAsString(dashboardDto);
+                dashboardWebSocketHandler.broadcastMetrics(json);
+
+                log.debug("📡 대시보드로 실시간 브로드캐스트 전송 완료: {}", json);
+            } catch (Exception e) {
+                log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
 
         } catch (NotFoundException | BadRequestException e) {
@@ -141,8 +170,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     metricsDto.getContainerHash(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("메트릭 처리 중 예상치 못한 오류 발생 - containerHash: {}",
-                    metricsDto.getContainerHash(), e);
+            log.error("메트릭 처리 중 예상치 못한 오류 발생 - containerHash: {}", metricsDto.getContainerHash(), e);
             throw new BadRequestException(ExceptionMessage.CONTAINER_METRICS_PROCESSING_FAILED);
         }
     }
@@ -163,7 +191,6 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
      * 새 컨테이너 생성
      */
     private Container createNewContainer(Agent agent, ContainerMetricsRequestDTO metricsDto) {
-        // CPU Limit Cores 계산
         BigDecimal cpuLimitCores = metricsCalculator.calculateCpuLimitCores(
                 metricsDto.getCpuQuota(),
                 metricsDto.getCpuPeriod()
@@ -172,7 +199,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(metricsDto.getContainerHash())
-                .name(metricsDto.getContainerHash().substring(0, 12)) // 기본 이름 (해시 앞 12자리)
+                .name(metricsDto.getContainerHash().substring(0, 12))
                 .cpuQuota(metricsDto.getCpuQuota())
                 .cpuPeriod(metricsDto.getCpuPeriod())
                 .cpuLimitCores(cpuLimitCores)
