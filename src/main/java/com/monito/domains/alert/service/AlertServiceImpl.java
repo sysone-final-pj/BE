@@ -14,7 +14,6 @@ import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.alert.repository.AlertSpecification;
-import com.monito.domains.alert.handler.AlertWebSocketHandler;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
@@ -25,6 +24,7 @@ import com.monito.global.exception.NotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +42,7 @@ public class AlertServiceImpl implements AlertService {
     private final AlertRuleRepository alertRuleRepository;
     private final MemberRepository memberRepository;
     private final ContainerRepository containerRepository;
-    private final AlertWebSocketHandler webSocketHandler;
+    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
 
     /**
@@ -73,8 +73,12 @@ public class AlertServiceImpl implements AlertService {
                     .containerInfo(containerInfo)
                     .build();
 
-            String jsonMessage = objectMapper.writeValueAsString(alertMessage);
-            webSocketHandler.sendAlertToUser(String.valueOf(dto.getMember().getId()), jsonMessage);
+            // STOMP를 통한 사용자별 알림 전송
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(dto.getMember().getId()),
+                    "/queue/alerts",
+                    alertMessage
+            );
 
             log.info("알림 생성 및 전송 완료: memberId={}, containerId={}, alertLevel={}, metricValue={}",
                     dto.getMember().getId(), dto.getContainer().getId(), dto.getAlertLevel(), dto.getMetricValue());
@@ -137,8 +141,8 @@ public class AlertServiceImpl implements AlertService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            String jsonMessage = objectMapper.writeValueAsString(alertMessage);
-            webSocketHandler.broadcastAlert(jsonMessage);
+            // STOMP를 통한 브로드캐스트 (/topic/alerts 구독자 전체에게 전송)
+            messagingTemplate.convertAndSend("/topic/alerts", alertMessage);
 
             log.info("브로드캐스트 알림 전송: title={}, level={}", title, alertLevel);
         } catch (Exception e) {
@@ -290,7 +294,7 @@ public class AlertServiceImpl implements AlertService {
     }
 
     /**
-     * WebSocket: 알림 읽음 처리 상태 업데이트 전송
+     * STOMP: 알림 읽음 처리 상태 업데이트 전송
      */
     private void sendReadStatusUpdate(Long memberId, Long alertId, boolean isRead) {
         try {
@@ -302,8 +306,12 @@ public class AlertServiceImpl implements AlertService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            String jsonMessage = objectMapper.writeValueAsString(statusUpdate);
-            webSocketHandler.sendAlertToUser(String.valueOf(memberId), jsonMessage);
+            // STOMP를 통한 사용자별 상태 업데이트 전송
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(memberId),
+                    "/queue/alerts",
+                    statusUpdate
+            );
 
             log.info("읽음 상태 업데이트 전송: memberId={}, alertId={}", memberId, alertId);
         } catch (Exception e) {
@@ -312,7 +320,7 @@ public class AlertServiceImpl implements AlertService {
     }
 
     /**
-     * WebSocket: 알림 삭제 알림 전송
+     * STOMP: 알림 삭제 알림 전송
      */
     private void sendDeleteNotification(Long memberId, Long alertId) {
         try {
@@ -324,8 +332,12 @@ public class AlertServiceImpl implements AlertService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            String jsonMessage = objectMapper.writeValueAsString(deleteNotification);
-            webSocketHandler.sendAlertToUser(String.valueOf(memberId), jsonMessage);
+            // STOMP를 통한 사용자별 삭제 알림 전송
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(memberId),
+                    "/queue/alerts",
+                    deleteNotification
+            );
 
             log.info("삭제 알림 전송: memberId={}, alertId={}", memberId, alertId);
         } catch (Exception e) {
