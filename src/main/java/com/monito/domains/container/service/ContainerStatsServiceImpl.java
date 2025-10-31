@@ -84,6 +84,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .container(container)
                     .containerHash(statsLog.getContainerHash())
                     .state(statsLog.getState())
+                    .health(statsLog.getHealth())
                     .collectedAt(statsLog.getCollectedAt())
                     .cpuPercent(statsLog.getCpuPercent())
                     .cpuCoreUsage(statsLog.getCpuCoreUsage())

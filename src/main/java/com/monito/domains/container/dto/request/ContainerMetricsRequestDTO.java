@@ -1,5 +1,6 @@
 package com.monito.domains.container.dto.request;
 
+import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -17,6 +18,7 @@ public class ContainerMetricsRequestDTO {
     private String containerHash;
     private String containerName;
     private ContainerState state;
+    private ContainerHealth health;
     private LocalDateTime collectedAt;  // Agent에서 메트릭을 수집한 시간
 
     // CPU 관련
