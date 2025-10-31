@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -30,6 +32,12 @@ public class ContainerSummaryResponseDTO {
     ContainerState containerState;
 
     public static ContainerSummaryResponseDTO of(Agent agent, Container container, ContainerStatsLog containerStatsLog) {
+        ContainerState resolvedState = containerStatsLog.getState();
+        LocalDateTime collectedAt = containerStatsLog.getCollectedAt();
+        if (collectedAt != null && Duration.between(collectedAt, LocalDateTime.now()).getSeconds() > 30) {
+            resolvedState = ContainerState.UNKNOWN;
+        }
+
         return ContainerSummaryResponseDTO.builder()
                 .agentName(agent.getAgentName())
                 .containerHash(container.getContainerHash())
@@ -40,10 +48,10 @@ public class ContainerSummaryResponseDTO {
                 .rxBytesPerSec(containerStatsLog.getRxBytesPerSec())
                 .txBytesPerSec(containerStatsLog.getTxBytesPerSec())
                 .imageSize(container.getImageSize())
-                .state(containerStatsLog.getState())
+                .state(resolvedState)
                 .health(containerStatsLog.getHealth())
                 .sizeRootFs(containerStatsLog.getSizeRootFs())
-                .containerState(containerStatsLog.getState())
+                .containerState(resolvedState)
                 .build();
     }
 }

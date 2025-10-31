@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import com.monito.domains.container.domain.ContainerState;
 
 @Slf4j
 @Service
@@ -144,6 +146,15 @@ public class ContainerServiceImpl implements ContainerService {
     // ===== Private Helper Methods =====
 
     private ContainerInfoDTO buildContainerInfo(Container container, ContainerStatsLog latestLog) {
+        ContainerState effectiveState = null;
+        if (latestLog != null) {
+            boolean stale = Duration.between(
+                    latestLog.getCollectedAt(),
+                    LocalDateTime.now()
+            ).getSeconds() > 30;
+            effectiveState = stale ? ContainerState.UNKNOWN : latestLog.getState();
+        }
+
         return ContainerInfoDTO.builder()
                 .containerId(container.getId())
                 .containerHash(container.getContainerHash())
@@ -151,7 +162,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .agentName(container.getAgent().getAgentName())
                 .imageName(container.getImageName())
                 .imageSize(container.getImageSize())
-                .state(latestLog != null ? latestLog.getState() : null)
+                .state(effectiveState)
                 .build();
     }
 
