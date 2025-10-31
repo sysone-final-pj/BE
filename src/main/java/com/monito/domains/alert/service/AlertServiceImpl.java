@@ -14,7 +14,7 @@ import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
 import com.monito.domains.alert.repository.AlertSpecification;
-import com.monito.domains.alert.websocket.handler.AlertWebSocketHandler;
+import com.monito.domains.alert.handler.AlertWebSocketHandler;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;

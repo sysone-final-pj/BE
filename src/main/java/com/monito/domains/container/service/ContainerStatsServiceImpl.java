@@ -8,10 +8,10 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.dto.response.ContainerListResponseDTO;
+import com.monito.domains.container.handler.DashboardWebSocketHandler;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
-import com.monito.domains.container.websocket.DashboardWebSocketHandler;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -140,27 +140,63 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 9. WebSocket 브로드캐스트
+            // 9. WebSocket 브로드캐스트 (모든 상세 메트릭 포함)
             try {
                 var dashboardDto = ContainerListResponseDTO.builder()
+                        // 기본 정보
                         .containerId(container.getId())
                         .containerHash(container.getContainerHash())
                         .containerName(container.getName())
                         .agentName(agent.getAgentName())
                         .state(statsLog.getState())
+                        // CPU 메트릭
                         .cpuPercent(statsLog.getCpuPercent())
+                        .cpuCoreUsage(statsLog.getCpuCoreUsage())
+                        .cpuUsageTotal(statsLog.getCpuUsageTotal())
+                        .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
+                        .cpuUser(statsLog.getCpuUser())
+                        .cpuSystem(statsLog.getCpuSystem())
+                        .cpuQuota(statsLog.getCpuQuota())
+                        .cpuPeriod(statsLog.getCpuPeriod())
+                        .onlineCpus(statsLog.getOnlineCpus())
+                        .throttlingPeriods(statsLog.getThrottlingPeriods())
+                        .throttledPeriods(statsLog.getThrottledPeriods())
+                        .throttledTime(statsLog.getThrottledTime())
+                        // Memory 메트릭
                         .memPercent(statsLog.getMemPercent())
                         .memUsage(statsLog.getMemUsage())
+                        .memLimit(container.getMemLimit())
+                        .memMaxUsage(statsLog.getMemMaxUsage())
+                        // Block I/O 메트릭
                         .blkRead(statsLog.getBlkRead())
                         .blkWrite(statsLog.getBlkWrite())
+                        .blkReadPerSec(statsLog.getBlkReadPerSec())
+                        .blkWritePerSec(statsLog.getBlkWritePerSec())
+                        // Network 메트릭
+                        .rxBytes(statsLog.getRxBytes())
+                        .txBytes(statsLog.getTxBytes())
+                        .rxPackets(statsLog.getRxPackets())
+                        .txPackets(statsLog.getTxPackets())
+                        .networkTotalBytes(statsLog.getNetworkTotalBytes())
                         .rxBytesPerSec(statsLog.getRxBytesPerSec())
                         .txBytesPerSec(statsLog.getTxBytesPerSec())
+                        .rxPps(statsLog.getRxPps())
+                        .txPps(statsLog.getTxPps())
+                        .rxFailureRate(statsLog.getRxFailureRate())
+                        .txFailureRate(statsLog.getTxFailureRate())
+                        .rxErrors(statsLog.getRxErrors())
+                        .txErrors(statsLog.getTxErrors())
+                        .rxDropped(statsLog.getRxDropped())
+                        .txDropped(statsLog.getTxDropped())
+                        // Storage 메트릭
+                        .sizeRw(statsLog.getSizeRw())
+                        .sizeRootFs(statsLog.getSizeRootFs())
                         .build();
 
                 String json = objectMapper.writeValueAsString(dashboardDto);
                 dashboardWebSocketHandler.broadcastMetrics(json);
 
-                log.debug("📡 대시보드로 실시간 브로드캐스트 전송 완료: {}", json);
+                log.debug("📡 대시보드 실시간 브로드캐스트 전송 완료 - Container: {}", container.getName());
             } catch (Exception e) {
                 log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
