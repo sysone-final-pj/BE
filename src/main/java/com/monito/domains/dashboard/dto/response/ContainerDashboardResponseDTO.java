@@ -1,5 +1,6 @@
 package com.monito.domains.dashboard.dto.response;
 
+import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import java.math.BigDecimal;
 import lombok.AccessLevel;
@@ -25,6 +26,7 @@ public class ContainerDashboardResponseDTO {
     private String containerName;
     private String agentName;
     private ContainerState state;
+    private ContainerHealth health;
 
     // CPU 메트릭
     private BigDecimal cpuPercent;          // CPU 사용률 (%)
@@ -83,6 +85,7 @@ public class ContainerDashboardResponseDTO {
             String containerName,
             String agentName,
             ContainerState state,
+            ContainerHealth health,
             BigDecimal cpuPercent,
             BigDecimal memPercent,
             Long memUsage,
@@ -97,6 +100,7 @@ public class ContainerDashboardResponseDTO {
         this.containerName = containerName;
         this.agentName = agentName;
         this.state = state;
+        this.health = health;
         this.cpuPercent = cpuPercent;
         this.memPercent = memPercent;
         this.memUsage = memUsage;
