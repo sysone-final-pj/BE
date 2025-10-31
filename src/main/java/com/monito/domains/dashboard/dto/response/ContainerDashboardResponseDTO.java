@@ -1,4 +1,4 @@
-package com.monito.domains.container.dto.response;
+package com.monito.domains.dashboard.dto.response;
 
 import com.monito.domains.container.domain.ContainerState;
 import java.math.BigDecimal;
@@ -17,7 +17,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ContainerListResponseDTO {
+public class ContainerDashboardResponseDTO {
 
     // 기본 정보
     private Long containerId;
@@ -64,10 +64,10 @@ public class ContainerListResponseDTO {
     private Long txPps;                     // 송신 PPS
     private BigDecimal rxFailureRate;       // 수신 실패율 (%)
     private BigDecimal txFailureRate;       // 송신 실패율 (%)
-    private Long rxErrors;                  // 수신 에러
-    private Long txErrors;                  // 송신 에러
-    private Long rxDropped;                 // 수신 드롭
-    private Long txDropped;                 // 송신 드롭
+    private Integer rxErrors;               // 수신 에러
+    private Integer txErrors;               // 송신 에러
+    private Integer rxDropped;              // 수신 드롭
+    private Integer txDropped;              // 송신 드롭
 
     // Storage 메트릭
     private Long sizeRw;                    // 컨테이너 쓰기 크기
@@ -77,7 +77,7 @@ public class ContainerListResponseDTO {
      * REST API용 생성자 (JPQL에서 사용)
      * - 주요 메트릭만 포함 (13개 필드)
      */
-    public ContainerListResponseDTO(
+    public ContainerDashboardResponseDTO(
             Long containerId,
             String containerHash,
             String containerName,

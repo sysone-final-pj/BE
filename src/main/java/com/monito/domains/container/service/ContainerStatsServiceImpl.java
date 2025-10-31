@@ -7,8 +7,8 @@ import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
-import com.monito.domains.container.dto.response.ContainerListResponseDTO;
-import com.monito.domains.container.handler.DashboardWebSocketHandler;
+import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.handler.DashboardWebSocketHandler;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -142,7 +142,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
             // 9. WebSocket 브로드캐스트 (모든 상세 메트릭 포함)
             try {
-                var dashboardDto = ContainerListResponseDTO.builder()
+                var dashboardDto = ContainerDashboardResponseDTO.builder()
                         // 기본 정보
                         .containerId(container.getId())
                         .containerHash(container.getContainerHash())
@@ -196,7 +196,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 String json = objectMapper.writeValueAsString(dashboardDto);
                 dashboardWebSocketHandler.broadcastMetrics(json);
 
-                log.debug("📡 대시보드 실시간 브로드캐스트 전송 완료 - Container: {}", container.getName());
+                log.debug("대시보드 실시간 브로드캐스트 전송 완료 - Container: {}", container.getName());
             } catch (Exception e) {
                 log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }

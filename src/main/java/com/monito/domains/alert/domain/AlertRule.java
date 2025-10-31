@@ -47,16 +47,16 @@ public class AlertRule {
     @Column(nullable = false, precision = 1)
     private Boolean isEnabled;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(precision = 5, scale = 2)
     private BigDecimal infoThreshold;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(precision = 5, scale = 2)
     private BigDecimal warningThreshold;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(precision = 5, scale = 2)
     private BigDecimal highThreshold;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(precision = 5, scale = 2)
     private BigDecimal criticalThreshold;
 
     @Column(nullable = false, precision = 10)
