@@ -6,6 +6,7 @@ import com.monito.domains.container.websocket.DashboardWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
@@ -39,8 +40,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
      * 웹소켓 전송 설정
      * - 메시지 크기 제한 설정 (64KB(기본) -> 1MB)
      * - 버퍼 크기 설정
+     * - 실제 서블릿 환경에서만 동작 (테스트 환경 제외)
      */
     @Bean
+    @Profile("!test")
     public ServletServerContainerFactoryBean createWebSocketContainer() {
         ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
         container.setMaxTextMessageBufferSize(1024 * 1024);  // 1MB
