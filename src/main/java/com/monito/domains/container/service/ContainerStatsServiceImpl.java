@@ -150,6 +150,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         .containerName(container.getName())
                         .agentName(agent.getAgentName())
                         .state(statsLog.getState())
+                        .health(statsLog.getHealth())
                         // CPU 메트릭
                         .cpuPercent(statsLog.getCpuPercent())
                         .cpuCoreUsage(statsLog.getCpuCoreUsage())
