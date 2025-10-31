@@ -1,8 +1,8 @@
 package com.monito.global.config;
 
-import com.monito.domains.alert.websocket.handler.AlertWebSocketHandler;
+import com.monito.domains.alert.handler.AlertWebSocketHandler;
 import com.monito.domains.agent.handler.AgentWebSocketHandler;
-import com.monito.domains.container.websocket.DashboardWebSocketHandler;
+import com.monito.domains.dashboard.handler.DashboardWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,5 +1,6 @@
 package com.monito.domains.alert.dto.request;
 
+import com.monito.domains.alert.validator.ValidThresholds;
 import com.monito.domains.container.domain.MetricType;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -15,11 +16,13 @@ import java.math.BigDecimal;
 /**
  * 알림 규칙 생성 요청 DTO
  * - 컨테이너별 메트릭 임계값 및 알림 규칙 설정 시 사용
+ * - 임계값은 일부만 입력 가능 (최소 1개 이상 필수)
  */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ValidThresholds
 public class AlertRuleCreateRequestDTO {
 
     @NotBlank(message = "규칙 이름은 필수입니다.")
@@ -28,22 +31,18 @@ public class AlertRuleCreateRequestDTO {
     @NotNull(message = "메트릭 타입은 필수입니다.")
     private MetricType metricType;
 
-    @NotNull(message = "INFO 임계값은 필수입니다.")
     @DecimalMin(value = "0.00", message = "임계값은 0 이상이어야 합니다.")
     @DecimalMax(value = "100.00", message = "임계값은 100 이하여야 합니다.")
     private BigDecimal infoThreshold;
 
-    @NotNull(message = "WARNING 임계값은 필수입니다.")
     @DecimalMin(value = "0.00", message = "임계값은 0 이상이어야 합니다.")
     @DecimalMax(value = "100.00", message = "임계값은 100 이하여야 합니다.")
     private BigDecimal warningThreshold;
 
-    @NotNull(message = "HIGH 임계값은 필수입니다.")
     @DecimalMin(value = "0.00", message = "임계값은 0 이상이어야 합니다.")
     @DecimalMax(value = "100.00", message = "임계값은 100 이하여야 합니다.")
     private BigDecimal highThreshold;
 
-    @NotNull(message = "CRITICAL 임계값은 필수입니다.")
     @DecimalMin(value = "0.00", message = "임계값은 0 이상이어야 합니다.")
     @DecimalMax(value = "100.00", message = "임계값은 100 이하여야 합니다.")
     private BigDecimal criticalThreshold;

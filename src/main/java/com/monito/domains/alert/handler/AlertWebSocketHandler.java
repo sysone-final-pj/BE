@@ -1,4 +1,4 @@
-package com.monito.domains.alert.websocket.handler;
+package com.monito.domains.alert.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

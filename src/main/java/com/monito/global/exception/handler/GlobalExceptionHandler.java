@@ -4,12 +4,20 @@ import com.monito.global.exception.AuthenticationException;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ConflictException;
 import com.monito.global.exception.ForbiddenException;
+import com.monito.global.exception.NotFoundException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
@@ -19,12 +27,62 @@ public class GlobalExceptionHandler {
      * Client Error 4xx - Custom Exception 요청에 문제가 있는 경우
      */
 
-    //예시 코드
+    /**
+     * @Valid 검증 실패 시 발생 (DTO 필드 검증)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ProblemDetail handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
+        Map<String, String> errors = new HashMap<>();
+        e.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        String errorMessage = errors.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining(", "));
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                errorMessage
+        );
+        problemDetail.setTitle("입력값 검증 실패");
+        problemDetail.setProperty("errors", errors);
+
+        log.warn("Validation failed: {}", errors);
+        return problemDetail;
+    }
+
+    /**
+     * Custom Validator 검증 실패 시 발생 (@ValidThresholds 등)
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    ProblemDetail handleConstraintViolationException(final ConstraintViolationException e) {
+        Map<String, String> errors = new HashMap<>();
+        for (ConstraintViolation<?> violation : e.getConstraintViolations()) {
+            String propertyPath = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            errors.put(propertyPath, message);
+        }
+
+        String errorMessage = errors.values().stream()
+                .collect(Collectors.joining(", "));
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                errorMessage
+        );
+        problemDetail.setTitle("입력값 검증 실패");
+        problemDetail.setProperty("errors", errors);
+
+        log.warn("Constraint violation: {}", errors);
+        return problemDetail;
+    }
+
     @ExceptionHandler(BadRequestException.class)
     ProblemDetail handleBadRequestException(final BadRequestException e) {
-        //status와 에러에 대한 자세한 설명
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-        // 아래와 같이 필드 확장 가능
         problemDetail.setTitle("잘못된 요청입니다");
 
         return problemDetail;

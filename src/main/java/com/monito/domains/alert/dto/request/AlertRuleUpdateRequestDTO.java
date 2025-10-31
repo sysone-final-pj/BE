@@ -1,5 +1,6 @@
 package com.monito.domains.alert.dto.request;
 
+import com.monito.domains.alert.validator.ValidThresholds;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import lombok.AllArgsConstructor;
@@ -12,11 +13,13 @@ import java.math.BigDecimal;
 /**
  * 알림 규칙 수정 요청 DTO
  * - 기존 알림 규칙의 임계값, 쿨다운, 활성화 상태 등을 수정할 때 사용
+ * - 임계값은 일부만 입력 가능
  */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ValidThresholds(allowAllNull = true)
 public class AlertRuleUpdateRequestDTO {
 
     private String ruleName;
