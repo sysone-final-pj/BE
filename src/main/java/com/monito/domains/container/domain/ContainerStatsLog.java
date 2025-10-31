@@ -58,6 +58,10 @@ public class ContainerStatsLog {
     @Column(length = 20, nullable = false)
     private ContainerState state;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ContainerHealth health;
+
     // CPU 관련
     @Column(precision = 6, scale = 2)
     private BigDecimal cpuPercent;

@@ -374,6 +374,7 @@ public class ContainerMetricsCalculator {
         return ContainerStatsLog.builder()
                 .containerHash(metrics.getContainerHash())
                 .state(metrics.getState())
+                .health(metrics.getHealth())
                 .collectedAt(collectedAt)
                 // CPU 계산 값
                 .cpuPercent(cpuPercent)

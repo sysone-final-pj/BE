@@ -1,5 +1,6 @@
 package com.monito.domains.container.dto.response.metrics;
 
+import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,4 +20,5 @@ public class ContainerInfoDTO {
     private String imageName;
     private Long imageSize;
     private ContainerState state;
+    private ContainerHealth health;
 }

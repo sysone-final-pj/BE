@@ -26,6 +26,7 @@ CREATE TABLE container_stats_logs (
     container_id NUMBER NOT NULL,
     container_hash VARCHAR2(64) NOT NULL,
     state VARCHAR2(20) NOT NULL,
+    health VARCHAR2(20) NOT NULL,
 
     -- CPU 관련
     cpu_percent NUMBER(6,2),

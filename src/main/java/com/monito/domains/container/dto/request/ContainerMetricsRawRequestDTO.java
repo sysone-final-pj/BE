@@ -1,6 +1,7 @@
 package com.monito.domains.container.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class ContainerMetricsRawRequestDTO {
     private String containerName;
     private String status;
     private String state;
+    private String health;
     private LocalDateTime collectedAt;  // Agent 메트릭 수집 시간
 
     private CpuMetricsRequestDTO cpu;
@@ -46,6 +48,7 @@ public class ContainerMetricsRawRequestDTO {
                 .containerHash(containerHash)
                 .containerName(containerName)
                 .state(parseState(state))
+                .health(parseHealth(health))
                 .collectedAt(collectedAt)  // Agent 수집 시간 전달
                 // CPU
                 .hostCpuUsageTotal(cpu != null ? cpu.getSystemCpuUsage() : null)
@@ -88,6 +91,16 @@ public class ContainerMetricsRawRequestDTO {
             return ContainerState.valueOf(state.toUpperCase());
         } catch (IllegalArgumentException e) {
             return ContainerState.DEAD;
+        }
+    }
+
+    private ContainerHealth parseHealth(String health) {
+        if (health == null) return ContainerHealth.UNKNOWN;
+
+        try {
+            return ContainerHealth.valueOf(health.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ContainerHealth.UNKNOWN;
         }
     }
 }
