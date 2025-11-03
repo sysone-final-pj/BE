@@ -89,7 +89,8 @@ public class ContainerMetricsRawRequestDTO {
         if (state == null) return ContainerState.DEAD;
 
         try {
-            return ContainerState.valueOf(state.toUpperCase());
+            String normalized = state.trim().toUpperCase();
+            return ContainerState.valueOf(normalized);
         } catch (IllegalArgumentException e) {
             return ContainerState.DEAD;
         }

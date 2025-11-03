@@ -5,6 +5,7 @@ import com.monito.domains.container.domain.ContainerSortField;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
+import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
@@ -49,4 +50,14 @@ public interface ContainerService {
      * @return 로그 목록 및 다음 커서 정보
      */
     ContainerLogsResponseDTO getContainerLogs(Long containerId, ContainerLogsRequest request);
+
+    /**
+     * 컨테이너 상태 변경 처리 (Agent의 CONTAINER_STATE_CHANGE 메시지)
+     * - 신규 컨테이너: 초기값(0)으로 생성, metricsInitialized = false
+     * - 기존 컨테이너: 상태 업데이트
+     * - deleted 상태: soft delete 처리
+     * @param agentKey Agent 식별 키
+     * @param snapshot 컨테이너 상태 스냅샷
+     */
+    void processContainerStateChange(String agentKey, ContainerSnapshotRequestDTO snapshot);
 }

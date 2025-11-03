@@ -2,17 +2,8 @@ package com.monito.domains.container.domain;
 
 import com.monito.domains.agent.domain.Agent;
 import com.monito.global.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -46,6 +37,10 @@ public class Container extends BaseEntity {
 
     @Column(nullable = false, length = 64)
     private String containerHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ContainerState state;
 
     @Column(nullable = false, length = 50)
     private String name;
@@ -93,6 +88,14 @@ public class Container extends BaseEntity {
     private Long storageLimit;
 
     /**
+     * 메트릭 초기화 플래그
+     * - false: CONTAINER_STATE_CHANGE로 생성된 초기 상태 (메트릭 0)
+     * - true: METRICS로 실제 메트릭 수신 완료
+     */
+    @Column(nullable = false)
+    private Boolean metricsInitialized;
+
+    /**
      * 컨테이너 이미지 이름
      * 예: "nginx:latest", "ubuntu:20.04"
      */
@@ -111,5 +114,28 @@ public class Container extends BaseEntity {
         if (this.oomKills == null) {
             this.oomKills = 0;
         }
+    }
+
+    public void updateSpecs(Long cpuQuota,
+                            Long cpuPeriod,
+                            BigDecimal cpuLimitCores,
+                            Integer onlineCpus,
+                            Long memLimit,
+                            Long storageLimit) {
+
+        this.cpuQuota = cpuQuota;
+        this.cpuPeriod = cpuPeriod;
+        this.cpuLimitCores = cpuLimitCores;
+        this.onlineCpus = onlineCpus;
+        this.memLimit = memLimit;
+        this.storageLimit = storageLimit;
+    }
+
+    public void markMetricsInitialized() {
+        this.metricsInitialized = true;
+    }
+
+    public void changeState(ContainerState state){
+        this.state = state;
     }
 }

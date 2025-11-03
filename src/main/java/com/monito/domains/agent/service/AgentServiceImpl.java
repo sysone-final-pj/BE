@@ -9,6 +9,8 @@ import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
 import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
+import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -84,6 +86,10 @@ public class AgentServiceImpl implements AgentService {
                     agent.updateStatus(status);
                     log.info("Agent 상태 변경 - agentKey: {}, status: {} -> {}",
                             agentKey, agent.getAgentStatus(), status);
+
+                    if (status == AgentStatus.OFFLINE) {
+                        markContainersAsUnknown(agent);
+                    }
                 });
     }
 
@@ -114,5 +120,14 @@ public class AgentServiceImpl implements AgentService {
     public AgentCreateResponseDTO createAgent(AgentCreateRequestDTO dto) {
         Agent save = agentRepository.save(dto.toEntity());
         return AgentCreateResponseDTO.from(save);
+    }
+
+    public void markContainersAsUnknown(Agent agent) {
+        List<Container> containers = containerRepository.findAllByAgent(agent);
+        for (Container container : containers) {
+            container.changeState(ContainerState.UNKNOWN);
+        }
+        log.info("Agent OFFLINE → 컨테이너 {}개 UNKNOWN 처리 - agentKey: {}",
+                containers.size(), agent.getAgentKey());
     }
 }

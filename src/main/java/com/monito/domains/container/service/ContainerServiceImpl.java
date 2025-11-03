@@ -1,9 +1,12 @@
 package com.monito.domains.container.service;
 
 import com.monito.domains.agent.domain.Agent;
+import com.monito.domains.agent.domain.AgentStatus;
+import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.*;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
+import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
 import com.monito.domains.container.repository.ContainerLogRepository;
@@ -38,6 +41,7 @@ public class ContainerServiceImpl implements ContainerService {
     private final ContainerStatsLogRepository containerStatsLogRepository;
     private final ContainerLogRepository containerLogRepository;
     private final AgentMetadataCache agentMetadataCache;
+    private final AgentRepository agentRepository;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
@@ -133,8 +137,7 @@ public class ContainerServiceImpl implements ContainerService {
         );
 
         // 4. 컨테이너 기본 정보 생성
-        ContainerStatsLog latestLog = statsLogs.isEmpty() ? null : statsLogs.get(statsLogs.size() - 1);
-        ContainerInfoDTO containerInfo = buildContainerInfo(container, latestLog);
+        ContainerInfoDTO containerInfo = buildContainerInfo(container);
 
         // 5. 메트릭 DTO 생성
         CpuMetricsDTO cpu = buildCpuMetrics(statsLogs, container);
@@ -212,17 +215,11 @@ public class ContainerServiceImpl implements ContainerService {
 
     // ===== Private Helper Methods =====
 
-    private ContainerInfoDTO buildContainerInfo(Container container, ContainerStatsLog latestLog) {
-        ContainerState effectiveState = null;
-        if (latestLog != null) {
-            boolean stale = Duration.between(
-                    latestLog.getCollectedAt(),
-                    LocalDateTime.now()
-            ).getSeconds() > 30;
-            effectiveState = stale ? ContainerState.UNKNOWN : latestLog.getState();
-        }
+    private ContainerInfoDTO buildContainerInfo(Container container) {
+        ContainerState effectiveState = container.getAgent().getAgentStatus() == AgentStatus.OFFLINE
+                ? ContainerState.UNKNOWN : container.getState();
 
-        String agentName = container.getAgent() != null ? container.getAgent().getAgentName() : null;
+        String agentName = container.getAgent().getAgentName();
 
         return ContainerInfoDTO.builder()
                 .containerId(container.getId())
@@ -360,4 +357,84 @@ public class ContainerServiceImpl implements ContainerService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void processContainerStateChange(String agentKey, ContainerSnapshotRequestDTO snapshot) {
+        // 1. Agent 조회
+        Agent agent = agentRepository.findByAgentKey(agentKey)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+
+        // 2. 상태 파싱
+        ContainerState state = parseState(snapshot.getState());
+
+        // 3. 기존 Container 조회
+        Container container = containerRepository
+                .findByAgentAndContainerHash(agent, snapshot.getContainerHash())
+                .orElse(null);
+
+        if (container == null) {
+            // 3-1. 신규 컨테이너 생성 (deleted 상태가 아닌 경우만)
+            if (state != ContainerState.DELETED) {
+                createContainerFromSnapshot(agent, snapshot, state);
+                log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, State: {}",
+                        agentKey, snapshot.getContainerHash(), state);
+            }
+        } else {
+            // 3-2. 기존 컨테이너 업데이트
+            if (state == ContainerState.DELETED) {
+                // Soft delete 처리
+                container.markAsDeleted();;
+                containerRepository.save(container);
+                log.info("컨테이너 삭제 처리 - Agent: {}, ContainerHash: {}",
+                        agentKey, snapshot.getContainerHash());
+            } else if(container.getState() != state) {
+                container.changeState(state);
+                // 상태만 업데이트 (이름이나 이미지 변경 가능성 대응)
+                log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
+                        snapshot.getContainerHash(), state);
+            }
+        }
+    }
+
+    /**
+     * 스냅샷 데이터로 컨테이너 생성 (초기값 0, metricsInitialized = false)
+     */
+    private void createContainerFromSnapshot(Agent agent, ContainerSnapshotRequestDTO snapshot, ContainerState state) {
+        Container container = Container.builder()
+                .agent(agent)
+                .containerHash(snapshot.getContainerHash())
+                .state(state)
+                .name(snapshot.getContainerName())
+                .imageName(snapshot.getImageName())
+                // 초기값 (메트릭 수신 전까지 0)
+                .cpuQuota(0L)
+                .cpuPeriod(0L)
+                .cpuLimitCores(BigDecimal.ZERO)
+                .onlineCpus(1)
+                .memLimit(0L)
+                .oomKills(0)
+                .storageLimit(0L)
+                .imageSize(null)
+                .metricsInitialized(false)  // 메트릭 미수신 상태
+                .build();
+
+        containerRepository.save(container);
+    }
+
+    /**
+     * 문자열 상태를 ContainerState Enum으로 변환
+     */
+    private ContainerState parseState(String state) {
+        if (state == null) {
+            return ContainerState.UNKNOWN;
+        }
+
+        try {
+            String normalized = state.trim().toUpperCase();
+            return ContainerState.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            log.warn("알 수 없는 컨테이너 상태: {}", state);
+            return ContainerState.UNKNOWN;
+        }
+    }
 }
