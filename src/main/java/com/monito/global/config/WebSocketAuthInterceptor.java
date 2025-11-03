@@ -33,48 +33,77 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-            // CONNECT 메시지에서 JWT 토큰 추출
-            List<String> authorizationHeaders = accessor.getNativeHeader("Authorization");
-
-            if (authorizationHeaders != null && !authorizationHeaders.isEmpty()) {
-                String authHeader = authorizationHeaders.get(0);
-
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                    String token = authHeader.substring(7);
-
-                    try {
-                        // 토큰 유효성 검증
-                        if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)) {
-                            // 사용자 ID 추출
-                            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                            String role = jwtTokenProvider.getRoleFromToken(token);
-
-                            // Principal 생성 (userId를 name으로 사용)
-                            Principal principal = new UsernamePasswordAuthenticationToken(
-                                    String.valueOf(userId),
-                                    null,
-                                    Collections.singletonList(new SimpleGrantedAuthority(role))
-                            );
-
-                            // Principal 설정
-                            accessor.setUser(principal);
-
-                            log.info("WebSocket 인증 성공: userId={}, role={}", userId, role);
-                        } else {
-                            log.warn("WebSocket 인증 실패: 유효하지 않은 토큰");
-                        }
-                    } catch (Exception e) {
-                        log.error("WebSocket 인증 중 오류 발생", e);
-                    }
-                } else {
-                    log.warn("WebSocket 인증 실패: Authorization 헤더 형식 오류");
-                }
-            } else {
-                log.warn("WebSocket CONNECT: Authorization 헤더 없음");
-            }
+        // CONNECT 명령이 아니면 스킵
+        if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
+            return message;
         }
 
+        authenticateWebSocketConnection(accessor);
         return message;
+    }
+
+    /**
+     * WebSocket 연결 인증 처리
+     */
+    private void authenticateWebSocketConnection(StompHeaderAccessor accessor) {
+        String token = extractToken(accessor);
+        if (token == null) {
+            return;
+        }
+
+        try {
+            if (!isValidToken(token)) {
+                log.warn("WebSocket 인증 실패: 유효하지 않은 토큰");
+                return;
+            }
+
+            setPrincipal(accessor, token);
+        } catch (Exception e) {
+            log.error("WebSocket 인증 중 오류 발생", e);
+        }
+    }
+
+    /**
+     * Authorization 헤더에서 JWT 토큰 추출
+     */
+    private String extractToken(StompHeaderAccessor accessor) {
+        List<String> authorizationHeaders = accessor.getNativeHeader("Authorization");
+
+        if (authorizationHeaders == null || authorizationHeaders.isEmpty()) {
+            log.warn("WebSocket CONNECT: Authorization 헤더 없음");
+            return null;
+        }
+
+        String authHeader = authorizationHeaders.get(0);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.warn("WebSocket 인증 실패: Authorization 헤더 형식 오류");
+            return null;
+        }
+
+        return authHeader.substring(7);
+    }
+
+    /**
+     * 토큰 유효성 검증
+     */
+    private boolean isValidToken(String token) {
+        return jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token);
+    }
+
+    /**
+     * 인증된 사용자의 Principal 설정
+     */
+    private void setPrincipal(StompHeaderAccessor accessor, String token) {
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        String role = jwtTokenProvider.getRoleFromToken(token);
+
+        Principal principal = new UsernamePasswordAuthenticationToken(
+                String.valueOf(userId),
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(role))
+        );
+
+        accessor.setUser(principal);
+        log.info("WebSocket 인증 성공: userId={}, role={}", userId, role);
     }
 }
