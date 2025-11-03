@@ -1,6 +1,7 @@
 package com.monito.domains.dashboard.repository;
 
 import com.monito.domains.container.domain.Container;
+import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -76,4 +77,16 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             WHERE a.id = :agentId
             """)
     List<ContainerDashboardResponseDTO> findContainersByAgentId(@Param("agentId") Long agentId);
+
+    /**
+     * Agent별 컨테이너 개수 집계
+     * @return Agent별 컨테이너 개수 목록
+     */
+    @Query("SELECT new com.monito.domains.dashboard.dto.response.AgentContainerCountDTO(" +
+            "a.id, a.agentName, COUNT(c.id)) " +
+            "FROM Container c " +
+            "JOIN c.agent a " +
+            "GROUP BY a.id, a.agentName " +
+            "ORDER BY COUNT(c.id) DESC")
+    List<AgentContainerCountDTO> countContainersByAgent();
 }

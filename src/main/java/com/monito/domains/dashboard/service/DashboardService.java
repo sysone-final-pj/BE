@@ -1,5 +1,6 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import java.util.List;
 
@@ -21,4 +22,10 @@ public interface DashboardService {
      * @return Agent에 속한 컨테이너 목록
      */
     List<ContainerDashboardResponseDTO> getContainersByAgentId(Long agentId);
+
+    /**
+     * Agent별 컨테이너 개수 집계
+     * @return Agent별 컨테이너 개수 목록 (개수 내림차순)
+     */
+    List<AgentContainerCountDTO> getContainerCountByAgent();
 }

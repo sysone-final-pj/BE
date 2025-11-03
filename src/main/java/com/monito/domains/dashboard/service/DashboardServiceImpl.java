@@ -1,5 +1,6 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.dashboard.repository.DashboardRepository;
 import java.util.List;
@@ -26,5 +27,11 @@ public class DashboardServiceImpl implements DashboardService {
     public List<ContainerDashboardResponseDTO> getContainersByAgentId(Long agentId) {
         log.info("대시보드: Agent별 컨테이너 목록 조회 - agentId: {}", agentId);
         return dashboardRepository.findContainersByAgentId(agentId);
+    }
+
+    @Override
+    public List<AgentContainerCountDTO> getContainerCountByAgent() {
+        log.info("대시보드: Agent별 컨테이너 개수 집계");
+        return dashboardRepository.countContainersByAgent();
     }
 }
