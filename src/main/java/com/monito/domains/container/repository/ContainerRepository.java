@@ -2,12 +2,8 @@ package com.monito.domains.container.repository;
 
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
-import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository

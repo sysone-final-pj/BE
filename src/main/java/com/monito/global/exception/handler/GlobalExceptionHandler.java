@@ -28,19 +28,27 @@ public class GlobalExceptionHandler {
      */
 
     /**
-     * @Valid 검증 실패 시 발생 (DTO 필드 검증)
+     * @Valid 검증 실패 시 발생 (DTO 필드 검증 및 클래스 레벨 검증)
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
         Map<String, String> errors = new HashMap<>();
+
         e.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            if (error instanceof FieldError fieldError) {
+                // 필드 레벨 검증 에러
+                String fieldName = fieldError.getField();
+                String errorMessage = error.getDefaultMessage();
+                errors.put(fieldName, errorMessage);
+            } else {
+                // 클래스 레벨 검증 에러
+                String objectName = error.getObjectName();
+                String errorMessage = error.getDefaultMessage();
+                errors.put(objectName, errorMessage);
+            }
         });
 
-        String errorMessage = errors.entrySet().stream()
-                .map(entry -> entry.getKey() + ": " + entry.getValue())
+        String errorMessage = errors.values().stream()
                 .collect(Collectors.joining(", "));
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
