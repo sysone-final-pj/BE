@@ -4,6 +4,7 @@ import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerSortField;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.domain.LogSource;
+import com.monito.domains.container.domain.LogSortField;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.request.QuickRangeType;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/containers")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ContainerController {
 
@@ -50,7 +51,7 @@ public class ContainerController {
      * - 정렬: GET /api/containers?sortBy=CPU_PERCENT&direction=DESC
      * - 복합: GET /api/containers?keyword=nginx&states=RUNNING&sortBy=MEM_USAGE&direction=DESC
      */
-    @GetMapping
+    @GetMapping("/containers")
     public ApiResponse<List<ContainerSummaryResponseDTO>> getContainerList(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) List<ContainerState> states,
@@ -81,7 +82,7 @@ public class ContainerController {
      * - Quick Range: GET /api/containers/1/metrics?quickRange=LAST_1_HOUR
      * - Custom Range: GET /api/containers/1/metrics?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
      */
-    @GetMapping("/{id}/metrics")
+    @GetMapping("/containers/{id}/metrics")
     public ApiResponse<ContainerDetailResponseDTO> getContainerMetrics(
             @PathVariable("id") Long containerId,
             @RequestParam(required = false) QuickRangeType quickRange,
@@ -99,10 +100,11 @@ public class ContainerController {
     }
 
     /**
-     * 컨테이너 로그 조회 (커서 기반 무한 스크롤)
-     * GET /api/containers/{id}/logs
+     * 컨테이너 로그 조회 (커서 기반 무한 스크롤 + 다중 컨테이너 지원 + 정렬)
+     * GET /api/logs
      *
      * Query Parameters:
+     * - containerIds: 컨테이너 ID 리스트 (쉼표로 구분, 없으면 전체 컨테이너)
      * - lastLogId: 커서 - 마지막 로그 ID (무한 스크롤용)
      * - lastLoggedAt: 커서 - 마지막 로그 시간 (무한 스크롤용)
      * - size: 한번에 가져올 개수 (기본: 50)
@@ -111,15 +113,20 @@ public class ContainerController {
      * - endTime: Custom range 종료 시간 (초기 로드 시)
      * - logSource: 로그 소스 필터 (STDOUT, STDERR, RAW)
      * - agentName: Agent 이름 필터
+     * - sortBy: 정렬 필드 (LOGGED_AT, CONTAINER_NAME, AGENT_NAME, LOG_MESSAGE) - 기본: LOGGED_AT
+     * - direction: 정렬 방향 (ASC, DESC) - 기본: DESC
      *
      * 예시:
-     * - 초기 로드: GET /api/containers/1/logs?quickRange=LAST_30_MINUTES&size=50
-     * - 무한 스크롤: GET /api/containers/1/logs?lastLogId=1000&lastLoggedAt=2025-10-30T10:30:00&size=50
-     * - 필터링: GET /api/containers/1/logs?logSource=STDERR&size=50
+     * - 전체 컨테이너: GET /api/logs?size=50
+     * - 단일 컨테이너: GET /api/logs?containerIds=1&size=50
+     * - 다중 컨테이너: GET /api/logs?containerIds=1,2,3&size=50
+     * - 무한 스크롤: GET /api/logs?containerIds=1,2&lastLogId=1000&lastLoggedAt=2025-10-30T10:30:00&size=50
+     * - 필터링: GET /api/logs?containerIds=1&logSource=STDERR&size=50
+     * - 정렬: GET /api/logs?containerIds=1,2&sortBy=CONTAINER_NAME&direction=ASC
      */
-    @GetMapping("/{id}/logs")
+    @GetMapping("/logs")
     public ApiResponse<ContainerLogsResponseDTO> getContainerLogs(
-            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) List<Long> containerIds,
             @RequestParam(required = false) Long lastLogId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastLoggedAt,
             @RequestParam(defaultValue = "50") int size,
@@ -127,14 +134,16 @@ public class ContainerController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
             @RequestParam(required = false) LogSource logSource,
-            @RequestParam(required = false) String agentName
+            @RequestParam(required = false) String agentName,
+            @RequestParam(required = false) LogSortField sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
-        log.info("컨테이너 로그 조회 요청 - containerId: {}, lastLogId: {}, lastLoggedAt: {}, size: {}",
-                containerId, lastLogId, lastLoggedAt, size);
+        log.info("컨테이너 로그 조회 요청 - containerIds: {}, lastLogId: {}, lastLoggedAt: {}, size: {}, sortBy: {}, direction: {}",
+                containerIds, lastLogId, lastLoggedAt, size, sortBy, direction);
 
         ContainerLogsResponseDTO response = containerService.getContainerLogs(
-                containerId,
-                ContainerLogsRequest.of(lastLogId, lastLoggedAt, size, quickRange, startTime, endTime, logSource, agentName)
+                containerIds,
+                ContainerLogsRequest.of(lastLogId, lastLoggedAt, size, quickRange, startTime, endTime, logSource, agentName, sortBy, direction)
         );
         return ApiResponse.ok(response, "컨테이너 로그 조회 성공");
     }

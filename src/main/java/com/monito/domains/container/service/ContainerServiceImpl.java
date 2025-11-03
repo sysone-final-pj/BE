@@ -157,44 +157,46 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public ContainerLogsResponseDTO getContainerLogs(Long containerId, ContainerLogsRequest request) {
-        // 1. 컨테이너 존재 확인
-        if (!containerRepository.existsById(containerId)) {
-            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
-        }
+    public ContainerLogsResponseDTO getContainerLogs(List<Long> containerIds, ContainerLogsRequest request) {
+        // 1. containerIds 검증 (비어있는 리스트는 null로 처리)
+        List<Long> validContainerIds = (containerIds == null || containerIds.isEmpty()) ? null : containerIds;
 
-        // 2. size + 1개 조회 (hasMore 판단용)
+        // 2. 정렬 설정 (기본: LOGGED_AT DESC)
+        Sort sort = createLogSort(
+                request.getSortBy() != null ? request.getSortBy() : com.monito.domains.container.domain.LogSortField.LOGGED_AT,
+                request.getDirection() != null ? request.getDirection() : Sort.Direction.DESC
+        );
+
+        // 3. size + 1개 조회 (hasMore 판단용)
         int requestSize = request.getSize();
-        PageRequest pageRequest = PageRequest.of(0, requestSize + 1);
+        PageRequest pageRequest = PageRequest.of(0, requestSize + 1, sort);
 
-        List<ContainerLog> logs;
+        // 4. 초기 로드 시 시간 범위 계산
+        LocalDateTime startTime = request.isInitialLoad() ? request.getCalculatedStartTime() : null;
+        LocalDateTime endTime = request.isInitialLoad() ? request.getCalculatedEndTime() : null;
 
-        // 3. 초기 로드 vs 커서 기반
-        if (request.isInitialLoad()) {
-            // 초기 로드
-            LocalDateTime startTime = request.getCalculatedStartTime();
-            LocalDateTime endTime = request.getCalculatedEndTime();
+        // 5. 통합 메서드로 로그 조회
+        List<ContainerLog> logs = containerLogRepository.findLogs(
+                validContainerIds,  // null이면 모든 컨테이너, 아니면 지정된 컨테이너들
+                request.getLogSource(),
+                request.getAgentName(),
+                request.getLastLogId(),
+                request.getLastLoggedAt(),
+                startTime,
+                endTime,
+                pageRequest
+        );
 
-            logs = (request.getLogSource() != null)
-                    ? containerLogRepository.findInitialLogsWithSource(containerId, startTime, endTime, request.getLogSource(), pageRequest)
-                    : containerLogRepository.findInitialLogs(containerId, startTime, endTime, pageRequest);
-        } else {
-            // 커서 기반
-            logs = (request.getLogSource() != null)
-                    ? containerLogRepository.findLogsAfterCursorWithSource(containerId, request.getLastLogId(), request.getLastLoggedAt(), request.getLogSource(), pageRequest)
-                    : containerLogRepository.findLogsAfterCursor(containerId, request.getLastLogId(), request.getLastLoggedAt(), pageRequest);
-        }
-
-        // 4. hasMore 판단 및 실제 반환할 로그 분리
+        // 6. hasMore 판단 및 실제 반환할 로그 분리
         boolean hasMore = logs.size() > requestSize;
         List<ContainerLog> actualLogs = hasMore ? logs.subList(0, requestSize) : logs;
 
-        // 5. DTO 변환
+        // 7. DTO 변환
         List<ContainerLogEntryDTO> logEntries = actualLogs.stream()
                 .map(ContainerLogEntryDTO::from)
                 .toList();
 
-        // 6. 다음 커서 정보
+        // 8. 다음 커서 정보
         Long lastLogId = null;
         LocalDateTime lastLoggedAt = null;
         if (!actualLogs.isEmpty()) {
@@ -211,6 +213,21 @@ public class ContainerServiceImpl implements ContainerService {
                 .returnedCount(actualLogs.size())
                 .requestedSize(requestSize)
                 .build();
+    }
+
+    /**
+     * 로그 정렬 생성 (정렬 필드에 따라 JPQL 경로 매핑)
+     */
+    private Sort createLogSort(com.monito.domains.container.domain.LogSortField sortBy, Sort.Direction direction) {
+        String sortField = switch (sortBy) {
+            case LOGGED_AT -> "loggedAt";
+            case CONTAINER_NAME -> "container.name";
+            case AGENT_NAME -> "container.agent.agentName";
+            case LOG_MESSAGE -> "logMessage";
+        };
+
+        // 동일 값일 때 id로 추가 정렬 (안정적인 페이징)
+        return Sort.by(direction, sortField).and(Sort.by(direction, "id"));
     }
 
     // ===== Private Helper Methods =====

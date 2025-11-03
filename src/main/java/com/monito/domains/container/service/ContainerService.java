@@ -44,12 +44,12 @@ public interface ContainerService {
     ContainerDetailResponseDTO getContainerMetrics(Long containerId, ContainerMetricsRequest request);
 
     /**
-     * 컨테이너 로그 조회 (커서 기반 무한 스크롤)
-     * @param containerId 컨테이너 ID
+     * 컨테이너 로그 조회 (커서 기반 무한 스크롤 + 다중 컨테이너 지원)
+     * @param containerIds 컨테이너 ID 리스트 (null이면 모든 컨테이너, 단일/다중 모두 지원)
      * @param request 커서 및 필터 조건
      * @return 로그 목록 및 다음 커서 정보
      */
-    ContainerLogsResponseDTO getContainerLogs(Long containerId, ContainerLogsRequest request);
+    ContainerLogsResponseDTO getContainerLogs(List<Long> containerIds, ContainerLogsRequest request);
 
     /**
      * 컨테이너 상태 변경 처리 (Agent의 CONTAINER_STATE_CHANGE 메시지)

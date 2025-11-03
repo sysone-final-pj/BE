@@ -2,10 +2,12 @@ package com.monito.domains.container.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.monito.domains.container.domain.LogSource;
+import com.monito.domains.container.domain.LogSortField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 
@@ -67,6 +69,18 @@ public class ContainerLogsRequest {
     private String agentName;
 
     /**
+     * 정렬 필드 (기본: LOGGED_AT)
+     */
+    @Builder.Default
+    private LogSortField sortBy = LogSortField.LOGGED_AT;
+
+    /**
+     * 정렬 방향 (기본: DESC)
+     */
+    @Builder.Default
+    private Sort.Direction direction = Sort.Direction.DESC;
+
+    /**
      * 초기 로드 여부 (커서가 없으면 초기 로드)
      */
     public boolean isInitialLoad() {
@@ -107,7 +121,9 @@ public class ContainerLogsRequest {
                                          LocalDateTime startTime,
                                          LocalDateTime endTime,
                                          LogSource logSource,
-                                         String agentName) {
+                                         String agentName,
+                                         LogSortField sortBy,
+                                         Sort.Direction direction) {
         return ContainerLogsRequest.builder()
                 .lastLogId(lastLogId)
                 .lastLoggedAt(lastLoggedAt)
@@ -117,6 +133,8 @@ public class ContainerLogsRequest {
                 .endTime(endTime)
                 .logSource(logSource)
                 .agentName(agentName)
+                .sortBy(sortBy)
+                .direction(direction)
                 .build();
     }
 }
