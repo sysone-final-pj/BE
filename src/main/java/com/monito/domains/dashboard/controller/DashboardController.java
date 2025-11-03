@@ -48,12 +48,7 @@ public class DashboardController {
             @RequestParam(required = false) ContainerSortType sortBy) {
         log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {})", sortBy);
 
-        List<ContainerDashboardResponseDTO> containers;
-        if (sortBy != null) {
-            containers = dashboardService.getAllContainersSorted(sortBy);
-        } else {
-            containers = dashboardService.getAllContainers();
-        }
+        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy);
 
         return ApiResponse.ok(containers, "대시보드 컨테이너 목록을 성공적으로 조회했습니다.");
     }

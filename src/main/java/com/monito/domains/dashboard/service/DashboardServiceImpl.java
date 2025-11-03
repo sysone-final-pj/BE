@@ -23,18 +23,27 @@ public class DashboardServiceImpl implements DashboardService {
     private final DashboardRepository dashboardRepository;
 
     @Override
-    public List<ContainerDashboardResponseDTO> getAllContainers() {
-        log.info("대시보드: 전체 컨테이너 목록 조회");
-        return dashboardRepository.findAllContainersForDashboard();
-    }
-
-    @Override
-    public List<ContainerDashboardResponseDTO> getAllContainersSorted(ContainerSortType sortType) {
+    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType) {
         log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {})", sortType);
 
         List<ContainerDashboardResponseDTO> containers = dashboardRepository.findAllContainersForDashboard();
 
+        // 정렬 타입이 없으면 정렬하지 않고 반환
+        if (sortType == null) {
+            return containers;
+        }
+
         // 정렬 타입에 따라 정렬
+        return sortContainers(containers, sortType);
+    }
+
+    /**
+     * 컨테이너 목록 정렬
+     */
+    private List<ContainerDashboardResponseDTO> sortContainers(
+            List<ContainerDashboardResponseDTO> containers,
+            ContainerSortType sortType) {
+
         return switch (sortType) {
             case NAME -> containers.stream()
                     .sorted(Comparator.comparing(ContainerDashboardResponseDTO::getContainerName,

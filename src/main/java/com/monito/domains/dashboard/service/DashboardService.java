@@ -14,16 +14,10 @@ public interface DashboardService {
 
     /**
      * 전체 컨테이너 목록 조회 (최신 통계 포함)
-     * @return 전체 컨테이너 목록
+     * @param sortType 정렬 타입 (null이면 정렬하지 않음)
+     * @return 컨테이너 목록
      */
-    List<ContainerDashboardResponseDTO> getAllContainers();
-
-    /**
-     * 전체 컨테이너 목록 조회 (정렬 옵션 포함)
-     * @param sortType 정렬 타입
-     * @return 정렬된 컨테이너 목록
-     */
-    List<ContainerDashboardResponseDTO> getAllContainersSorted(ContainerSortType sortType);
+    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType);
 
     /**
      * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)
