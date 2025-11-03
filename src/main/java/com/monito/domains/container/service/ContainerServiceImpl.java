@@ -65,7 +65,7 @@ public class ContainerServiceImpl implements ContainerService {
                     Agent agent = container.getAgent();
                     return containerStatsLogRepository.findLatestByContainerHash(container.getContainerHash())
                             .map(statsLog -> {
-                                ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(agent, container, statsLog);
+                                ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(container, statsLog);
 
                                 // storageLimit가 0이면 Agent 전체 디스크 용량으로 변경
                                 if (dto.getStorageLimit() == 0 && agent != null) {
@@ -414,7 +414,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .memLimit(0L)
                 .oomKills(0)
                 .storageLimit(0L)
-                .imageSize(null)
+                .imageSize(snapshot.getImageSize())
                 .metricsInitialized(false)  // 메트릭 미수신 상태
                 .build();
 

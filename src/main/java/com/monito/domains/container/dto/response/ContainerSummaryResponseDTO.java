@@ -1,6 +1,5 @@
 package com.monito.domains.container.dto.response;
 
-import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
@@ -31,7 +30,7 @@ public class ContainerSummaryResponseDTO {
     private Long sizeRootFs;
     private Long storageLimit;  // 0이면 무제한 (Agent 전체 디스크 용량)
 
-    public static ContainerSummaryResponseDTO of(Agent agent, Container container, ContainerStatsLog containerStatsLog) {
+    public static ContainerSummaryResponseDTO of(Container container, ContainerStatsLog containerStatsLog) {
         ContainerState resolvedState = containerStatsLog.getState();
         LocalDateTime collectedAt = containerStatsLog.getCollectedAt();
         if (collectedAt != null && Duration.between(collectedAt, LocalDateTime.now()).getSeconds() > 30) {
