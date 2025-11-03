@@ -40,8 +40,14 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AgentSummaryResponseDTO> getAgentList() {
-        return agentRepository.findAll().stream()
+    public List<AgentSummaryResponseDTO> getAgentList(String keyword) {
+        // keyword trim 처리 (빈 문자열은 null로 변환)
+        String searchKeyword = keyword != null && !keyword.trim().isEmpty()
+                ? keyword.trim()
+                : null;
+
+        // 하나의 쿼리로 전체 조회 및 검색 처리
+        return agentRepository.findAllWithSearch(searchKeyword).stream()
                 .map(AgentSummaryResponseDTO::from)
                 .toList();
     }
