@@ -1,9 +1,7 @@
 package com.monito.domains.container.service;
 
 import com.monito.domains.agent.domain.Agent;
-import com.monito.domains.container.domain.Container;
-import com.monito.domains.container.domain.ContainerLog;
-import com.monito.domains.container.domain.ContainerStatsLog;
+import com.monito.domains.container.domain.*;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.response.*;
@@ -11,12 +9,17 @@ import com.monito.domains.container.dto.response.metrics.*;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
+import com.monito.global.cache.AgentMetadata;
+import com.monito.global.cache.AgentMetadataCache;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +27,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.Duration;
-import com.monito.domains.container.domain.ContainerState;
 
 @Slf4j
 @Service
@@ -35,19 +37,84 @@ public class ContainerServiceImpl implements ContainerService {
     private final ContainerRepository containerRepository;
     private final ContainerStatsLogRepository containerStatsLogRepository;
     private final ContainerLogRepository containerLogRepository;
+    private final AgentMetadataCache agentMetadataCache;
 
     @Override
-    public List<ContainerSummaryResponseDTO> getContainerList(){
-        List<Container> containers = containerRepository.findAll();
+    public List<ContainerSummaryResponseDTO> getContainerList(
+            String keyword,
+            List<ContainerState> states,
+            List<ContainerHealth> healths,
+            ContainerSortField sortBy,
+            Sort.Direction direction
+    ) {
+        // 1. keyword trim 처리 (빈 문자열은 null로 변환)
+        String searchKeyword = keyword != null && !keyword.trim().isEmpty()
+                ? keyword.trim()
+                : null;
 
-        return containers.stream()
+        // 2. Container 검색 (Repository에서 JPQL 쿼리 실행)
+        List<Container> containers = containerRepository.findAllWithSearch(searchKeyword);
+
+        // 3. Container → DTO 변환 (최신 StatsLog 포함)
+        Stream<ContainerSummaryResponseDTO> dtoStream = containers.stream()
                 .flatMap(container -> {
                     Agent agent = container.getAgent();
                     return containerStatsLogRepository.findLatestByContainerHash(container.getContainerHash())
-                            .map(statsLog -> ContainerSummaryResponseDTO.of(agent, container, statsLog))
+                            .map(statsLog -> {
+                                ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(agent, container, statsLog);
+
+                                // storageLimit가 0이면 Agent 전체 디스크 용량으로 변경
+                                if (dto.getStorageLimit() == 0 && agent != null) {
+                                    AgentMetadata metadata = agentMetadataCache.getMetadata(agent.getAgentKey());
+                                    if (metadata != null && metadata.getHostTotalDiskSpace() != null) {
+                                        dto = dto.changeStorageLimit(metadata.getHostTotalDiskSpace());
+                                    }
+                                }
+                                return dto;
+                            })
                             .stream();
-                })
-                .toList();
+                });
+
+        // 4. state 필터링
+        if (states != null && !states.isEmpty()) {
+            dtoStream = dtoStream.filter(dto -> states.contains(dto.getState()));
+        }
+
+        // 5. health 필터링
+        if (healths != null && !healths.isEmpty()) {
+            dtoStream = dtoStream.filter(dto -> healths.contains(dto.getHealth()));
+        }
+
+        // 6. 정렬
+        if (sortBy != null) {
+            Comparator<ContainerSummaryResponseDTO> comparator = getComparator(sortBy);
+            if (direction == Sort.Direction.DESC) {
+                comparator = comparator.reversed();
+            }
+            dtoStream = dtoStream.sorted(comparator);
+        }
+
+        return dtoStream.toList();
+    }
+
+    /**
+     * 정렬 필드에 따른 Comparator 생성
+     */
+    private Comparator<ContainerSummaryResponseDTO> getComparator(ContainerSortField sortBy) {
+        return switch (sortBy) {
+            case AGENT_NAME -> Comparator.comparing(dto -> dto.getAgentName() != null ? dto.getAgentName() : "", String.CASE_INSENSITIVE_ORDER);
+            case CONTAINER_HASH -> Comparator.comparing(dto -> dto.getContainerHash() != null ? dto.getContainerHash() : "");
+            case CONTAINER_NAME -> Comparator.comparing(dto -> dto.getContainerName() != null ? dto.getContainerName() : "", String.CASE_INSENSITIVE_ORDER);
+            case CPU_PERCENT -> Comparator.comparing(dto -> dto.getCpuPercent() != null ? dto.getCpuPercent() : BigDecimal.ZERO);
+            case MEM_USAGE -> Comparator.comparing(dto -> dto.getMemUsage() != null ? dto.getMemUsage() : 0L);
+            case MEM_LIMIT -> Comparator.comparing(dto -> dto.getMemLimit() != null ? dto.getMemLimit() : 0L);
+            case STORAGE_USAGE -> Comparator.comparing(dto -> dto.getSizeRootFs() != null ? dto.getSizeRootFs() : 0L);
+            case STORAGE_LIMIT -> Comparator.comparing(dto -> dto.getStorageLimit() != null ? dto.getStorageLimit() : 0L);
+            case RX_BYTES -> Comparator.comparing(dto -> dto.getRxBytesPerSec() != null ? dto.getRxBytesPerSec() : 0L);
+            case TX_BYTES -> Comparator.comparing(dto -> dto.getTxBytesPerSec() != null ? dto.getTxBytesPerSec() : 0L);
+            case STATE -> Comparator.comparing(dto -> dto.getState() != null ? dto.getState().name() : "");
+            case HEALTH -> Comparator.comparing(dto -> dto.getHealth() != null ? dto.getHealth().name() : "");
+        };
     }
 
     @Override

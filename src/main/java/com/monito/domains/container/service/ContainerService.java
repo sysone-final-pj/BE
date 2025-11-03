@@ -1,11 +1,14 @@
 package com.monito.domains.container.service;
 
+import com.monito.domains.container.domain.ContainerHealth;
+import com.monito.domains.container.domain.ContainerSortField;
+import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
-
+import org.springframework.data.domain.Sort.Direction;
 
 import java.util.List;
 
@@ -15,9 +18,21 @@ import java.util.List;
 public interface ContainerService {
 
     /**
-     * 컨테이너 목록 조회
+     * 컨테이너 목록 조회 (검색/필터/정렬 지원)
+     * @param keyword 검색어 (agent name, container hash, container name) - null 가능
+     * @param states 상태 필터 (다중 선택) - null이면 전체
+     * @param healths 헬스 필터 (다중 선택) - null이면 전체
+     * @param sortBy 정렬 필드 - null이면 기본 정렬
+     * @param direction 정렬 방향 (ASC/DESC) - null이면 DESC
+     * @return 컨테이너 목록
      */
-    List<ContainerSummaryResponseDTO> getContainerList();
+    List<ContainerSummaryResponseDTO> getContainerList(
+            String keyword,
+            List<ContainerState> states,
+            List<ContainerHealth> healths,
+            ContainerSortField sortBy,
+            Direction direction
+    );
 
     /**
      * 컨테이너 메트릭 상세 조회 (CPU, Memory, Network)

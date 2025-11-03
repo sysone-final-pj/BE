@@ -1,5 +1,8 @@
 package com.monito.domains.container.controller;
 
+import com.monito.domains.container.domain.ContainerHealth;
+import com.monito.domains.container.domain.ContainerSortField;
+import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.domain.LogSource;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
@@ -14,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +34,36 @@ public class ContainerController {
     private final ContainerService containerService;
 
     /**
-     * 컨테이너 목록 조회
+     * 컨테이너 목록 조회 (검색/필터/정렬 지원)
      * GET /api/containers
+     *
+     * Query Parameters:
+     * - keyword: 검색어 (agent name, container hash, container name)
+     * - states: 상태 필터 (다중 선택 가능) - RUNNING, PAUSED, DEAD, etc.
+     * - healths: 헬스 필터 (다중 선택 가능) - HEALTHY, UNHEALTHY, NONE, etc.
+     * - sortBy: 정렬 필드 - AGENT_NAME, CONTAINER_NAME, CPU_PERCENT, MEM_USAGE, etc.
+     * - direction: 정렬 방향 - ASC, DESC (기본: DESC)
+     *
+     * 예시:
+     * - 검색: GET /api/containers?keyword=nginx
+     * - 필터: GET /api/containers?states=RUNNING&healths=HEALTHY
+     * - 정렬: GET /api/containers?sortBy=CPU_PERCENT&direction=DESC
+     * - 복합: GET /api/containers?keyword=nginx&states=RUNNING&sortBy=MEM_USAGE&direction=DESC
      */
     @GetMapping
-    public ApiResponse<List<ContainerSummaryResponseDTO>> getContainerList() {
-        log.info("컨테이너 목록 조회 요청");
-        List<ContainerSummaryResponseDTO> containers = containerService.getContainerList();
+    public ApiResponse<List<ContainerSummaryResponseDTO>> getContainerList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<ContainerState> states,
+            @RequestParam(required = false) List<ContainerHealth> healths,
+            @RequestParam(required = false) ContainerSortField sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction
+    ) {
+        log.info("컨테이너 목록 조회 요청 - keyword: {}, states: {}, healths: {}, sortBy: {}, direction: {}",
+                keyword, states, healths, sortBy, direction);
+
+        List<ContainerSummaryResponseDTO> containers = containerService.getContainerList(
+                keyword, states, healths, sortBy, direction
+        );
         return ApiResponse.ok(containers, "컨테이너 목록 조회 성공");
     }
 
