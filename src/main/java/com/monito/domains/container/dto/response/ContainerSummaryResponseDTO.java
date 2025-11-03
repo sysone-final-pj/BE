@@ -29,7 +29,6 @@ public class ContainerSummaryResponseDTO {
     private ContainerHealth health;
     private Long imageSize;
     private Long sizeRootFs;
-    ContainerState containerState;
 
     public static ContainerSummaryResponseDTO of(Agent agent, Container container, ContainerStatsLog containerStatsLog) {
         ContainerState resolvedState = containerStatsLog.getState();
@@ -39,7 +38,7 @@ public class ContainerSummaryResponseDTO {
         }
 
         return ContainerSummaryResponseDTO.builder()
-                .agentName(agent.getAgentName())
+                .agentName(container.getName())
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
                 .cpuPercent(containerStatsLog.getCpuPercent())
@@ -51,7 +50,6 @@ public class ContainerSummaryResponseDTO {
                 .state(resolvedState)
                 .health(containerStatsLog.getHealth())
                 .sizeRootFs(containerStatsLog.getSizeRootFs())
-                .containerState(resolvedState)
                 .build();
     }
 }

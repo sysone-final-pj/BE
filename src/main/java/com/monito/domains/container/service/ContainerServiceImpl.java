@@ -155,11 +155,13 @@ public class ContainerServiceImpl implements ContainerService {
             effectiveState = stale ? ContainerState.UNKNOWN : latestLog.getState();
         }
 
+        String agentName = container.getAgent() != null ? container.getAgent().getAgentName() : null;
+
         return ContainerInfoDTO.builder()
                 .containerId(container.getId())
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
-                .agentName(container.getAgent().getAgentName())
+                .agentName(agentName)
                 .imageName(container.getImageName())
                 .imageSize(container.getImageSize())
                 .state(effectiveState)

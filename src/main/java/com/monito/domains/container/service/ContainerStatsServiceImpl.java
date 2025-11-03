@@ -237,7 +237,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(metricsDto.getContainerHash())
-                .name(metricsDto.getContainerHash().substring(0, 12))
+                .name(metricsDto.getContainerName())
                 .cpuQuota(metricsDto.getCpuQuota())
                 .cpuPeriod(metricsDto.getCpuPeriod())
                 .cpuLimitCores(cpuLimitCores)
