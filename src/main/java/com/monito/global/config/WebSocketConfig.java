@@ -24,7 +24,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         // Agent → Backend: 메트릭 수집
-        registry.addHandler(agentWebSocketHandler, "/ws/agent")
+        registry.addHandler(agentWebSocketHandler, "/ws/agent/collect")
                 .setAllowedOrigins("*");
 
         // Backend → Frontend: 알림 전송
