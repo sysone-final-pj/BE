@@ -245,6 +245,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .memLimit(metricsDto.getMemLimit())
                 .imageName(metricsDto.getImageName())
                 .imageSize(metricsDto.getImageSize())
+                .storageLimit(metricsDto.getStorageLimit())
                 .build();
 
         container = containerRepository.save(container);

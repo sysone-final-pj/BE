@@ -79,6 +79,7 @@ public class ContainerMetricsRawRequestDTO {
                 // Storage
                 .sizeRw(storage != null ? storage.getSizeRw() : 0L)
                 .sizeRootFs(storage != null ? storage.getSizeRootFs() : 0L)
+                .storageLimit(storage != null ? storage.getStorageLimit() : 0L)
                 .imageSize(storage != null ? storage.getImageSize() : null)
                 .imageName(storage != null ? storage.getImageName() : null)
                 .build();

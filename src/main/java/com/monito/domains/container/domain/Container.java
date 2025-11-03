@@ -85,6 +85,14 @@ public class Container extends BaseEntity {
     private Integer oomKills;
 
     /**
+     * 스토리지 할당량 (bytes)
+     * - Docker의 --storage-opt size 옵션으로 설정 가능
+     * - 0인 경우 무제한 (Agent 호스트의 전체 디스크 용량 사용)
+     */
+    @Column(nullable = false)
+    private Long storageLimit;
+
+    /**
      * 컨테이너 이미지 이름
      * 예: "nginx:latest", "ubuntu:20.04"
      */

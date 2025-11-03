@@ -29,6 +29,7 @@ public class ContainerSummaryResponseDTO {
     private ContainerHealth health;
     private Long imageSize;
     private Long sizeRootFs;
+    private Long storageLimit;  // 0이면 무제한 (Agent 전체 디스크 용량)
 
     public static ContainerSummaryResponseDTO of(Agent agent, Container container, ContainerStatsLog containerStatsLog) {
         ContainerState resolvedState = containerStatsLog.getState();
@@ -50,6 +51,30 @@ public class ContainerSummaryResponseDTO {
                 .state(resolvedState)
                 .health(containerStatsLog.getHealth())
                 .sizeRootFs(containerStatsLog.getSizeRootFs())
+                .storageLimit(container.getStorageLimit())
+                .build();
+    }
+
+    /**
+     * storageLimit을 변경한 새로운 DTO 반환 (불변성 유지)
+     * @param newStorageLimit 새로운 스토리지 제한
+     * @return storageLimit이 변경된 새 DTO
+     */
+    public ContainerSummaryResponseDTO changeStorageLimit(Long newStorageLimit) {
+        return ContainerSummaryResponseDTO.builder()
+                .agentName(this.agentName)
+                .containerHash(this.containerHash)
+                .containerName(this.containerName)
+                .cpuPercent(this.cpuPercent)
+                .memUsage(this.memUsage)
+                .memLimit(this.memLimit)
+                .rxBytesPerSec(this.rxBytesPerSec)
+                .txBytesPerSec(this.txBytesPerSec)
+                .state(this.state)
+                .health(this.health)
+                .imageSize(this.imageSize)
+                .sizeRootFs(this.sizeRootFs)
+                .storageLimit(newStorageLimit)
                 .build();
     }
 }
