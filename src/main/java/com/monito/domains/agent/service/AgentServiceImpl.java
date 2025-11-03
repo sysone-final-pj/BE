@@ -9,6 +9,7 @@ import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
 import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
+import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.List;
 @Transactional
 public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
+    private final ContainerRepository containerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -87,6 +89,10 @@ public class AgentServiceImpl implements AgentService {
                 );
 
         agent.markAsDeleted();
+
+        // Soft delete all containers belonging to this agent
+        containerRepository.findAllByAgent_Id(id)
+                .forEach(c -> c.markAsDeleted());
     }
 
     @Override

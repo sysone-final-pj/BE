@@ -20,4 +20,14 @@ public interface ContainerRepository extends JpaRepository<Container, Long> {
      * @return Container
      */
     Optional<Container> findByAgentAndContainerHash(Agent agent, String containerHash);
+
+    /**
+     * Agent 스코프로 컨테이너 해시 조회 (파생 메서드)
+     */
+    Optional<Container> findByAgentIdAndContainerHash(Long agentId, String containerHash);
+
+    /**
+     * 특정 Agent의 활성 컨테이너 전체 조회 (soft delete 제외)
+     */
+    List<Container> findAllByAgent_Id(Long agentId);
 }
