@@ -410,7 +410,7 @@ public class ContainerServiceImpl implements ContainerService {
             // 3-2. 기존 컨테이너 업데이트
             if (state == ContainerState.DELETED) {
                 // Soft delete 처리
-                container.markAsDeleted();;
+                container.markAsDeleted();
                 containerRepository.save(container);
                 log.info("컨테이너 삭제 처리 - Agent: {}, ContainerHash: {}",
                         agentKey, snapshot.getContainerHash());
