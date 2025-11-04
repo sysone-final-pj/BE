@@ -45,6 +45,7 @@ CREATE TABLE containers (
     image_size NUMBER,
     storage_limit NUMBER NOT NULL,
     metrics_initialized NUMBER(1) DEFAULT 0 NOT NULL,
+    last_oom_killed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
     is_deleted NUMBER(1) DEFAULT 0 NOT NULL,

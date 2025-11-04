@@ -5,6 +5,8 @@ import com.monito.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -80,6 +82,14 @@ public class Container extends BaseEntity {
     private Integer oomKills;
 
     /**
+     * 마지막 OOM Kill 발생 시각
+     * - 중복 이벤트 방지를 위해 사용
+     * - null: 한 번도 OOM이 발생하지 않음
+     */
+    @Column
+    private LocalDateTime lastOomKilledAt;
+
+    /**
      * 스토리지 할당량 (bytes)
      * - Docker의 --storage-opt size 옵션으로 설정 가능
      * - 0인 경우 무제한 (Agent 호스트의 전체 디스크 용량 사용)
@@ -137,5 +147,17 @@ public class Container extends BaseEntity {
 
     public void changeState(ContainerState state){
         this.state = state;
+    }
+
+    public void incrementOomKills() {
+        this.oomKills++;
+    }
+
+    /**
+     * 마지막 OOM Kill 발생 시각 업데이트
+     * @param occurredAt OOM 발생 시각
+     */
+    public void updateLastOomKilledAt(LocalDateTime occurredAt) {
+        this.lastOomKilledAt = occurredAt;
     }
 }

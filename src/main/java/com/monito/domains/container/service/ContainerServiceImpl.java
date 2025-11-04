@@ -14,6 +14,8 @@ import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.global.cache.AgentMetadata;
 import com.monito.global.cache.AgentMetadataCache;
+import com.monito.global.cache.OomEvent;
+import com.monito.global.cache.OomEventCache;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.util.Comparator;
@@ -29,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.Duration;
 
 @Slf4j
 @Service
@@ -42,6 +43,7 @@ public class ContainerServiceImpl implements ContainerService {
     private final ContainerLogRepository containerLogRepository;
     private final AgentMetadataCache agentMetadataCache;
     private final AgentRepository agentRepository;
+    private final OomEventCache oomEventCache;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
@@ -392,9 +394,14 @@ public class ContainerServiceImpl implements ContainerService {
         if (container == null) {
             // 3-1. 신규 컨테이너 생성 (deleted 상태가 아닌 경우만)
             if (state != ContainerState.DELETED) {
-                createContainerFromSnapshot(agent, snapshot, state);
+                Container newContainer = createContainerFromSnapshot(agent, snapshot, state);
                 log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, State: {}",
                         agentKey, snapshot.getContainerHash(), state);
+
+                // 3-1-1. 신규 컨테이너가 처음부터 OOM 상태인 경우 (중복 체크 불필요)
+                if (Boolean.TRUE.equals(snapshot.getOomKilled())) {
+                    handleOomKillForNewContainer(newContainer, agentKey);
+                }
             }
         } else {
             // 3-2. 기존 컨테이너 업데이트
@@ -410,13 +417,19 @@ public class ContainerServiceImpl implements ContainerService {
                 log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
                         snapshot.getContainerHash(), state);
             }
+
+            // 4. OOM Kill 감지 및 처리 (중복 방지)
+            if (Boolean.TRUE.equals(snapshot.getOomKilled())) {
+                handleOomKillIfNew(container, agentKey);
+            }
         }
     }
 
     /**
      * 스냅샷 데이터로 컨테이너 생성 (초기값 0, metricsInitialized = false)
+     * @return 생성된 컨테이너
      */
-    private void createContainerFromSnapshot(Agent agent, ContainerSnapshotRequestDTO snapshot, ContainerState state) {
+    private Container createContainerFromSnapshot(Agent agent, ContainerSnapshotRequestDTO snapshot, ContainerState state) {
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(snapshot.getContainerHash())
@@ -435,7 +448,71 @@ public class ContainerServiceImpl implements ContainerService {
                 .metricsInitialized(false)  // 메트릭 미수신 상태
                 .build();
 
-        containerRepository.save(container);
+        return containerRepository.save(container);
+    }
+
+    /**
+     * OOM Kill 이벤트 처리 (중복 방지 포함)
+     * - 이전 상태가 RUNNING/PAUSED일 때만 새로운 OOM으로 간주
+     * - 5초 내 중복 이벤트 방지
+     */
+    private void handleOomKillIfNew(Container container, String agentKey) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 중복 방지: RUNNING/PAUSED 상태였고, 아직 기록 안 됐으면 새로운 OOM
+        boolean isRunningState = container.getState() == ContainerState.RUNNING
+                || container.getState() == ContainerState.PAUSED;
+
+        boolean isNotRecentlyRecorded = container.getLastOomKilledAt() == null
+                || container.getLastOomKilledAt().isBefore(now.minusSeconds(5));
+
+        if (isRunningState && isNotRecentlyRecorded) {
+            // 새로운 OOM 이벤트
+            handleOomKill(container, agentKey, now);
+        } else {
+            log.debug("[OOM] 중복 이벤트 무시 - containerId: {}, state: {}, lastOom: {}",
+                    container.getId(), container.getState(), container.getLastOomKilledAt());
+        }
+    }
+
+    /**
+     * 신규 컨테이너 OOM Kill 처리 (중복 체크 불필요)
+     * - 신규 컨테이너가 처음부터 OOM 상태로 생성된 경우
+     * - 상태 검증 없이 무조건 기록
+     */
+    private void handleOomKillForNewContainer(Container container, String agentKey) {
+        LocalDateTime now = LocalDateTime.now();
+        handleOomKill(container, agentKey, now);
+        log.warn("[OOM] 신규 컨테이너가 OOM 상태로 생성됨 - containerId: {}, containerName: {}, state: {}",
+                container.getId(), container.getName(), container.getState());
+    }
+
+    /**
+     * OOM Kill 이벤트 처리
+     * - DB의 oomKills 카운터 증가 (영구 누적) - 더티 체킹으로 자동 저장
+     * - 캐시에 시간대별 OOM 이벤트 기록 (최근 7일)
+     * - lastOomKilledAt 타임스탬프 업데이트
+     */
+    private void handleOomKill(Container container, String agentKey, LocalDateTime occurredAt) {
+        // 1. DB 누적 횟수 증가 (더티 체킹으로 자동 저장됨)
+        container.incrementOomKills();
+
+        // 2. 마지막 OOM 시각 업데이트
+        container.updateLastOomKilledAt(occurredAt);
+
+        // 3. 캐시에 이벤트 기록 (Histogram/Heatmap용)
+        OomEvent oomEvent = OomEvent.builder()
+                .containerId(container.getId())
+                .containerHash(container.getContainerHash())
+                .containerName(container.getName())
+                .occurredAt(occurredAt)
+                .agentKey(agentKey)
+                .build();
+
+        oomEventCache.recordEvent(oomEvent);
+
+        log.warn("[OOM] 새로운 OOM Kill 발생 - containerId: {}, containerName: {}, 누적 횟수: {}, 발생 시각: {}",
+                container.getId(), container.getName(), container.getOomKills(), occurredAt);
     }
 
     /**
