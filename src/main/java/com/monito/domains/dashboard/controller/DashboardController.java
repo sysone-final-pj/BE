@@ -36,24 +36,62 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     /**
-     * 대시보드용 전체 컨테이너 목록 조회
+     * 대시보드용 전체 컨테이너 목록 조회 (필터 + 정렬)
      * GET /api/dashboard/containers
-     * @param sortBy 정렬 기준 (선택사항: CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)
-     * @param userDetails 현재 로그인한 사용자 (FAVORITE 정렬 시 필요)
-     * @return 전체 컨테이너 목록
+     * @param sortBy 정렬 기준
+     * @param favoriteOnly 즐겨찾기만 보기
+     * @param states 상태 필터
+     * @param healths 헬스 필터
+     * @param agentIds 에이전트 ID 필터
+     * @param userDetails 현재 로그인한 사용자
+     * @return 필터링 + 정렬된 컨테이너 목록
      */
-    @Operation(summary = "컨테이너 목록조회(정렬 포함)",
-            description = "컨테이너 카드에 사용. sortBy 파라미터로 정렬 가능 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
+    @Operation(summary = "컨테이너 목록조회(필터+정렬)",
+            description = """
+                    컨테이너 목록 조회 with 필터 + 정렬
+
+                    **필터 옵션:**
+                    - favoriteOnly: 즐겨찾기만 보기 (true/false)
+                    - states: 상태 필터 (RUNNING, RESTARTING, PAUSED, CREATED, EXIT, DEAD)
+                    - healths: 헬스 필터 (HEALTHY, UNHEALTHY, STARTING, NONE, UNKNOWN)
+                    - agentIds: 에이전트 ID 필터
+
+                    **정렬 옵션:**
+                    - sortBy: CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE
+                    """)
     @GetMapping("/containers")
     public ApiResponse<List<ContainerDashboardResponseDTO>> getAllContainers(
             @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
             @RequestParam(required = false) ContainerSortType sortBy,
+
+            @Parameter(description = "즐겨찾기만 보기 (true: 즐겨찾기만, false/null: 전체)")
+            @RequestParam(required = false) Boolean favoriteOnly,
+
+            @Parameter(description = "상태 필터 (다중 선택 가능)")
+            @RequestParam(required = false) List<com.monito.domains.container.domain.ContainerState> states,
+
+            @Parameter(description = "헬스 필터 (다중 선택 가능)")
+            @RequestParam(required = false) List<com.monito.domains.container.domain.ContainerHealth> healths,
+
+            @Parameter(description = "에이전트 ID 필터 (다중 선택 가능)")
+            @RequestParam(required = false) List<Long> agentIds,
+
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long memberId = userDetails != null ? Long.valueOf(userDetails.getId()) : null;
+
+        // 필터 DTO 생성
+        com.monito.domains.dashboard.dto.request.ContainerFilterDTO filter =
+                com.monito.domains.dashboard.dto.request.ContainerFilterDTO.builder()
+                        .favoriteOnly(favoriteOnly)
+                        .states(states)
+                        .healths(healths)
+                        .agentIds(agentIds)
+                        .build();
+
         log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {}, memberId: {})", sortBy, memberId);
 
-        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId);
+        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId, filter);
 
         return ApiResponse.ok(containers, "대시보드 컨테이너 목록을 성공적으로 조회했습니다.");
     }

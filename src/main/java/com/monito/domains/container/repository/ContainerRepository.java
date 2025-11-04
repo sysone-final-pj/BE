@@ -4,10 +4,11 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ContainerRepository extends JpaRepository<Container, Long> {
+public interface ContainerRepository extends JpaRepository<Container, Long>, JpaSpecificationExecutor<Container> {
 
     /**
      * Agent와 컨테이너 해시로 컨테이너 조회

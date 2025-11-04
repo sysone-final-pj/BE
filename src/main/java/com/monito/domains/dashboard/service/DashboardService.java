@@ -17,9 +17,10 @@ public interface DashboardService {
      * 전체 컨테이너 목록 조회 (최신 통계 포함)
      * @param sortType 정렬 타입 (null이면 정렬하지 않음)
      * @param memberId 회원 ID (FAVORITE 정렬 시 필수)
+     * @param filter 필터 조건
      * @return 컨테이너 목록
      */
-    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId);
+    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, com.monito.domains.dashboard.dto.request.ContainerFilterDTO filter);
 
     /**
      * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)

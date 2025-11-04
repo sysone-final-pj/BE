@@ -1,11 +1,14 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
 import com.monito.domains.dashboard.repository.DashboardRepository;
+import com.monito.domains.dashboard.repository.DashboardSpecification;
+import com.monito.domains.container.repository.ContainerRepository;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -24,12 +27,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class DashboardServiceImpl implements DashboardService {
 
     private final DashboardRepository dashboardRepository;
+    private final ContainerRepository containerRepository;
 
     @Override
-    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId) {
-        log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {}, memberId: {})", sortType, memberId);
+    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter) {
+        log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {}, memberId: {}, 필터: {})", sortType, memberId, filter != null);
 
-        List<ContainerDashboardResponseDTO> containers = dashboardRepository.findAllContainersForDashboard();
+        List<ContainerDashboardResponseDTO> containers;
+
+        // 필터가 있으면 필터링 적용
+        if (hasActiveFilter(filter)) {
+            containers = getFilteredContainers(filter, memberId);
+        } else {
+            containers = dashboardRepository.findAllContainersForDashboard();
+        }
 
         // 정렬 타입이 없으면 기본값으로 즐겨찾기 정렬 적용
         if (sortType == null) {
@@ -38,6 +49,38 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 정렬 타입에 따라 정렬
         return sortContainers(containers, sortType, memberId);
+    }
+
+    /**
+     * 필터가 활성화되어 있는지 확인
+     */
+    private boolean hasActiveFilter(ContainerFilterDTO filter) {
+        if (filter == null) {
+            return false;
+        }
+        return (filter.getFavoriteOnly() != null && filter.getFavoriteOnly()) ||
+                (filter.getStates() != null && !filter.getStates().isEmpty()) ||
+                (filter.getHealths() != null && !filter.getHealths().isEmpty()) ||
+                (filter.getAgentIds() != null && !filter.getAgentIds().isEmpty());
+    }
+
+    /**
+     * 필터링된 컨테이너 조회
+     */
+    private List<ContainerDashboardResponseDTO> getFilteredContainers(ContainerFilterDTO filter, Long memberId) {
+        // Specification을 사용하여 DB 레벨에서 필터링
+        List<com.monito.domains.container.domain.Container> filteredContainers =
+                containerRepository.findAll(DashboardSpecification.withFilter(filter, memberId));
+
+        // Container 엔티티를 DTO로 변환 (기존 Repository 쿼리 재사용)
+        List<Long> containerIds = filteredContainers.stream()
+                .map(com.monito.domains.container.domain.Container::getId)
+                .collect(Collectors.toList());
+
+        // 전체 조회 후 필터링된 ID로 필터링 (비효율적이지만 기존 로직 재사용)
+        return dashboardRepository.findAllContainersForDashboard().stream()
+                .filter(dto -> containerIds.contains(dto.getContainerId()))
+                .collect(Collectors.toList());
     }
 
     /**
