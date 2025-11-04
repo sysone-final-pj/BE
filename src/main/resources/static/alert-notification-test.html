@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>컨테이너 모니터링 대시보드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        /* 로그인 화면 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .login-box p {
+            color: #7f8c8d;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #2980b9;
+        }
+
+        .login-hint {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1976d2;
+        }
+
+        /* 대시보드 (숨김 처리) */
+        .dashboard {
+            display: none;
+            padding: 20px;
+        }
+
+        .dashboard.show {
+            display: block;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #27ae60;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 알림 버튼 */
+        .notification-btn {
+            position: relative;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .notification-btn:hover {
+            background: #2980b9;
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .badge.show {
+            display: block;
+            animation: badgePulse 1s infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 알림 드롭다운 */
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .notification-dropdown.show {
+            display: block;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-header {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-header h3 {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .clear-all-btn {
+            background: none;
+            border: none;
+            color: #2196F3;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-all-btn:hover {
+            text-decoration: underline;
+        }
+
+        .notification-list {
+            list-style: none;
+        }
+
+        .notification-item {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: #f9f9f9;
+        }
+
+        .notification-item.unread {
+            background: #e3f2fd;
+        }
+
+        .notification-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .notification-level {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .notification-level.critical {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .notification-level.high {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .notification-level.warning {
+            background: #fff8e1;
+            color: #f57f17;
+        }
+
+        .notification-level.info {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .notification-message {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .notification-container {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: #999;
+        }
+
+        /* 토스트 알림 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            width: 400px;
+        }
+
+        .toast {
+            background: white;
+            border-left: 4px solid #4CAF50;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 16px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .toast.critical { border-left-color: #f44336; }
+        .toast.high { border-left-color: #ff9800; }
+        .toast.warning { border-left-color: #ffc107; }
+        .toast.info { border-left-color: #2196F3; }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOut 0.3s ease-out;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .toast-body {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .toast-close:hover {
+            color: #333;
+        }
+
+        /* 로그아웃 버튼 */
+        .btn-logout {
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-logout:hover {
+            background: #c0392b;
+        }
+
+        /* 컨테이너 그리드 (4열) */
+        .container-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* 컨테이너 카드 */
+        .container-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+
+        /* 카드 헤더 */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .container-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .container-hash {
+            font-size: 12px;
+            color: #95a5a6;
+            font-family: monospace;
+        }
+
+        .container-state {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .container-state.RUNNING {
+            background: #d4edda;
+            color: #27ae60;
+        }
+
+        .container-state.STOPPED {
+            background: #f8d7da;
+            color: #e74c3c;
+        }
+
+        .container-state.PAUSED {
+            background: #fff3cd;
+            color: #f39c12;
+        }
+
+        /* 메트릭 섹션 */
+        .metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .metric-icon {
+            font-size: 16px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .metric-unit {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-left: 4px;
+        }
+
+        /* 프로그레스 바 */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        /* 카드 푸터 */
+        .card-footer {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .agent-name {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .last-update {
+            font-size: 11px;
+            color: #95a5a6;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 로딩 상태 */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .loading-spinner {
+            border: 3px solid #ecf0f1;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 빈 상태 */
+        .empty-state-container {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-message {
+            font-size: 14px;
+            color: #95a5a6;
+        }
+
+        /* 반응형 */
+        @media (max-width: 1400px) {
+            .container-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .container-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 메인 영역 2단 구성 */
+        .dashboard-body {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 왼쪽 컨테이너 카드 */
+        .container-grid {
+            flex: 2;  /* 왼쪽 2/3 차지 */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 오른쪽 상세 패널 */
+        .details-panel {
+            flex: 1;  /* 오른쪽 1/3 차지 */
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+
+        .details-panel h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .details-panel .container-hash-display {
+            font-size: 12px;
+            color: #95a5a6;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        .metric-section {
+            margin-bottom: 24px;
+        }
+
+        .metric-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: #3498db;
+            border-radius: 2px;
+        }
+
+        .metric-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #34495e;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .metric-item:hover {
+            background: #e9ecef;
+        }
+
+        .metric-item-label {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .metric-item-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            perspective: 300px;
+            display: inline-block;
+        }
+
+        /* 숫자 flip 애니메이션 */
+        @keyframes flipUp {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(-90deg); } /* 위로 */
+            100% { transform: rotateX(0deg); }
+        }
+
+        @keyframes flipDown {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); } /* 아래로 */
+            100% { transform: rotateX(0deg); }
+        }
+
+        .metric-item-value.flip-up {
+            animation: flipUp 0.6s ease-in-out;
+        }
+
+        .metric-item-value.flip-down {
+            animation: flipDown 0.6s ease-in-out;
+        }
+
+        .metric-item-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            perspective: 300px;
+            display: inline-block;
+        }
+
+    </style>
+    <!-- SockJS & STOMP.js 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1>🐳 컨테이너 모니터링</h1>
+            <p>로그인하여 대시보드에 접속하세요</p>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">아이디</label>
+                    <input type="text" id="username" placeholder="아이디를 입력하세요" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" placeholder="비밀번호를 입력하세요" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn-login">로그인</button>
+            </form>
+            <div class="login-hint">
+                💡 등록된 계정으로 로그인하세요
+            </div>
+        </div>
+    </div>
+
+    <!-- 대시보드 -->
+    <div class="dashboard" id="dashboard">
+        <div class="container">
+            <!-- 헤더 -->
+            <div class="header">
+                <div class="header-left">
+                    <h1>🐳 컨테이너 대시보드</h1>
+                    <div class="user-info" id="userInfo">로딩 중...</div>
+                </div>
+                <div class="header-right">
+                    <div class="header-info">
+                        <div class="connection-status">
+                            <div class="status-dot" id="statusDot"></div>
+                            <span id="statusText">연결 중...</span>
+                        </div>
+                        <span id="containerCount">컨테이너: 0개</span>
+                    </div>
+                    <div style="position: relative;">
+                        <button class="notification-btn" id="notificationBtn">
+                            🔔 알림
+                            <span class="badge" id="badge">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="notification-header">
+                                <h3>알림</h3>
+                                <button class="clear-all-btn" onclick="markAllAsRead()">모두 읽음</button>
+                            </div>
+                            <ul class="notification-list" id="notificationList">
+                                <li class="empty-state">알림이 없습니다</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <button class="btn-logout" onclick="handleLogout()">로그아웃</button>
+                </div>
+            </div>
+
+            <!-- 토스트 컨테이너 -->
+            <div class="toast-container" id="toastContainer"></div>
+
+            <!-- 로딩 -->
+            <div id="loadingState" class="loading">
+                <div class="loading-spinner"></div>
+                <div>컨테이너 목록을 불러오는 중...</div>
+            </div>
+
+            <!-- 2분할 레이아웃 -->
+            <div class="dashboard-body" id="dashboardBody" style="display: none;">
+                <!-- 왼쪽: 컨테이너 카드 목록 -->
+                <div id="containerGrid" class="container-grid"></div>
+
+                <!-- 오른쪽: 선택된 컨테이너 상세 -->
+                <div id="detailsPanel" class="details-panel">
+                    <div class="empty-details">
+                        <div class="empty-details-icon">📊</div>
+                        <p>컨테이너를 선택하세요</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 빈 상태 -->
+            <div id="emptyState" class="empty-state-container" style="display: none;">
+                <div class="empty-state-icon">📦</div>
+                <div class="empty-state-title">컨테이너가 없습니다</div>
+                <div class="empty-state-message">Agent에서 컨테이너가 감지되면 여기에 표시됩니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedContainerId = null; // 선택된 컨테이너
+
+        let currentMemberId = null;
+        let dashboardStompClient = null;
+        let alertStompClient = null;
+        let containers = [];
+        let notifications = [];
+        let unreadCount = 0;
+
+        const API_BASE = 'http://localhost:8081';
+
+        // JWT 토큰을 자동으로 추가하는 fetch wrapper
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            // 토큰이 있으면 Authorization 헤더 추가
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, { ...options, headers });
+
+            // 401 Unauthorized 시 로그아웃 처리
+            if (response.status === 401) {
+                alert('인증이 만료되었습니다. 다시 로그인해주세요.');
+                handleLogout();
+                throw new Error('Unauthorized');
+            }
+
+            return response;
+        }
+
+        // 로그인 처리
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                alert('아이디와 비밀번호를 입력하세요');
+                return;
+            }
+
+            try {
+                // 실제 로그인 API 호출
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('로그인 실패');
+                }
+
+                const result = await response.json();
+                const loginData = result.data;
+
+                // JWT 토큰 저장
+                localStorage.setItem('token', loginData.accessToken);
+                localStorage.setItem('refreshToken', loginData.refreshToken);
+                localStorage.setItem('userId', loginData.userId);
+                localStorage.setItem('username', loginData.username);
+
+                // 전역 변수 설정 (알림용)
+                currentMemberId = loginData.userId;
+
+                // 로그인 화면 숨기고 대시보드 표시
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('dashboard').classList.add('show');
+
+                // 사용자 정보 표시
+                document.getElementById('userInfo').textContent = `${loginData.username} (${loginData.email || loginData.role})`;
+
+                // 데이터 로드
+                await loadUserContainers();
+                await loadExistingAlerts();
+
+            } catch (error) {
+                console.error('로그인 실패:', error);
+                alert('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
+            }
+        }
+
+        // 로그아웃 처리
+        function handleLogout() {
+            // STOMP 연결 종료
+            if (dashboardStompClient && dashboardStompClient.connected) {
+                dashboardStompClient.disconnect();
+            }
+            if (alertStompClient && alertStompClient.connected) {
+                alertStompClient.disconnect();
+            }
+
+            // 데이터 초기화
+            currentMemberId = null;
+            containers = [];
+            notifications = [];
+            unreadCount = 0;
+
+            // 모든 저장된 데이터 삭제
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+
+            // 화면 전환
+            document.getElementById('dashboard').classList.remove('show');
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // 사용자의 컨테이너 목록 로드 (모든 사용자가 모든 컨테이너 조회 가능)
+        async function loadUserContainers() {
+            try {
+                const response = await authFetch(`${API_BASE}/api/dashboard/containers`);
+                const result = await response.json();
+
+                containers = result.data || [];
+
+                console.log('🔍 초기 API 응답:', containers);
+                if (containers.length > 0) {
+                    console.log('🔍 첫 번째 컨테이너:', containers[0]);
+                }
+
+                renderContainers();
+                updateHeader();
+
+                // WebSocket 연결
+                connectDashboardWebSocket();
+
+            } catch (error) {
+                console.error('컨테이너 목록 로드 실패:', error);
+                showError();
+            }
+        }
+
+        // 기존 알림 로드
+        async function loadExistingAlerts() {
+            try {
+                const response = await authFetch(`${API_BASE}/api/test/alerts/alerts/unread/${currentMemberId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const alerts = result.data || [];
+
+                console.log(`기존 알림 ${alerts.length}개 로드`);
+
+                // 알림 데이터 변환 및 추가
+                alerts.forEach(alert => {
+                    notifications.push({
+                        id: alert.alertId,
+                        message: alert.message,
+                        level: getLevelFromMessage(alert.message),
+                        containerName: alert.containerName,
+                        createdAt: alert.createdAt,
+                        isRead: false
+                    });
+                });
+
+                // 배지 및 리스트 업데이트
+                unreadCount = notifications.length;
+                updateBadge();
+                updateNotificationList();
+
+                // 알림 WebSocket 연결
+                connectAlertWebSocket();
+
+            } catch (error) {
+                console.error('기존 알림 로드 실패:', error);
+            }
+        }
+
+        // 메시지에서 레벨 추출
+        function getLevelFromMessage(message) {
+            if (message.includes('[심각]')) return 'critical';
+            if (message.includes('[높음]')) return 'high';
+            if (message.includes('[경고]')) return 'warning';
+            return 'info';
+        }
+
+        // 대시보드 STOMP 연결
+        function connectDashboardWebSocket() {
+            const socket = new SockJS(`${API_BASE}/ws`);
+            dashboardStompClient = Stomp.over(socket);
+
+            // 디버그 출력 활성화 (선택사항)
+            dashboardStompClient.debug = (str) => console.log('[STOMP Dashboard]', str);
+
+            dashboardStompClient.connect({}, function(frame) {
+                console.log('대시보드 STOMP 연결 성공');
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('statusText').textContent = '실시간 연결됨';
+
+                // 대시보드 토픽 구독
+                dashboardStompClient.subscribe('/topic/dashboard', function(message) {
+                    try {
+                        const data = JSON.parse(message.body);
+                        console.log('실시간 메트릭 수신:', data);
+                        updateContainer(data);
+                    } catch (error) {
+                        console.error('STOMP 메시지 파싱 오류:', error);
+                    }
+                });
+            }, function(error) {
+                console.error('대시보드 STOMP 오류:', error);
+                document.getElementById('statusDot').classList.remove('connected');
+                document.getElementById('statusText').textContent = '연결 끊김';
+            });
+        }
+
+        // 알림 STOMP 연결
+        function connectAlertWebSocket() {
+            const socket = new SockJS(`${API_BASE}/ws`);
+            alertStompClient = Stomp.over(socket);
+
+            // 디버그 출력 활성화 (선택사항)
+            alertStompClient.debug = (str) => console.log('[STOMP Alert]', str);
+
+            // JWT 토큰 가져오기
+            const token = localStorage.getItem('token');
+
+            // STOMP 헤더에 JWT 토큰 추가
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            alertStompClient.connect(headers, function(frame) {
+                console.log('알림 STOMP 연결 성공');
+
+                // 사용자별 알림 큐 구독
+                alertStompClient.subscribe(`/user/queue/alerts`, function(message) {
+                    try {
+                        const data = JSON.parse(message.body);
+                        console.log('실시간 알림 수신:', data);
+                        handleNotification(data);
+                    } catch (error) {
+                        console.error('STOMP 알림 파싱 오류:', error);
+                    }
+                });
+
+                // 브로드캐스트 알림 구독 (선택사항)
+                alertStompClient.subscribe(`/topic/alerts`, function(message) {
+                    try {
+                        const data = JSON.parse(message.body);
+                        console.log('브로드캐스트 알림 수신:', data);
+                        handleNotification(data);
+                    } catch (error) {
+                        console.error('STOMP 브로드캐스트 파싱 오류:', error);
+                    }
+                });
+            }, function(error) {
+                console.error('알림 STOMP 오류:', error);
+            });
+        }
+
+        // 컨테이너 렌더링
+        function renderContainers() {
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            const dashboardBody = document.getElementById('dashboardBody');
+            const grid = document.getElementById('containerGrid');
+
+            loadingState.style.display = 'none';
+
+            if (containers.length === 0) {
+                emptyState.style.display = 'block';
+                dashboardBody.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            dashboardBody.style.display = 'flex';  // 2분할 레이아웃 표시
+
+            grid.innerHTML = containers.map(container => createContainerCard(container)).join('');
+        }
+
+        // 컨테이너 카드 생성
+        function createContainerCard(container) {
+            const cpuPercent = container.cpuPercent || 0;
+            const memPercent = container.memPercent || 0;
+            const memUsageMB = formatBytes(container.memUsage || 0);
+            const memLimitMB = formatBytes(container.memLimit || 0);
+            const networkRx = formatBytesPerSec(container.rxBytesPerSec || 0);
+            const networkTx = formatBytesPerSec(container.txBytesPerSec || 0);
+
+            const cpuClass = cpuPercent > 80 ? 'danger' : cpuPercent > 60 ? 'warning' : '';
+            const memClass = memPercent > 80 ? 'danger' : memPercent > 60 ? 'warning' : '';
+
+            const stateClass = container.state || 'STOPPED';
+
+            return `
+                <div class="container-card" data-container-id="${container.containerId}" onclick="goToDetail(${container.containerId})">
+
+                    <div class="card-header">
+                        <div>
+                            <div class="container-name">${container.containerName || '알 수 없음'}</div>
+                            <div class="container-hash">${(container.containerHash || '').substring(0, 12)}</div>
+                        </div>
+                        <span class="container-state ${stateClass}">${stateClass}</span>
+                    </div>
+
+                    <div class="metrics">
+                        <!-- CPU -->
+                        <div>
+                            <div class="metric-row">
+                                <span class="metric-label">
+                                    <span class="metric-icon">💻</span> CPU
+                                </span>
+                                <span class="metric-value">${cpuPercent.toFixed(1)}<span class="metric-unit">%</span></span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill ${cpuClass}" style="width: ${cpuPercent}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Memory -->
+                        <div>
+                            <div class="metric-row">
+                                <span class="metric-label">
+                                    <span class="metric-icon">🧠</span> Memory
+                                </span>
+                                <span class="metric-value">${memPercent.toFixed(1)}<span class="metric-unit">%</span></span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill ${memClass}" style="width: ${memPercent}%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: #95a5a6; margin-top: 4px;">
+                                ${memUsageMB} / ${memLimitMB}
+                            </div>
+                        </div>
+
+                        <!-- Network -->
+                        <div class="metric-row">
+                            <span class="metric-label">
+                                <span class="metric-icon">🌐</span> Network
+                            </span>
+                            <div style="text-align: right; font-size: 12px; color: #7f8c8d;">
+                                <div>↓ ${networkRx}/s</div>
+                                <div>↑ ${networkTx}/s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <span class="agent-name">📡 ${container.agentName || 'Unknown Agent'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 컨테이너 업데이트 (ContainerListResponseDTO 형식 - 플랫 구조)
+        function updateContainer(data) {
+            try {
+                console.log('📦 WebSocket 데이터:', {
+                    id: data.containerId,
+                    hash: data.containerHash,
+                    cpu: data.cpuPercent
+                });
+
+                console.log('📋 현재 목록:', containers.map(c => ({
+                    id: c.containerId,
+                    hash: (c.containerHash || '').substring(0, 12)
+                })));
+
+                // containerId 또는 containerHash로 기존 컨테이너 찾기
+                const index = containers.findIndex(c => {
+                    const idMatch = c.containerId && data.containerId && c.containerId === data.containerId;
+                    const hashMatch = c.containerHash && data.containerHash && c.containerHash === data.containerHash;
+                    return idMatch || hashMatch;
+                });
+
+                console.log('🔍 매칭 인덱스:', index);
+
+                if (index !== -1) {
+                    // 기존 컨테이너 업데이트
+                    console.log('✅ 업데이트:', containers[index].containerId);
+                    containers[index] = { ...containers[index], ...data };
+                    updateSingleCard(data);
+                } else {
+                    // 새 컨테이너 추가
+                    console.log('➕ 새로 추가:', data.containerId);
+                    containers.push(data);
+                    renderContainers();
+                }
+
+                updateHeader();
+
+                // 상세창 자동 업데이트
+                if (selectedContainerId === data.containerId) {
+                    renderContainerDetails(data);
+                }
+            } catch (error) {
+                console.error('❌ updateContainer 오류:', error);
+            }
+        }
+
+        // 개별 카드 업데이트 (전체 재렌더링 없이)
+        function updateSingleCard(data) {
+            try {
+                const grid = document.getElementById('containerGrid');
+                if (!grid) {
+                    console.error('❌ Grid 없음');
+                    return;
+                }
+
+                // 기존 카드 찾기
+                const existingCard = grid.querySelector(`[data-container-id="${data.containerId}"]`);
+
+                console.log('🔍 카드 찾기:', {
+                    containerId: data.containerId,
+                    found: !!existingCard
+                });
+
+                if (existingCard) {
+                    // 새 카드 HTML 생성
+                    const newCardHTML = createContainerCard(data);
+
+                    // 임시 div에 새 카드 생성
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newCardHTML;
+                    const newCard = tempDiv.firstElementChild;
+
+                    // 기존 카드 교체
+                    existingCard.replaceWith(newCard);
+                    console.log('✅ 카드 교체 완료:', data.containerId);
+                } else {
+                    console.warn('⚠️ 카드를 찾을 수 없음:', data.containerId);
+                    console.log('🔍 현재 grid의 카드들:', Array.from(grid.querySelectorAll('[data-container-id]')).map(c => c.dataset.containerId));
+                }
+            } catch (error) {
+                console.error('❌ updateSingleCard 오류:', error);
+            }
+        }
+
+        // 헤더 업데이트
+        function updateHeader() {
+            document.getElementById('containerCount').textContent = `컨테이너: ${containers.length}개`;
+        }
+
+        // 알림 처리
+        function handleNotification(data) {
+            // 시스템 메시지는 무시
+            if (data.metricType === 'ALERT_READ_STATUS' || data.metricType === 'ALERT_DELETED') {
+                return;
+            }
+
+            // 알림 추가
+            notifications.unshift({
+                id: data.alertId || Date.now(),
+                message: data.message,
+                level: data.title?.toLowerCase() || 'info',
+                containerName: data.containerInfo?.containerName || '알 수 없음',
+                createdAt: data.createdAt || new Date().toISOString(),
+                isRead: false
+            });
+
+            // 배지 업데이트
+            unreadCount++;
+            updateBadge();
+
+            // 토스트 표시
+            showToast(data);
+
+            // 알림 목록 업데이트
+            updateNotificationList();
+        }
+
+        // 배지 업데이트
+        function updateBadge() {
+            const badge = document.getElementById('badge');
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                badge.classList.add('show');
+            } else {
+                badge.classList.remove('show');
+            }
+        }
+
+        // 토스트 알림 표시
+        function showToast(data) {
+            const toastContainer = document.getElementById('toastContainer');
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${data.title?.toLowerCase() || 'info'}`;
+
+            const levelText = data.title || '알림';
+
+            toast.innerHTML = `
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+                <div class="toast-header">[${levelText}] ${data.containerInfo?.containerName || '컨테이너'}</div>
+                <div class="toast-body">${data.message}</div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 알림 목록 업데이트
+        function updateNotificationList() {
+            const list = document.getElementById('notificationList');
+
+            if (notifications.length === 0) {
+                list.innerHTML = '<li class="empty-state">알림이 없습니다</li>';
+                return;
+            }
+
+            list.innerHTML = notifications.map(notif => {
+                const levelText = {
+                    'critical': '심각',
+                    'high': '높음',
+                    'warning': '경고',
+                    'info': '정보'
+                }[notif.level] || '알림';
+
+                const time = new Date(notif.createdAt).toLocaleString('ko-KR');
+
+                return `
+                    <li class="notification-item ${notif.isRead ? '' : 'unread'}" onclick="markAsRead(${notif.id})">
+                        <div class="notification-item-header">
+                            <span class="notification-level ${notif.level}">${levelText}</span>
+                            <span class="notification-time">${time}</span>
+                        </div>
+                        <div class="notification-message">${notif.message}</div>
+                        <div class="notification-container">컨테이너: ${notif.containerName}</div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // 알림 읽음 처리
+        async function markAsRead(notifId) {
+            const notif = notifications.find(n => n.id === notifId);
+            if (notif && !notif.isRead) {
+                notif.isRead = true;
+                unreadCount--;
+                updateBadge();
+                updateNotificationList();
+
+                // 서버에 읽음 처리 요청
+                try {
+                    await fetch(`${API_BASE}/api/test/alerts/alerts/${notifId}/read`, {
+                        method: 'PATCH'
+                    });
+                } catch (error) {
+                    console.error('서버 읽음 처리 실패:', error);
+                }
+            }
+        }
+
+        // 모두 읽음 처리
+        async function markAllAsRead() {
+            const unreadNotifs = notifications.filter(n => !n.isRead);
+
+            if (unreadNotifs.length === 0) {
+                return;
+            }
+
+            notifications.forEach(n => n.isRead = true);
+            unreadCount = 0;
+            updateBadge();
+            updateNotificationList();
+
+            // 서버에 읽음 처리
+            try {
+                const promises = unreadNotifs.map(notif =>
+                    fetch(`${API_BASE}/api/test/alerts/alerts/${notif.id}/read`, {
+                        method: 'PATCH'
+                    })
+                );
+                await Promise.all(promises);
+            } catch (error) {
+                console.error('서버 읽음 처리 실패:', error);
+            }
+        }
+
+        // 알림 버튼 클릭
+        document.getElementById('notificationBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('show');
+        });
+
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('notificationDropdown');
+            if (!e.target.closest('.notification-btn') && !e.target.closest('.notification-dropdown')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // 상세 페이지로 이동
+        function goToDetail(containerId) {
+            selectedContainerId = containerId;
+            const data = containers.find(c => c.containerId === containerId);
+            if (data) renderContainerDetails(data);
+        }
+
+        // 🔹 renderContainerDetails만 교체
+        function renderContainerDetails(data) {
+            const panel = document.getElementById('detailsPanel');
+            if (!panel) return;
+
+            // 이전 상태 저장용
+            if (!window.prevDetailData) window.prevDetailData = {};
+
+            const sections = [
+                {
+                    title: '💻 CPU 메트릭',
+                    metrics: [
+                        { key: 'cpuPercent', label: 'CPU 사용률', value: `${(data.cpuPercent || 0).toFixed(2)} %` },
+                        { key: 'cpuCoreUsage', label: 'CPU Core Usage', value: data.cpuCoreUsage || 0 },
+                        { key: 'cpuUser', label: 'CPU User', value: data.cpuUser || 0 },
+                        { key: 'cpuSystem', label: 'CPU System', value: data.cpuSystem || 0 },
+                        { key: 'cpuUsageTotal', label: 'CPU Total', value: data.cpuUsageTotal || 0 },
+                        { key: 'onlineCpus', label: 'Online CPUs', value: data.onlineCpus || 0 },
+                        { key: 'cpuQuota', label: 'CPU Quota', value: data.cpuQuota || 'unlimited' },
+                        { key: 'cpuPeriod', label: 'CPU Period', value: data.cpuPeriod || 0 },
+                        { key: 'throttlingPeriods', label: 'Throttling Periods', value: data.throttlingPeriods || 0 },
+                        { key: 'throttledPeriods', label: 'Throttled Periods', value: data.throttledPeriods || 0 },
+                        { key: 'throttledTime', label: 'Throttled Time', value: `${data.throttledTime || 0} ns` },
+                    ]
+                },
+                {
+                    title: '🧠 메모리 메트릭',
+                    metrics: [
+                        { key: 'memPercent', label: '메모리 사용률', value: `${(data.memPercent || 0).toFixed(2)} %` },
+                        { key: 'memUsage', label: '메모리 사용량', value: formatBytes(data.memUsage) },
+                        { key: 'memLimit', label: '메모리 제한', value: formatBytes(data.memLimit) },
+                        { key: 'memMaxUsage', label: '최대 사용량', value: formatBytes(data.memMaxUsage) },
+                    ]
+                },
+                {
+                    title: '💾 Block I/O 메트릭',
+                    metrics: [
+                        { key: 'blkRead', label: '블록 읽기 (누적)', value: formatBytes(data.blkRead) },
+                        { key: 'blkWrite', label: '블록 쓰기 (누적)', value: formatBytes(data.blkWrite) },
+                        { key: 'blkReadPerSec', label: '읽기 속도', value: `${formatBytes(data.blkReadPerSec)}/s` },
+                        { key: 'blkWritePerSec', label: '쓰기 속도', value: `${formatBytes(data.blkWritePerSec)}/s` },
+                    ]
+                },
+                {
+                    title: '🌐 네트워크 메트릭',
+                    metrics: [
+                        { key: 'rxBytes', label: '수신 바이트 (누적)', value: formatBytes(data.rxBytes) },
+                        { key: 'txBytes', label: '송신 바이트 (누적)', value: formatBytes(data.txBytes) },
+                        { key: 'rxBytesPerSec', label: '수신 속도', value: `${formatBytes(data.rxBytesPerSec)}/s` },
+                        { key: 'txBytesPerSec', label: '송신 속도', value: `${formatBytes(data.txBytesPerSec)}/s` },
+                        { key: 'rxPackets', label: '수신 패킷', value: data.rxPackets || 0 },
+                        { key: 'txPackets', label: '송신 패킷', value: data.txPackets || 0 },
+                        { key: 'rxErrors', label: '수신 에러', value: data.rxErrors || 0 },
+                        { key: 'txErrors', label: '송신 에러', value: data.txErrors || 0 },
+                        { key: 'rxDropped', label: '수신 드롭', value: data.rxDropped || 0 },
+                        { key: 'txDropped', label: '송신 드롭', value: data.txDropped || 0 },
+                    ]
+                },
+                {
+                    title: '📦 스토리지 메트릭',
+                    metrics: [
+                        { key: 'sizeRw', label: '컨테이너 쓰기', value: formatBytes(data.sizeRw) },
+                        { key: 'sizeRootFs', label: '루트FS 크기', value: formatBytes(data.sizeRootFs) },
+                    ]
+                },
+                {
+                    title: 'ℹ️ 기타 정보',
+                    metrics: [
+                        { key: 'state', label: '상태', value: data.state },
+                        { key: 'agentName', label: 'Agent', value: data.agentName },
+                        { key: 'containerHash', label: 'Container Hash', value: (data.containerHash || '').substring(0, 16) },
+                    ]
+                }
+            ];
+
+            panel.innerHTML = `
+                <h2>${data.containerName || '컨테이너 상세 정보'}</h2>
+                <div class="container-hash-display">${data.containerHash || 'N/A'}</div>
+                ${sections.map(section => `
+                    <div class="metric-section">
+                        <div class="metric-section-title">${section.title}</div>
+                        ${section.metrics.map(m => `
+                            <div class="metric-item">
+                                <span class="metric-item-label">${m.label}</span>
+                                <span class="metric-item-value" data-key="${m.key}">${m.value ?? '-'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('')}
+            `;
+
+            // 🔹 값 비교 후 flip 애니메이션 적용
+            setTimeout(() => {
+                const values = panel.querySelectorAll('.metric-item-value');
+                values.forEach(el => {
+                    const key = el.dataset.key;
+                    const newText = el.textContent.trim();
+                    const oldText = window.prevDetailData[key];
+
+                    if (oldText && oldText !== newText) {
+                        const numericOld = parseFloat(oldText);
+                        const numericNew = parseFloat(newText);
+
+                        if (!isNaN(numericOld) && !isNaN(numericNew)) {
+                            if (numericNew > numericOld) {
+                                el.classList.add('flip-up');
+                            } else if (numericNew < numericOld) {
+                                el.classList.add('flip-down');
+                            }
+
+                            setTimeout(() => el.classList.remove('flip-up', 'flip-down'), 600);
+                        }
+                    }
+
+                    // 현재 값 저장
+                    window.prevDetailData[key] = newText;
+                });
+            }, 30);
+        }
+
+
+
+        // 에러 표시
+        function showError() {
+            const loadingState = document.getElementById('loadingState');
+            loadingState.innerHTML = `
+                <div style="color: #e74c3c;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                    <div>컨테이너 목록을 불러오는데 실패했습니다.</div>
+                    <div style="font-size: 12px; margin-top: 8px;">API 서버가 실행 중인지 확인해주세요.</div>
+                </div>
+            `;
+        }
+
+        // 유틸리티 함수
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function formatBytesPerSec(bytes) {
+            return formatBytes(bytes);
+        }
+
+        // 페이지 로드 시 - 저장된 토큰 확인
+        window.onload = async function() {
+            const token = localStorage.getItem('token');
+            const userId = localStorage.getItem('userId');
+            const username = localStorage.getItem('username');
+
+            if (token && userId) {
+                // 토큰이 있으면 자동 로그인
+                try {
+                    currentMemberId = parseInt(userId);
+
+                    // 로그인 화면 숨기고 대시보드 표시
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboard').classList.add('show');
+
+                    // 사용자 정보 표시
+                    document.getElementById('userInfo').textContent = username || `사용자 ID: ${userId}`;
+
+                    // 데이터 로드 (토큰 유효성 자동 체크됨)
+                    await loadUserContainers();
+                    await loadExistingAlerts();
+
+                } catch (error) {
+                    console.error('자동 로그인 실패:', error);
+                    // 토큰이 유효하지 않으면 로그아웃
+                    handleLogout();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
