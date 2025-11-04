@@ -21,9 +21,12 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                 c.id,
                 c.containerHash,
                 c.name,
+                a.id,
                 a.agentName,
                 latest.state,
                 latest.health,
+                c.imageName,
+                c.imageSize,
                 latest.cpuPercent,
                 latest.memPercent,
                 latest.memUsage,
@@ -54,9 +57,12 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                 c.id,
                 c.containerHash,
                 c.name,
+                a.id,
                 a.agentName,
                 latest.state,
                 latest.health,
+                c.imageName,
+                c.imageSize,
                 latest.cpuPercent,
                 latest.memPercent,
                 latest.memUsage,
@@ -89,4 +95,123 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             "GROUP BY a.id, a.agentName " +
             "ORDER BY COUNT(c.id) DESC")
     List<AgentContainerCountDTO> countContainersByAgent();
+
+    /**
+     * 구동중인 컨테이너 목록 조회 (state = RUNNING)
+     * @return RUNNING 상태의 컨테이너 목록
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO(
+                c.id,
+                c.containerHash,
+                c.name,
+                a.id,
+                a.agentName,
+                latest.state,
+                latest.health,
+                c.imageName,
+                c.imageSize,
+                latest.cpuPercent,
+                latest.memPercent,
+                latest.memUsage,
+                c.memLimit,
+                latest.blkRead,
+                latest.blkWrite,
+                latest.rxBytesPerSec,
+                latest.txBytesPerSec
+            )
+            FROM Container c
+            JOIN c.agent a
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            WHERE latest.state = com.monito.domains.container.domain.ContainerState.RUNNING
+            """)
+    List<ContainerDashboardResponseDTO> findRunningContainers();
+
+    /**
+     * 특정 ID의 컨테이너 상세 정보 조회
+     * @param containerId 컨테이너 ID
+     * @return 컨테이너 상세 정보
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO(
+                c.id,
+                c.containerHash,
+                c.name,
+                a.id,
+                a.agentName,
+                latest.state,
+                latest.health,
+                c.imageName,
+                c.imageSize,
+                latest.cpuPercent,
+                latest.memPercent,
+                latest.memUsage,
+                c.memLimit,
+                latest.blkRead,
+                latest.blkWrite,
+                latest.rxBytesPerSec,
+                latest.txBytesPerSec
+            )
+            FROM Container c
+            JOIN c.agent a
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            WHERE c.id = :containerId
+            """)
+    ContainerDashboardResponseDTO findContainerDetailById(@Param("containerId") Long containerId);
+
+    /**
+     * 특정 멤버의 즐겨찾기 컨테이너 목록 조회
+     * @param memberId Member ID
+     * @return 즐겨찾기 컨테이너 목록
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO(
+                c.id,
+                c.containerHash,
+                c.name,
+                a.id,
+                a.agentName,
+                latest.state,
+                latest.health,
+                c.imageName,
+                c.imageSize,
+                latest.cpuPercent,
+                latest.memPercent,
+                latest.memUsage,
+                c.memLimit,
+                latest.blkRead,
+                latest.blkWrite,
+                latest.rxBytesPerSec,
+                latest.txBytesPerSec
+            )
+            FROM Container c
+            JOIN c.agent a
+            JOIN com.monito.domains.favorite.domain.Favorite f ON f.container = c
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            WHERE f.member.id = :memberId
+            """)
+    List<ContainerDashboardResponseDTO> findFavoriteContainersByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 멤버의 즐겨찾기 컨테이너 ID 목록 조회
+     * @param memberId Member ID
+     * @return 즐겨찾기 컨테이너 ID 목록
+     */
+    @Query("SELECT f.container.id FROM com.monito.domains.favorite.domain.Favorite f WHERE f.member.id = :memberId")
+    List<Long> findFavoriteContainerIdsByMemberId(@Param("memberId") Long memberId);
 }

@@ -91,6 +91,10 @@ public enum ExceptionMessage {
     CONTAINER_METRICS_PROCESSING_FAILED("컨테이너 메트릭 처리 중 오류가 발생했습니다."),
     CONTAINER_LOGS_PROCESSING_FAILED("컨테이너 로그 처리 중 오류가 발생했습니다."),
 
+    // Favorite 관련
+    FAVORITE_NOT_FOUND("즐겨찾기를 찾을 수 없습니다."),
+    FAVORITE_ALREADY_EXISTS("이미 즐겨찾기에 등록된 컨테이너입니다."),
+
     // 입력값 검증
     INVALID_INPUT_VALUE("입력값이 유효하지 않습니다.");
 

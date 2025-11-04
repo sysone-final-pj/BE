@@ -217,9 +217,6 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
             log.info("메트릭 처리 완료 - 성공: {}, 실패: {}", successCount, failCount);
 
-            // STOMP 브로커로 대시보드 브로드캐스트
-            messagingTemplate.convertAndSend("/topic/dashboard", agentMetrics);
-
             sendMessage(session, Map.of(
                     "type", "ACK",
                     "message", String.format("Metrics processed: %d success, %d failed", successCount, failCount),

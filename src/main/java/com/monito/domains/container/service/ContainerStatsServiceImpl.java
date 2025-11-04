@@ -147,9 +147,12 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         .containerId(container.getId())
                         .containerHash(container.getContainerHash())
                         .containerName(container.getName())
+                        .agentId(agent.getId())
                         .agentName(agent.getAgentName())
                         .state(statsLog.getState())
                         .health(statsLog.getHealth())
+                        .imageName(container.getImageName())
+                        .imageSize(container.getImageSize())
                         // CPU 메트릭
                         .cpuPercent(statsLog.getCpuPercent())
                         .cpuCoreUsage(statsLog.getCpuCoreUsage())

@@ -24,9 +24,12 @@ public class ContainerDashboardResponseDTO {
     private Long containerId;
     private String containerHash;
     private String containerName;
+    private Long agentId;
     private String agentName;
     private ContainerState state;
     private ContainerHealth health;
+    private String imageName;
+    private Long imageSize;
 
     // CPU 메트릭
     private BigDecimal cpuPercent;          // CPU 사용률 (%)
@@ -77,15 +80,18 @@ public class ContainerDashboardResponseDTO {
 
     /**
      * REST API용 생성자 (JPQL에서 사용)
-     * - 주요 메트릭만 포함 (13개 필드)
+     * - 주요 메트릭만 포함 (16개 필드)
      */
     public ContainerDashboardResponseDTO(
             Long containerId,
             String containerHash,
             String containerName,
+            Long agentId,
             String agentName,
             ContainerState state,
             ContainerHealth health,
+            String imageName,
+            Long imageSize,
             BigDecimal cpuPercent,
             BigDecimal memPercent,
             Long memUsage,
@@ -98,9 +104,12 @@ public class ContainerDashboardResponseDTO {
         this.containerId = containerId;
         this.containerHash = containerHash;
         this.containerName = containerName;
+        this.agentId = agentId;
         this.agentName = agentName;
         this.state = state;
         this.health = health;
+        this.imageName = imageName;
+        this.imageSize = imageSize;
         this.cpuPercent = cpuPercent;
         this.memPercent = memPercent;
         this.memUsage = memUsage;

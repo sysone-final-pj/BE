@@ -351,9 +351,41 @@ public class AlertServiceImpl implements AlertService {
     @Override
     @Transactional(readOnly = true)
     public List<AlertListItemResponseDTO> getAlertsWithFilter(Long memberId, AlertFilterDTO filter) {
-        return alertRepository.findAll(AlertSpecification.withFilter(memberId, filter))
+        // QuickRangeType이 있으면 실제 날짜 범위로 변환
+        AlertFilterDTO processedFilter = processQuickRangeType(filter);
+
+        return alertRepository.findAll(AlertSpecification.withFilter(memberId, processedFilter))
                 .stream()
                 .map(AlertListItemResponseDTO::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * QuickRangeType을 실제 날짜 범위로 변환
+     * - quickRangeType이 있으면 현재 시간 기준으로 collectedAtFrom/To 계산
+     * - quickRangeType이 없으면 기존 collectedAtFrom/To 사용
+     */
+    private AlertFilterDTO processQuickRangeType(AlertFilterDTO filter) {
+        if (filter == null || filter.getQuickRangeType() == null) {
+            return filter;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime from = now.minusMinutes(filter.getQuickRangeType().getMinutes());
+
+        // QuickRangeType이 있으면 기존 collectedAtFrom/To는 무시하고 새로 계산된 값 사용
+        return AlertFilterDTO.builder()
+                .alertLevel(filter.getAlertLevel())
+                .metricType(filter.getMetricType())
+                .agentName(filter.getAgentName())
+                .containerName(filter.getContainerName())
+                .quickRangeType(null) // 이미 처리했으므로 null로 설정
+                .collectedAtFrom(from)
+                .collectedAtTo(now)
+                .createdAtFrom(filter.getCreatedAtFrom())
+                .createdAtTo(filter.getCreatedAtTo())
+                .isRead(filter.getIsRead())
+                .sortType(filter.getSortType()) // 정렬 타입 유지
+                .build();
     }
 }
