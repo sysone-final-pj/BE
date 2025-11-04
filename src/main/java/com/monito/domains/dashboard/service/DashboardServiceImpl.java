@@ -4,10 +4,13 @@ import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
 import com.monito.domains.dashboard.repository.DashboardRepository;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +26,18 @@ public class DashboardServiceImpl implements DashboardService {
     private final DashboardRepository dashboardRepository;
 
     @Override
-    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType) {
-        log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {})", sortType);
+    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId) {
+        log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {}, memberId: {})", sortType, memberId);
 
         List<ContainerDashboardResponseDTO> containers = dashboardRepository.findAllContainersForDashboard();
 
-        // 정렬 타입이 없으면 정렬하지 않고 반환
+        // 정렬 타입이 없으면 기본값으로 즐겨찾기 정렬 적용
         if (sortType == null) {
-            return containers;
+            sortType = ContainerSortType.FAVORITE;
         }
 
         // 정렬 타입에 따라 정렬
-        return sortContainers(containers, sortType);
+        return sortContainers(containers, sortType, memberId);
     }
 
     /**
@@ -42,7 +45,8 @@ public class DashboardServiceImpl implements DashboardService {
      */
     private List<ContainerDashboardResponseDTO> sortContainers(
             List<ContainerDashboardResponseDTO> containers,
-            ContainerSortType sortType) {
+            ContainerSortType sortType,
+            Long memberId) {
 
         return switch (sortType) {
             case NAME -> containers.stream()
@@ -64,6 +68,27 @@ public class DashboardServiceImpl implements DashboardService {
                     .sorted(Comparator.comparing(ContainerDashboardResponseDTO::getNetworkTotalBytes,
                             Comparator.nullsLast(Comparator.reverseOrder())))
                     .collect(Collectors.toList());
+
+            case FAVORITE -> {
+                if (memberId == null) {
+                    log.warn("FAVORITE 정렬 시 memberId가 필요하지만 null입니다. 정렬하지 않고 반환합니다.");
+                    yield containers;
+                }
+
+                // 즐겨찾기 컨테이너 ID 목록 조회
+                List<Long> favoriteIds = dashboardRepository.findFavoriteContainerIdsByMemberId(memberId);
+                Set<Long> favoriteIdSet = new HashSet<>(favoriteIds);
+
+                // 즐겨찾기 우선 정렬 (즐겨찾기가 먼저 오도록)
+                yield containers.stream()
+                        .sorted((c1, c2) -> {
+                            boolean isFav1 = favoriteIdSet.contains(c1.getContainerId());
+                            boolean isFav2 = favoriteIdSet.contains(c2.getContainerId());
+                            // 즐겨찾기가 먼저 오도록: true > false
+                            return Boolean.compare(isFav2, isFav1);
+                        })
+                        .collect(Collectors.toList());
+            }
         };
     }
 
@@ -123,8 +148,27 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public List<ContainerDashboardResponseDTO> getFavoriteContainers(Long memberId) {
-        log.info("대시보드: 즐겨찾기 컨테이너 목록 조회 - memberId: {}", memberId);
-        return dashboardRepository.findFavoriteContainersByMemberId(memberId);
+    public List<ContainerWithFavoriteDTO> getAllContainersSortedByFavorite(Long memberId) {
+        log.info("대시보드: 즐겨찾기 우선 정렬된 전체 컨테이너 목록 조회 - memberId: {}", memberId);
+
+        // 1. 모든 컨테이너 조회
+        List<ContainerDashboardResponseDTO> allContainers = dashboardRepository.findAllContainersForDashboard();
+
+        // 2. 즐겨찾기 컨테이너 ID 목록 조회
+        List<Long> favoriteContainerIds = dashboardRepository.findFavoriteContainerIdsByMemberId(memberId);
+        Set<Long> favoriteIdSet = new HashSet<>(favoriteContainerIds);
+
+        // 3. 각 컨테이너에 즐겨찾기 여부 표시
+        List<ContainerWithFavoriteDTO> containersWithFavorite = allContainers.stream()
+                .map(container -> ContainerWithFavoriteDTO.builder()
+                        .container(container)
+                        .isFavorite(favoriteIdSet.contains(container.getContainerId()))
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. 즐겨찾기 우선 정렬 (즐겨찾기=true가 먼저)
+        return containersWithFavorite.stream()
+                .sorted(Comparator.comparing(ContainerWithFavoriteDTO::getIsFavorite).reversed())
+                .collect(Collectors.toList());
     }
 }

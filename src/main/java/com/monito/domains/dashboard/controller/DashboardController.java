@@ -4,6 +4,7 @@ import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
 import com.monito.domains.dashboard.service.DashboardService;
 import com.monito.global.common.response.ApiResponse;
 import java.util.List;
@@ -37,18 +38,22 @@ public class DashboardController {
     /**
      * 대시보드용 전체 컨테이너 목록 조회
      * GET /api/dashboard/containers
-     * @param sortBy 정렬 기준 (선택사항: CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES)
+     * @param sortBy 정렬 기준 (선택사항: CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)
+     * @param userDetails 현재 로그인한 사용자 (FAVORITE 정렬 시 필요)
      * @return 전체 컨테이너 목록
      */
     @Operation(summary = "컨테이너 목록조회(정렬 포함)",
-            description = "컨테이너 카드에 사용. sortBy 파라미터로 정렬 가능 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES)")
+            description = "컨테이너 카드에 사용. sortBy 파라미터로 정렬 가능 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
     @GetMapping("/containers")
     public ApiResponse<List<ContainerDashboardResponseDTO>> getAllContainers(
-            @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES)")
-            @RequestParam(required = false) ContainerSortType sortBy) {
-        log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {})", sortBy);
+            @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
+            @RequestParam(required = false) ContainerSortType sortBy,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy);
+        Long memberId = userDetails != null ? Long.valueOf(userDetails.getId()) : null;
+        log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {}, memberId: {})", sortBy, memberId);
+
+        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId);
 
         return ApiResponse.ok(containers, "대시보드 컨테이너 목록을 성공적으로 조회했습니다.");
     }
@@ -120,20 +125,20 @@ public class DashboardController {
     }
 
     /**
-     * 즐겨찾기 컨테이너 목록 조회 (대시보드용)
+     * 모든 컨테이너 목록 조회 (즐겨찾기 우선 정렬)
      * GET /api/dashboard/favorites
      * @param userDetails 현재 로그인한 사용자 ID
-     * @return 즐겨찾기 컨테이너 목록 (최신 통계 포함)
+     * @return 즐겨찾기가 먼저 오는 모든 컨테이너 목록 (최신 통계 포함)
      */
-    @Operation(summary = "즐겨찾기 컨테이너 조회 (대시보드용)",
-            description = "로그인한 사용자의 즐겨찾기 컨테이너 목록 조회 (최신 통계 포함)")
+    @Operation(summary = "모든 컨테이너 조회 (즐겨찾기 우선)",
+            description = "즐겨찾기 컨테이너가 먼저 오고, 나머지 컨테이너가 뒤따르는 전체 목록 조회")
     @GetMapping("/favorites")
-    public ApiResponse<List<ContainerDashboardResponseDTO>> getFavoriteContainers(
+    public ApiResponse<List<ContainerWithFavoriteDTO>> getAllContainersSortedByFavorite(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        log.info("GET /api/dashboard/favorites - 즐겨찾기 컨테이너 목록 조회 - memberId: {}", userDetails.getId());
+        log.info("GET /api/dashboard/favorites - 즐겨찾기 우선 정렬된 컨테이너 목록 조회 - memberId: {}", userDetails.getId());
 
-        List<ContainerDashboardResponseDTO> favorites = dashboardService.getFavoriteContainers(Long.valueOf(userDetails.getId()));
+        List<ContainerWithFavoriteDTO> containers = dashboardService.getAllContainersSortedByFavorite(Long.valueOf(userDetails.getId()));
 
-        return ApiResponse.ok(favorites, "즐겨찾기 컨테이너 목록을 성공적으로 조회했습니다.");
+        return ApiResponse.ok(containers, "즐겨찾기 우선 정렬된 컨테이너 목록을 성공적으로 조회했습니다.");
     }
 }

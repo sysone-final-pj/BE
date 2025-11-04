@@ -4,6 +4,7 @@ import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
 import java.util.List;
 
 /**
@@ -15,9 +16,10 @@ public interface DashboardService {
     /**
      * 전체 컨테이너 목록 조회 (최신 통계 포함)
      * @param sortType 정렬 타입 (null이면 정렬하지 않음)
+     * @param memberId 회원 ID (FAVORITE 정렬 시 필수)
      * @return 컨테이너 목록
      */
-    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType);
+    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId);
 
     /**
      * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)
@@ -52,9 +54,9 @@ public interface DashboardService {
     ContainerDashboardResponseDTO getContainerDetail(Long containerId);
 
     /**
-     * 특정 멤버의 즐겨찾기 컨테이너 목록 조회
+     * 모든 컨테이너 목록 조회 (즐겨찾기 우선 정렬)
      * @param memberId Member ID
-     * @return 즐겨찾기 컨테이너 목록
+     * @return 즐겨찾기가 먼저 오는 모든 컨테이너 목록
      */
-    List<ContainerDashboardResponseDTO> getFavoriteContainers(Long memberId);
+    List<ContainerWithFavoriteDTO> getAllContainersSortedByFavorite(Long memberId);
 }

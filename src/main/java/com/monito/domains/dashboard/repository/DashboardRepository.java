@@ -206,4 +206,12 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             WHERE f.member.id = :memberId
             """)
     List<ContainerDashboardResponseDTO> findFavoriteContainersByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 멤버의 즐겨찾기 컨테이너 ID 목록 조회
+     * @param memberId Member ID
+     * @return 즐겨찾기 컨테이너 ID 목록
+     */
+    @Query("SELECT f.container.id FROM com.monito.domains.favorite.domain.Favorite f WHERE f.member.id = :memberId")
+    List<Long> findFavoriteContainerIdsByMemberId(@Param("memberId") Long memberId);
 }
