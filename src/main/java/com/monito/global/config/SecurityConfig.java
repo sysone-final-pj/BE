@@ -52,7 +52,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // STOMP WebSocket
+                        .requestMatchers("/agent/**").permitAll() // Agent Raw WebSocket
                         // ADMIN 권한이 필요한 경로
                         .requestMatchers("/api/admin/**").hasRole("MASTER")
                         // 나머지는 인증 필요

@@ -23,7 +23,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         // Agent → Backend: 메트릭 수집 (Raw WebSocket 유지)
-        registry.addHandler(agentWebSocketHandler, "/ws/agent/collect")
+        // Note: /ws는 STOMP+SockJS용이므로 별도 경로 사용
+        registry.addHandler(agentWebSocketHandler, "/agent/collect")
                 .setAllowedOriginPatterns("*");
     }
 
