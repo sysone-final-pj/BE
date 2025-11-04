@@ -1,7 +1,15 @@
 package com.monito.global.cache;
 
+import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.OomEventEntity;
+import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.repository.OomEventRepository;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -11,14 +19,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * OOM 이벤트 인메모리 캐시
- * - 컨테이너별 최근 7일간 OOM 발생 이력 저장
- * - Histogram/Heatmap 생성용
- * - 향후 Redis로 전환 가능
+ * OOM 이벤트 하이브리드 캐시
+ * - 인메모리 캐시: 빠른 조회
+ * - DB 저장: 서버 재시작 시 복구
+ * - 7일 보관, 자동 정리
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OomEventCache {
+
+    private final OomEventRepository oomEventRepository;
+    private final ContainerRepository containerRepository;
 
     /**
      * 이벤트 보관 기간 (7일)
@@ -38,11 +50,32 @@ public class OomEventCache {
     private final List<OomEvent> allEvents = Collections.synchronizedList(new ArrayList<>());
 
     /**
-     * OOM 이벤트 기록
+     * 서버 시작 시 DB에서 최근 7일 OOM 이벤트 로드
+     */
+    @PostConstruct
+    public void init() {
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minus(RETENTION_PERIOD);
+        List<OomEventEntity> recentEvents = oomEventRepository.findAllAfter(sevenDaysAgo);
+
+        for (OomEventEntity entity : recentEvents) {
+            OomEvent cacheEvent = entity.toCacheEvent();
+
+            // 캐시에 추가
+            eventsByContainer.computeIfAbsent(cacheEvent.getContainerId(), k -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(cacheEvent);
+            allEvents.add(cacheEvent);
+        }
+
+        log.info("[OOM_CACHE] 초기화 완료 - 로드된 이벤트: {}건, 컨테이너: {}개",
+                allEvents.size(), eventsByContainer.size());
+    }
+
+    /**
+     * OOM 이벤트 기록 (캐시 + DB)
      * @param event OOM 이벤트
      */
     public void recordEvent(OomEvent event) {
-        // 1. 컨테이너별 이벤트 추가
+        // 1. 캐시에 추가
         eventsByContainer.compute(event.getContainerId(), (k, events) -> {
             if (events == null) {
                 events = Collections.synchronizedList(new ArrayList<>());
@@ -50,15 +83,41 @@ public class OomEventCache {
             events.add(event);
             return events;
         });
-
-        // 2. 전체 이벤트에 추가
         allEvents.add(event);
 
         log.info("[OOM_CACHE] 이벤트 기록 - containerId: {}, containerName: {}, occurredAt: {}",
                 event.getContainerId(), event.getContainerName(), event.getOccurredAt());
 
+        // 2. DB에 비동기 저장
+        saveToDatabase(event);
+
         // 3. 주기적 정리 (7일 이전 데이터 삭제)
         cleanupExpiredEvents();
+    }
+
+    /**
+     * DB에 비동기 저장
+     */
+    @Async
+    @Transactional
+    protected void saveToDatabase(OomEvent event) {
+        try {
+            Container container = containerRepository.findById(event.getContainerId())
+                    .orElse(null);
+
+            if (container == null) {
+                log.warn("[OOM_CACHE] 컨테이너를 찾을 수 없음 - containerId: {}", event.getContainerId());
+                return;
+            }
+
+            OomEventEntity entity = OomEventEntity.from(event, container);
+            oomEventRepository.save(entity);
+
+            log.debug("[OOM_CACHE] DB 저장 완료 - containerId: {}", event.getContainerId());
+        } catch (Exception e) {
+            log.error("[OOM_CACHE] DB 저장 실패 - containerId: {}, error: {}",
+                    event.getContainerId(), e.getMessage(), e);
+        }
     }
 
     /**
