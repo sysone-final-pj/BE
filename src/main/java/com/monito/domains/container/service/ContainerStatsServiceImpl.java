@@ -16,6 +16,7 @@ import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             Container container = containerRepository
                     .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
                     .orElseGet(() -> createNewContainer(agent, metricsDto));
+
+            initializeSpecsIfFirstMetrics(container, metricsDto);
 
             // 4. 이전 통계 조회 (계산용)
             ContainerStatsLog previousStats = statsLogRepository
@@ -239,7 +242,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         Container container = Container.builder()
                 .agent(agent)
                 .containerHash(metricsDto.getContainerHash())
-                .name(metricsDto.getContainerHash().substring(0, 12))
+                .state(metricsDto.getState())
+                .name(metricsDto.getContainerName())
                 .cpuQuota(metricsDto.getCpuQuota())
                 .cpuPeriod(metricsDto.getCpuPeriod())
                 .cpuLimitCores(cpuLimitCores)
@@ -247,6 +251,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .memLimit(metricsDto.getMemLimit())
                 .imageName(metricsDto.getImageName())
                 .imageSize(metricsDto.getImageSize())
+                .storageLimit(metricsDto.getStorageLimit())
                 .build();
 
         container = containerRepository.save(container);
@@ -255,5 +260,35 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores);
 
         return container;
+    }
+
+    /**
+     * 최초 메트릭 수신 시 컨테이너 리소스 스펙 초기화
+     */
+    private void initializeSpecsIfFirstMetrics(Container container, ContainerMetricsRequestDTO metric) {
+
+        if (Boolean.TRUE.equals(container.getMetricsInitialized())) {
+            return; // 이미 초기화됨 → Skip
+        }
+
+        BigDecimal cpuLimitCores = null;
+        if (metric.getCpuQuota() != null && metric.getCpuPeriod() > 0) {
+            cpuLimitCores = BigDecimal.valueOf(metric.getCpuQuota())
+                    .divide(BigDecimal.valueOf(metric.getCpuPeriod()), 2, RoundingMode.HALF_UP);
+        }
+
+        container.updateSpecs(
+                metric.getCpuQuota(),
+                metric.getCpuPeriod(),
+                cpuLimitCores,
+                metric.getOnlineCpus(),
+                metric.getMemLimit(),
+                metric.getStorageLimit()
+        );
+
+        container.markMetricsInitialized();
+        containerRepository.save(container);
+
+        log.info("최초 메트릭 수신 → 컨테이너 스펙 초기화 완료: {}", container.getContainerHash());
     }
 }

@@ -91,3 +91,27 @@ ENABLE ROW MOVEMENT;
 -- Container Stats Logs 인덱스 (로컬 파티션 인덱스)
 CREATE INDEX IDX_CONTAINER_STATS_COLLECTED_AT ON container_stats_logs(collected_at) LOCAL;
 CREATE INDEX IDX_CONTAINER_STATS_CONTAINER_COLLECTED_AT ON container_stats_logs(container_id, collected_at) LOCAL;
+
+-- OOM Events 테이블 (7일 단위 파티셔닝)
+CREATE TABLE oom_events (
+    id NUMBER NOT NULL,
+    container_id NUMBER NOT NULL,
+    container_hash VARCHAR2(64) NOT NULL,
+    container_name VARCHAR2(50) NOT NULL,
+    occurred_at TIMESTAMP NOT NULL,
+    agent_key VARCHAR2(255),
+    created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    CONSTRAINT PK_OOM_EVENTS PRIMARY KEY (id, occurred_at),
+    CONSTRAINT FK_OOM_CONTAINER FOREIGN KEY (container_id) REFERENCES containers(id)
+)
+PARTITION BY RANGE (occurred_at)
+INTERVAL (NUMTODSINTERVAL(7, 'DAY'))
+(
+    PARTITION p_oom_initial VALUES LESS THAN (TO_DATE('2025-01-01', 'YYYY-MM-DD'))
+)
+ENABLE ROW MOVEMENT;
+
+-- OOM Events 인덱스 (로컬 파티션 인덱스)
+CREATE INDEX IDX_OOM_OCCURRED_AT ON oom_events(occurred_at) LOCAL;
+CREATE INDEX IDX_OOM_CONTAINER_OCCURRED_AT ON oom_events(container_id, occurred_at) LOCAL;
+CREATE INDEX IDX_OOM_CONTAINER_HASH ON oom_events(container_hash) LOCAL;

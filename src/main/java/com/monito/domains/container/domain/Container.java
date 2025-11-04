@@ -2,23 +2,18 @@ package com.monito.domains.container.domain;
 
 import com.monito.domains.agent.domain.Agent;
 import com.monito.global.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 @Entity
 @Table(name = "containers")
@@ -38,11 +33,16 @@ public class Container extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent;
 
     @Column(nullable = false, length = 64)
     private String containerHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ContainerState state;
 
     @Column(nullable = false, length = 50)
     private String name;
@@ -82,6 +82,30 @@ public class Container extends BaseEntity {
     private Integer oomKills;
 
     /**
+     * 마지막 OOM Kill 발생 시각
+     * - 중복 이벤트 방지를 위해 사용
+     * - null: 한 번도 OOM이 발생하지 않음
+     */
+    @Column
+    private LocalDateTime lastOomKilledAt;
+
+    /**
+     * 스토리지 할당량 (bytes)
+     * - Docker의 --storage-opt size 옵션으로 설정 가능
+     * - 0인 경우 무제한 (Agent 호스트의 전체 디스크 용량 사용)
+     */
+    @Column(nullable = false)
+    private Long storageLimit;
+
+    /**
+     * 메트릭 초기화 플래그
+     * - false: CONTAINER_STATE_CHANGE로 생성된 초기 상태 (메트릭 0)
+     * - true: METRICS로 실제 메트릭 수신 완료
+     */
+    @Column(nullable = false)
+    private Boolean metricsInitialized;
+
+    /**
      * 컨테이너 이미지 이름
      * 예: "nginx:latest", "ubuntu:20.04"
      */
@@ -100,5 +124,40 @@ public class Container extends BaseEntity {
         if (this.oomKills == null) {
             this.oomKills = 0;
         }
+    }
+
+    public void updateSpecs(Long cpuQuota,
+                            Long cpuPeriod,
+                            BigDecimal cpuLimitCores,
+                            Integer onlineCpus,
+                            Long memLimit,
+                            Long storageLimit) {
+
+        this.cpuQuota = cpuQuota;
+        this.cpuPeriod = cpuPeriod;
+        this.cpuLimitCores = cpuLimitCores;
+        this.onlineCpus = onlineCpus;
+        this.memLimit = memLimit;
+        this.storageLimit = storageLimit;
+    }
+
+    public void markMetricsInitialized() {
+        this.metricsInitialized = true;
+    }
+
+    public void changeState(ContainerState state){
+        this.state = state;
+    }
+
+    public void incrementOomKills() {
+        this.oomKills++;
+    }
+
+    /**
+     * 마지막 OOM Kill 발생 시각 업데이트
+     * @param occurredAt OOM 발생 시각
+     */
+    public void updateLastOomKilledAt(LocalDateTime occurredAt) {
+        this.lastOomKilledAt = occurredAt;
     }
 }

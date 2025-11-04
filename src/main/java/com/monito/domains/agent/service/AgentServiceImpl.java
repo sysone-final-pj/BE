@@ -9,6 +9,9 @@ import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
 import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
+import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import java.util.List;
 @Transactional
 public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
+    private final ContainerRepository containerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -38,8 +42,14 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AgentSummaryResponseDTO> getAgentList() {
-        return agentRepository.findAll().stream()
+    public List<AgentSummaryResponseDTO> getAgentList(String keyword) {
+        // keyword trim 처리 (빈 문자열은 null로 변환)
+        String searchKeyword = keyword != null && !keyword.trim().isEmpty()
+                ? keyword.trim()
+                : null;
+
+        // 하나의 쿼리로 전체 조회 및 검색 처리
+        return agentRepository.findAllWithSearch(searchKeyword).stream()
                 .map(AgentSummaryResponseDTO::from)
                 .toList();
     }
@@ -76,6 +86,10 @@ public class AgentServiceImpl implements AgentService {
                     agent.updateStatus(status);
                     log.info("Agent 상태 변경 - agentKey: {}, status: {} -> {}",
                             agentKey, agent.getAgentStatus(), status);
+
+                    if (status == AgentStatus.OFFLINE) {
+                        markContainersAsUnknown(agent);
+                    }
                 });
     }
 
@@ -87,6 +101,10 @@ public class AgentServiceImpl implements AgentService {
                 );
 
         agent.markAsDeleted();
+
+        // Soft delete all containers belonging to this agent
+        containerRepository.findAllByAgent_Id(id)
+                .forEach(c -> c.markAsDeleted());
     }
 
     @Override
@@ -102,5 +120,14 @@ public class AgentServiceImpl implements AgentService {
     public AgentCreateResponseDTO createAgent(AgentCreateRequestDTO dto) {
         Agent save = agentRepository.save(dto.toEntity());
         return AgentCreateResponseDTO.from(save);
+    }
+
+    public void markContainersAsUnknown(Agent agent) {
+        List<Container> containers = containerRepository.findAllByAgent(agent);
+        for (Container container : containers) {
+            container.changeState(ContainerState.UNKNOWN);
+        }
+        log.info("Agent OFFLINE → 컨테이너 {}개 UNKNOWN 처리 - agentKey: {}",
+                containers.size(), agent.getAgentKey());
     }
 }

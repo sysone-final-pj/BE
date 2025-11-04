@@ -30,13 +30,9 @@ app:
     refresh-expiration: 604800000  # 7? (???)
 
   scheduler:
-    agent-polling:
-      fixed-delay: 5000  # Agent 폴링 주기 (밀리초)
-      initial-delay: 10000  # 초기 지연 시간 (밀리초)
-    thread-pool:
-      core-size: 5  # 기본 스레드 수
-      max-size: 20  # 최대 스레드 수
-      queue-capacity: 100  # 대기 큐 크기
-    partition-cleanup:
+    metrics-partition-cleanup:
       retention-days: 30  # 로그 보관 기간 (일)
       cron: "0 0 2 * * *"  # 실행 시간 (매일 새벽 2시)
+    oom-partition-cleanup:
+      retention-days: 180
+      cron: "0 0 3 * * *"

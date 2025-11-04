@@ -79,6 +79,7 @@ public class ContainerMetricsRawRequestDTO {
                 // Storage
                 .sizeRw(storage != null ? storage.getSizeRw() : 0L)
                 .sizeRootFs(storage != null ? storage.getSizeRootFs() : 0L)
+                .storageLimit(storage != null ? storage.getStorageLimit() : 0L)
                 .imageSize(storage != null ? storage.getImageSize() : null)
                 .imageName(storage != null ? storage.getImageName() : null)
                 .build();
@@ -88,7 +89,8 @@ public class ContainerMetricsRawRequestDTO {
         if (state == null) return ContainerState.DEAD;
 
         try {
-            return ContainerState.valueOf(state.toUpperCase());
+            String normalized = state.trim().toUpperCase();
+            return ContainerState.valueOf(normalized);
         } catch (IllegalArgumentException e) {
             return ContainerState.DEAD;
         }

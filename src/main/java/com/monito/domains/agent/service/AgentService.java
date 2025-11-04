@@ -20,9 +20,11 @@ public interface AgentService {
     AgentDetailResponseDTO getAgent(Long id);
 
     /**
-     * @return 조회 가능한 모든 Agent AgentSummaryResponseDTO 형식으로 반환
+     * Agent 목록 조회 및 검색
+     * @param keyword 검색어 (null이면 전체 조회, 값이 있으면 agentName, agentKey, description에서 검색)
+     * @return 조회된 Agent 리스트
      */
-    List<AgentSummaryResponseDTO> getAgentList();
+    List<AgentSummaryResponseDTO> getAgentList(String keyword);
 
     /**
      * @param id Agent 기본 키

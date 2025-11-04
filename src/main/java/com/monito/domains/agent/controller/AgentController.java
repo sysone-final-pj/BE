@@ -21,8 +21,10 @@ public class AgentController {
     private final AgentService agentService;
 
     @GetMapping
-    public ApiResponse<List<AgentSummaryResponseDTO>> getAgentList(){
-        return ApiResponse.ok(agentService.getAgentList());
+    public ApiResponse<List<AgentSummaryResponseDTO>> getAgentList(
+            @RequestParam(required = false) String keyword
+    ){
+        return ApiResponse.ok(agentService.getAgentList(keyword));
     }
 
     @GetMapping("/{id}")

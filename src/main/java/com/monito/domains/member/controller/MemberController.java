@@ -46,7 +46,7 @@ public class MemberController {
     /**
      * 사용자 수정
      */
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     public ApiResponse<Void> updateMember(
             @PathVariable Long id,
             @Valid @RequestBody MemberUpdateRequestDTO memberUpdateRequestDTO) {

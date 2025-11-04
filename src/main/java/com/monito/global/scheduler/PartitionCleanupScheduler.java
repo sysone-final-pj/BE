@@ -22,8 +22,11 @@ public class PartitionCleanupScheduler {
 
     private final DataSource dataSource;
 
-    @Value("${app.scheduler.partition-cleanup.retention-days:30}")
-    private int retentionDays;
+    @Value("${app.scheduler.metrics-partition-cleanup.retention-days:30}")
+    private int metricsRetentionDays;
+
+    @Value("${app.scheduler.oom-partition-cleanup.retention-days:180}")
+    private int oomRetentionDays;
 
     /**
      * 설정된 시간에 오래된 파티션 삭제
@@ -31,12 +34,12 @@ public class PartitionCleanupScheduler {
      * - 전용 스레드 풀(partitionCleanupExecutor) 사용
      */
     @Async("partitionCleanupExecutor")
-    @Scheduled(cron = "${app.scheduler.partition-cleanup.cron:0 0 2 * * *}")
-    public void cleanupOldPartitions() {
-        log.info("파티션 정리 작업 시작 - 보관 기간: {}일", retentionDays);
+    @Scheduled(cron = "${app.scheduler.metrics-partition-cleanup.cron:0 0 2 * * *}")
+    public void cleanupOldMetricsPartitions() {
+        log.info("파티션 정리 작업 시작 - 보관 기간: {}일", metricsRetentionDays);
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        LocalDate cutoffDate = LocalDate.now().minusDays(retentionDays);
+        LocalDate cutoffDate = LocalDate.now().minusDays(metricsRetentionDays);
 
         try {
             // Container Logs 파티션 삭제
@@ -48,6 +51,28 @@ public class PartitionCleanupScheduler {
             log.info("파티션 정리 작업 완료");
         } catch (Exception e) {
             log.error("파티션 정리 작업 실패", e);
+        }
+    }
+
+    /**
+     * 설정된 시간에 오래된 파티션 삭제
+     * - Cron 표현식: application.yml에서 설정
+     * - 전용 스레드 풀(partitionCleanupExecutor) 사용
+     */
+    @Async("partitionCleanupExecutor")
+    @Scheduled(cron = "${app.scheduler.oom-partition-cleanup.cron:0 0 3 * * *}")
+    public void cleanupOldOOMPartitions() {
+        log.info("OOM 파티션 정리 작업 시작 - 보관 기간: {}일", oomRetentionDays);
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        LocalDate cutoffDate = LocalDate.now().minusDays(oomRetentionDays);
+
+        try {
+            dropPartitionsForTable(jdbcTemplate, "oom_events", cutoffDate);
+
+            log.info("OOM 파티션 정리 작업 완료");
+        } catch (Exception e) {
+            log.error("OOM 파티션 정리 작업 실패", e);
         }
     }
 

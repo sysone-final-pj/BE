@@ -15,71 +15,37 @@ import java.util.List;
 public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long> {
 
     /**
-     * 초기 로드: 특정 컨테이너의 특정 기간 내 최신 로그 조회
-     * @param containerId 컨테이너 ID
-     * @param startTime 시작 시간
-     * @param endTime 종료 시간
-     * @param pageable 페이지 정보 (size만 사용)
+     * 통합 로그 조회 메서드 (초기 로드 + 무한 스크롤 + 다중 컨테이너 지원)
+     *
+     * @param containerIds 컨테이너 ID 리스트 (null이면 모든 컨테이너, 단일/다중 모두 지원)
+     * @param logSource 로그 소스 필터 (null이면 필터링 안함)
+     * @param agentName Agent 이름 필터 (null이면 필터링 안함)
+     * @param lastLogId 커서 - 마지막 로그 ID (null이면 초기 로드)
+     * @param lastLoggedAt 커서 - 마지막 로그 시간 (null이면 초기 로드)
+     * @param startTime 시작 시간 (초기 로드 시 사용, null 가능)
+     * @param endTime 종료 시간 (초기 로드 시 사용, null 가능)
+     * @param pageable 페이지 정보 (size와 sort 사용)
      * @return 로그 목록
      */
     @Query("SELECT cl FROM ContainerLog cl " +
-           "WHERE cl.container.id = :containerId " +
-           "AND cl.loggedAt BETWEEN :startTime AND :endTime " +
-           "ORDER BY cl.loggedAt DESC, cl.id DESC")
-    List<ContainerLog> findInitialLogs(
-            @Param("containerId") Long containerId,
-            @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime,
-            Pageable pageable
-    );
-
-    /**
-     * 초기 로드 + LogSource 필터
-     */
-    @Query("SELECT cl FROM ContainerLog cl " +
-           "WHERE cl.container.id = :containerId " +
-           "AND cl.loggedAt BETWEEN :startTime AND :endTime " +
-           "AND cl.source = :logSource " +
-           "ORDER BY cl.loggedAt DESC, cl.id DESC")
-    List<ContainerLog> findInitialLogsWithSource(
-            @Param("containerId") Long containerId,
-            @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime,
+           "LEFT JOIN FETCH cl.container c " +
+           "LEFT JOIN FETCH c.agent a " +
+           "WHERE (:containerIds IS NULL OR cl.container.id IN :containerIds) " +
+           "AND (:logSource IS NULL OR cl.source = :logSource) " +
+           "AND (:agentName IS NULL OR a.agentName LIKE CONCAT('%', :agentName, '%')) " +
+           "AND (:lastLoggedAt IS NULL OR " +
+           "     cl.loggedAt < :lastLoggedAt OR " +
+           "     (cl.loggedAt = :lastLoggedAt AND cl.id < :lastLogId)) " +
+           "AND (:startTime IS NULL OR cl.loggedAt >= :startTime) " +
+           "AND (:endTime IS NULL OR cl.loggedAt <= :endTime)")
+    List<ContainerLog> findLogs(
+            @Param("containerIds") List<Long> containerIds,
             @Param("logSource") LogSource logSource,
-            Pageable pageable
-    );
-
-    /**
-     * 커서 기반: 이전 로그 조회 (무한 스크롤)
-     * - lastLoggedAt 이전 시간의 로그
-     * - lastLoggedAt과 같은 시간이면 lastLogId보다 작은 ID
-     */
-    @Query("SELECT cl FROM ContainerLog cl " +
-           "WHERE cl.container.id = :containerId " +
-           "AND (cl.loggedAt < :lastLoggedAt " +
-           "     OR (cl.loggedAt = :lastLoggedAt AND cl.id < :lastLogId)) " +
-           "ORDER BY cl.loggedAt DESC, cl.id DESC")
-    List<ContainerLog> findLogsAfterCursor(
-            @Param("containerId") Long containerId,
+            @Param("agentName") String agentName,
             @Param("lastLogId") Long lastLogId,
             @Param("lastLoggedAt") LocalDateTime lastLoggedAt,
-            Pageable pageable
-    );
-
-    /**
-     * 커서 기반 + LogSource 필터
-     */
-    @Query("SELECT cl FROM ContainerLog cl " +
-           "WHERE cl.container.id = :containerId " +
-           "AND (cl.loggedAt < :lastLoggedAt " +
-           "     OR (cl.loggedAt = :lastLoggedAt AND cl.id < :lastLogId)) " +
-           "AND cl.source = :logSource " +
-           "ORDER BY cl.loggedAt DESC, cl.id DESC")
-    List<ContainerLog> findLogsAfterCursorWithSource(
-            @Param("containerId") Long containerId,
-            @Param("lastLogId") Long lastLogId,
-            @Param("lastLoggedAt") LocalDateTime lastLoggedAt,
-            @Param("logSource") LogSource logSource,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
             Pageable pageable
     );
 }

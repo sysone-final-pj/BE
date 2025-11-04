@@ -9,7 +9,10 @@ import com.monito.domains.agent.dto.request.AgentLogsRequestDTO;
 import com.monito.domains.agent.dto.request.AgentMetricsRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRawRequestDTO;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
+import com.monito.domains.container.dto.request.ContainerStateChangeRequestDTO;
 import com.monito.domains.container.service.ContainerLogService;
+import com.monito.domains.container.service.ContainerService;
 import com.monito.domains.container.service.ContainerStatsService;
 import com.monito.global.cache.AgentMetadata;
 import com.monito.global.cache.AgentMetadataCache;
@@ -35,6 +38,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;
     private final ContainerLogService containerLogService;
+    private final ContainerService containerService;
     private final AgentMetadataCache metadataCache;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
@@ -76,6 +80,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                     break;
                 case "AGENT_INFO":
                     handleAgentInfo(session, data);
+                    break;
+                case "CONTAINER_STATE_CHANGE":
+                    handleContainerStateChange(session, data);
                     break;
                 case "METRICS":
                     handleMetrics(session, data);
@@ -293,6 +300,83 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             sendMessage(session, Map.of(
                     "type", "ERROR",
                     "message", "Failed to process logs: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 컨테이너 상태 변경 처리 (CONTAINER_STATE_CHANGE)
+     * - Agent가 감지한 컨테이너 생성/종료/삭제 이벤트 처리
+     * - 신규 컨테이너: 초기값(0)으로 생성
+     * - 삭제된 컨테이너: soft delete 처리
+     */
+    private void handleContainerStateChange(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 컨테이너 상태 변경 전송 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> stateChangeData = (Map<String, Object>) data.get("data");
+            ContainerStateChangeRequestDTO stateChange = objectMapper.convertValue(
+                    stateChangeData,
+                    ContainerStateChangeRequestDTO.class
+            );
+
+            int totalContainers = stateChange.getContainers() != null ? stateChange.getContainers().size() : 0;
+
+            log.info("═══════════════════════════════════════");
+            log.info("📦 컨테이너 상태 변경 수신");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   컨테이너 개수: {}", totalContainers);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            // 각 컨테이너 상태 처리
+            int successCount = 0;
+            int failCount = 0;
+
+            if (stateChange.getContainers() != null) {
+                for (ContainerSnapshotRequestDTO snapshot : stateChange.getContainers()) {
+                    try {
+                        containerService.processContainerStateChange(agentKey, snapshot);
+                        successCount++;
+
+                        log.debug("컨테이너 상태 변경 처리 성공 - Hash: {}, Name: {}, State: {}",
+                                snapshot.getContainerHash(),
+                                snapshot.getContainerName(),
+                                snapshot.getState());
+                    } catch (Exception e) {
+                        failCount++;
+                        log.error("컨테이너 상태 변경 처리 실패 - Hash: {}",
+                                snapshot.getContainerHash(), e);
+                    }
+                }
+            }
+
+            log.info("컨테이너 상태 변경 처리 완료 - 성공: {}, 실패: {}", successCount, failCount);
+
+            sendMessage(session, Map.of(
+                    "type", "CONTAINER_STATE_CHANGE_ACK",
+                    "message", String.format("Container state changes processed: %d success, %d failed", successCount, failCount),
+                    "successCount", successCount,
+                    "failCount", failCount,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
+        } catch (Exception e) {
+            log.error("컨테이너 상태 변경 처리 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to process container state changes: " + e.getMessage()
             ));
         }
     }
