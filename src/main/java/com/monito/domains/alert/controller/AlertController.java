@@ -207,7 +207,7 @@ public class AlertController {
             @io.swagger.v3.oas.annotations.Parameter(description = "읽음 여부 (true: 읽음, false: 안읽음)")
             @RequestParam(required = false) Boolean isRead,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT, CREATED_AT). 기본값: CREATED_AT")
+            @io.swagger.v3.oas.annotations.Parameter(description = "정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT). 기본값: CREATED_AT")
             @RequestParam(required = false) com.monito.domains.alert.dto.request.AlertSortType sortBy
     ) {
         AlertFilterDTO filter = AlertFilterDTO.builder()

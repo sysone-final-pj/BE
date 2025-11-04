@@ -13,8 +13,7 @@ public enum AlertSortType {
     METRIC_TYPE("메트릭 타입 순"),
     CONTAINER_NAME("컨테이너 이름 순"),
     METRIC_VALUE("메트릭 값 순 (높은 순)"),
-    COLLECTED_AT("수집 시간 순 (최신 순)"),
-    CREATED_AT("생성 시간 순 (최신 순)");
+    COLLECTED_AT("수집 시간 순 (최신 순)");
 
     private final String description;
 }

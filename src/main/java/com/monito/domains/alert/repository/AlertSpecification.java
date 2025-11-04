@@ -132,7 +132,6 @@ public class AlertSpecification {
             case CONTAINER_NAME -> criteriaBuilder.asc(containerJoin.get("name"));
             case METRIC_VALUE -> criteriaBuilder.desc(root.get("metricValue"));
             case COLLECTED_AT -> criteriaBuilder.desc(root.get("collectedAt"));
-            case CREATED_AT -> criteriaBuilder.desc(root.get("createdAt"));
         };
     }
 }
