@@ -159,25 +159,28 @@ public class AlertController {
     @Operation(
             summary = "필터 조건으로 알림 조회",
             description = """
-                    알림을 다양한 조건으로 필터링합니다.
+                    알림을 다양한 조건으로 필터링하고 정렬합니다.
 
                     **사용 가능한 필터:**
-                    - alertLevel: 경고 레벨 (ERROR, WARNING, INFO)
-                    - metricType: 메트릭 타입 (CPU, MEMORY, DISK, NETWORK 등)
+                    - alertLevel: 경고 레벨 (CRITICAL, HIGH, WARNING, INFO)
+                    - metricType: 메트릭 타입 (CPU_PERCENT, MEM_PERCENT, DISK_USAGE_GB, NETWORK_TOTAL_BYTES 등)
                     - agentName: 에이전트 이름 (부분 일치)
                     - containerName: 컨테이너 이름 (부분 일치)
-                    - collectedAtFrom/To: 수집 시간 범위 (예: 2024-10-01T00:00:00)
+                    - quickRangeType: 빠른 시간 범위 선택 (LAST_5_MINUTES, LAST_10_MINUTES 등)
+                      * quickRangeType이 있으면 collectedAtFrom/To는 무시됨
+                    - collectedAtFrom/To: 수집 시간 범위 (예: 2024-10-01T00:00:00) - quickRangeType이 없을 때 사용
                     - createdAtFrom/To: 생성 시간 범위 (예: 2024-10-01T00:00:00)
                     - isRead: 읽음 여부 (true/false)
+                    - sortBy: 정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT, CREATED_AT)
                     """
     )
     @GetMapping("/filter")
     public ApiResponse<List<AlertListItemResponseDTO>> getAlertsWithFilter(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @io.swagger.v3.oas.annotations.Parameter(description = "경고 레벨 (ERROR, WARNING, INFO)")
+            @io.swagger.v3.oas.annotations.Parameter(description = "경고 레벨 (CRITICAL, HIGH, WARNING, INFO)")
             @RequestParam(required = false) com.monito.domains.alert.domain.AlertLevel alertLevel,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "메트릭 타입 (CPU, MEMORY, DISK, NETWORK 등)")
+            @io.swagger.v3.oas.annotations.Parameter(description = "메트릭 타입 (CPU_PERCENT, MEM_PERCENT, DISK_USAGE_GB, NETWORK_TOTAL_BYTES 등)")
             @RequestParam(required = false) com.monito.domains.container.domain.MetricType metricType,
 
             @io.swagger.v3.oas.annotations.Parameter(description = "에이전트 이름 (부분 일치)")
@@ -186,10 +189,13 @@ public class AlertController {
             @io.swagger.v3.oas.annotations.Parameter(description = "컨테이너 이름 (부분 일치)")
             @RequestParam(required = false) String containerName,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "수집 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
+            @io.swagger.v3.oas.annotations.Parameter(description = "빠른 시간 범위 선택 (LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR, LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS). 이 값이 있으면 collectedAtFrom/To는 무시됨")
+            @RequestParam(required = false) com.monito.domains.container.dto.request.QuickRangeType quickRangeType,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "수집 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00) - quickRangeType이 없을 때 사용")
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtFrom,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "수집 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59)")
+            @io.swagger.v3.oas.annotations.Parameter(description = "수집 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59) - quickRangeType이 없을 때 사용")
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtTo,
 
             @io.swagger.v3.oas.annotations.Parameter(description = "생성 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
@@ -199,18 +205,23 @@ public class AlertController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAtTo,
 
             @io.swagger.v3.oas.annotations.Parameter(description = "읽음 여부 (true: 읽음, false: 안읽음)")
-            @RequestParam(required = false) Boolean isRead
+            @RequestParam(required = false) Boolean isRead,
+
+            @io.swagger.v3.oas.annotations.Parameter(description = "정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT). 기본값: CREATED_AT")
+            @RequestParam(required = false) com.monito.domains.alert.dto.request.AlertSortType sortBy
     ) {
         AlertFilterDTO filter = AlertFilterDTO.builder()
                 .alertLevel(alertLevel)
                 .metricType(metricType)
                 .agentName(agentName)
                 .containerName(containerName)
+                .quickRangeType(quickRangeType)
                 .collectedAtFrom(collectedAtFrom)
                 .collectedAtTo(collectedAtTo)
                 .createdAtFrom(createdAtFrom)
                 .createdAtTo(createdAtTo)
                 .isRead(isRead)
+                .sortType(sortBy)
                 .build();
 
         List<AlertListItemResponseDTO> alerts = alertService.getAlertsWithFilter(userDetails.getId(), filter);

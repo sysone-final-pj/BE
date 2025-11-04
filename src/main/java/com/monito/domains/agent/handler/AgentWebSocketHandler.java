@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -32,6 +33,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 @Slf4j
 public class AgentWebSocketHandler extends TextWebSocketHandler {
+    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;

@@ -8,8 +8,8 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
-import com.monito.domains.dashboard.handler.DashboardWebSocketHandler;
 import com.monito.domains.container.repository.ContainerRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
 import com.monito.global.exception.BadRequestException;
@@ -36,8 +36,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
-    private final DashboardWebSocketHandler dashboardWebSocketHandler;
-    private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
     @Override
     @Transactional
     public void processMetrics(String agentKey, ContainerMetricsRequestDTO metricsDto) {
@@ -144,16 +143,19 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 9. WebSocket 브로드캐스트 (모든 상세 메트릭 포함)
+            // 9. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
             try {
-                var dashboardDto = ContainerDashboardResponseDTO.builder()
+                ContainerDashboardResponseDTO dashboardDto = ContainerDashboardResponseDTO.builder()
                         // 기본 정보
                         .containerId(container.getId())
                         .containerHash(container.getContainerHash())
                         .containerName(container.getName())
+                        .agentId(agent.getId())
                         .agentName(agent.getAgentName())
                         .state(statsLog.getState())
                         .health(statsLog.getHealth())
+                        .imageName(container.getImageName())
+                        .imageSize(container.getImageSize())
                         // CPU 메트릭
                         .cpuPercent(statsLog.getCpuPercent())
                         .cpuCoreUsage(statsLog.getCpuCoreUsage())
@@ -198,10 +200,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         .sizeRootFs(statsLog.getSizeRootFs())
                         .build();
 
-                String json = objectMapper.writeValueAsString(dashboardDto);
-                dashboardWebSocketHandler.broadcastMetrics(json);
+                // STOMP를 통한 브로드캐스트 (/topic/dashboard 구독자 전체에게 전송)
+                messagingTemplate.convertAndSend("/topic/dashboard", dashboardDto);
 
-                log.debug("대시보드 실시간 브로드캐스트 전송 완료 - Container: {}", container.getName());
+                log.debug("대시보드 STOMP 브로드캐스트 전송 완료 - Container: {}", container.getName());
             } catch (Exception e) {
                 log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
