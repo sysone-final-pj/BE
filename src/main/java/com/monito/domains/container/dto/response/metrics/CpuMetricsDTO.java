@@ -39,4 +39,7 @@ public class CpuMetricsDTO {
     private Long throttledPeriods;                        // Throttle된 기간 수
     private Long throttledTime;                           // Throttle된 총 시간 (nanoseconds)
     private BigDecimal throttleRate;                      // Throttle 비율 (%)
+
+    // cpu 요약 정보 (1분, 5분, 15분, p95)
+    private CpuMetricsSummaryDTO summary;
 }

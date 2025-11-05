@@ -9,6 +9,7 @@ import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.global.cache.CpuMetricsBufferCache;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -37,6 +38,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CpuMetricsBufferCache cpuMetricsBufferCache;
+
     @Override
     @Transactional
     public void processMetrics(String agentKey, ContainerMetricsRequestDTO metricsDto) {
@@ -135,7 +138,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     statsLog.getMemPercent()
             );
 
-            // 8. 알림 규칙 평가 (자동 알림 발생)
+            // 8. CPU 통계치 계산을 위한 캐싱 처리
+            cpuMetricsBufferCache.addCpuSample(container.getId(), statsLog.getCpuPercent());
+
+            // 9. 알림 규칙 평가 (자동 알림 발생)
             try {
                 alertEvaluationFacade.evaluateContainerStats(statsLog);
             } catch (Exception e) {
@@ -143,7 +149,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 9. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
+            // 10. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
             try {
                 ContainerDashboardResponseDTO dashboardDto = ContainerDashboardResponseDTO.builder()
                         // 기본 정보

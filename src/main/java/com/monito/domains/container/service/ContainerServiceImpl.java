@@ -12,10 +12,8 @@ import com.monito.domains.container.dto.response.metrics.*;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
-import com.monito.global.cache.AgentMetadata;
-import com.monito.global.cache.AgentMetadataCache;
-import com.monito.global.cache.OomEvent;
-import com.monito.global.cache.OomEventCache;
+import com.monito.domains.container.util.CpuMetricsCalculator;
+import com.monito.global.cache.*;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 
@@ -48,6 +46,8 @@ public class ContainerServiceImpl implements ContainerService {
     private final AgentMetadataCache agentMetadataCache;
     private final AgentRepository agentRepository;
     private final OomEventCache oomEventCache;
+    private final CpuMetricsBufferCache cpuMetricsBufferCache;
+    private final CpuMetricsCalculator cpuMetricsCalculator;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
@@ -280,6 +280,18 @@ public class ContainerServiceImpl implements ContainerService {
                     .multiply(BigDecimal.valueOf(100));
         }
 
+        // 통계 불러오기
+        List<BigDecimal> samples = cpuMetricsBufferCache.getSamples(container.getId());
+
+        // 요약 통계 계산 및 객체 생성
+        CpuMetricsSummaryDTO summary = CpuMetricsSummaryDTO.builder()
+                .current(cpuMetricsCalculator.avgLast(samples, 1))
+                .avg1m(cpuMetricsCalculator.avgLast(samples, 12))        // 1분
+                .avg5m(cpuMetricsCalculator.avgLast(samples, 12 * 5))    // 5분
+                .avg15m(cpuMetricsCalculator.avgLast(samples, 12 * 15))  // 15분
+                .p95(cpuMetricsCalculator.percentile(samples, 0.95))     // 95th percentile
+                .build();
+
         return CpuMetricsDTO.builder()
                 .cpuPercent(cpuPercent)
                 .cpuCoreUsage(cpuCoreUsage)
@@ -297,6 +309,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .throttledPeriods(latest != null ? latest.getThrottledPeriods() : null)
                 .throttledTime(latest != null ? latest.getThrottledTime() : null)
                 .throttleRate(throttleRate)
+                .summary(summary)
                 .build();
     }
 
@@ -415,6 +428,9 @@ public class ContainerServiceImpl implements ContainerService {
                 containerRepository.save(container);
                 log.info("컨테이너 삭제 처리 - Agent: {}, ContainerHash: {}",
                         agentKey, snapshot.getContainerHash());
+                // 컨테이너 삭제처리 될 경우 캐시 데이터에서도 삭제
+                cpuMetricsBufferCache.removeContainer(container.getId());
+                oomEventCache.removeContainer(container.getId());
             } else if(container.getState() != state) {
                 container.changeState(state);
                 // 상태만 업데이트 (이름이나 이미지 변경 가능성 대응)
