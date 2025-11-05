@@ -4,6 +4,7 @@ import com.monito.domains.container.dto.response.metrics.ContainerInfoDTO;
 import com.monito.domains.container.dto.response.metrics.CpuMetricsDTO;
 import com.monito.domains.container.dto.response.metrics.MemoryMetricsDTO;
 import com.monito.domains.container.dto.response.metrics.NetworkMetricsDTO;
+import com.monito.domains.container.dto.response.metrics.OomMetricsDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 
 /**
  * 컨테이너 상세 정보 응답 DTO
- * - CPU, Memory, Network 메트릭을 한번에 반환
+ * - CPU, Memory, Network, OOM 메트릭을 한번에 반환
  * - 로그는 별도 API로 제공
  */
 @Getter
@@ -23,6 +24,7 @@ public class ContainerDetailResponseDTO {
     private CpuMetricsDTO cpu;
     private MemoryMetricsDTO memory;
     private NetworkMetricsDTO network;
+    private OomMetricsDTO oom;
 
     // 조회 시간 정보
     private LocalDateTime startTime;

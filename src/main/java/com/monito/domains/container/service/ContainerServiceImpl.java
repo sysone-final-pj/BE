@@ -149,6 +149,7 @@ public class ContainerServiceImpl implements ContainerService {
         CpuMetricsDTO cpu = buildCpuMetrics(statsLogs, container);
         MemoryMetricsDTO memory = buildMemoryMetrics(statsLogs, container);
         NetworkMetricsDTO network = buildNetworkMetrics(statsLogs);
+        OomMetricsDTO oom = buildOomMetrics(container, startTime, endTime);
 
         // 6. 응답 생성
         return ContainerDetailResponseDTO.builder()
@@ -156,6 +157,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .cpu(cpu)
                 .memory(memory)
                 .network(network)
+                .oom(oom)
                 .startTime(startTime)
                 .endTime(endTime)
                 .dataPoints(statsLogs.size())
@@ -535,44 +537,17 @@ public class ContainerServiceImpl implements ContainerService {
                 container.getId(), container.getName(), container.getOomKills(), occurredAt);
     }
 
-    @Override
-    public OomTimeSeriesResponseDTO getOomTimeSeries(
-            Long containerId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            ChronoUnit bucketSize
-    ) {
-        // 1. 컨테이너 조회
-        Container container = containerRepository.findById(containerId)
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.DATA_NOT_FOUND));
-
-        // 2. 기본값 설정 (null이면 최근 7일)
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime effectiveStartTime = startTime != null ? startTime : now.minusDays(7);
-        LocalDateTime effectiveEndTime = endTime != null ? endTime : now;
-
-        // 3. 캐시에서 시간대별 Histogram 조회
+    private OomMetricsDTO buildOomMetrics(Container container, LocalDateTime startTime, LocalDateTime endTime) {
+        // 캐시에서 시간대별 Histogram 조회 (HOURS 고정)
         Map<LocalDateTime, Long> histogram = oomEventCache.getHistogram(
-                containerId,
-                effectiveStartTime,
-                effectiveEndTime,
-                bucketSize
+                container.getId(),
+                startTime,
+                endTime,
+                ChronoUnit.HOURS
         );
 
-        // 4. 기간 내 총 OOM 횟수 계산
-        int totalCount = histogram.values().stream()
-                .mapToInt(Long::intValue)
-                .sum();
-
-        // 5. 응답 DTO 생성
-        return OomTimeSeriesResponseDTO.builder()
-                .containerId(container.getId())
-                .containerName(container.getName())
-                .startTime(effectiveStartTime)
-                .endTime(effectiveEndTime)
-                .bucketSize(bucketSize.name())
+        return OomMetricsDTO.builder()
                 .timeSeries(histogram)
-                .totalCount(totalCount)
                 .totalOomKills(container.getOomKills())
                 .lastOomKilledAt(container.getLastOomKilledAt())
                 .build();

@@ -7,7 +7,6 @@ import com.monito.domains.container.dto.request.QuickRangeType;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
-import com.monito.domains.container.dto.response.OomTimeSeriesResponseDTO;
 import com.monito.domains.container.service.ContainerService;
 import com.monito.global.common.response.ApiResponse;
 
@@ -145,50 +144,4 @@ public class ContainerController {
         return ApiResponse.ok(response, "컨테이너 로그 조회 성공");
     }
 
-    /**
-     * OOM 시계열 데이터 조회 (Histogram/Heatmap용)
-     * GET /api/containers/{id}/oom-timeseries
-     *
-     * Query Parameters:
-     * - startTime: 조회 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss) - null이면 7일 전
-     * - endTime: 조회 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss) - null이면 현재
-     * - bucketSize: 버킷 크기 (HOURS, DAYS, MINUTES) - 기본: HOURS
-     *
-     * 예시:
-     * - 기본 (최근 7일, 시간별): GET /api/containers/1/oom-timeseries
-     * - 시간별 (최근 24시간): GET /api/containers/1/oom-timeseries?startTime=2025-01-20T00:00:00&bucketSize=HOURS
-     * - 일별 (최근 30일): GET /api/containers/1/oom-timeseries?startTime=2025-01-01T00:00:00&bucketSize=DAYS
-     *
-     * Response:
-     * {
-     *   "containerId": 1,
-     *   "containerName": "oom-test",
-     *   "startTime": "2025-01-20T00:00:00",
-     *   "endTime": "2025-01-27T00:00:00",
-     *   "bucketSize": "HOURS",
-     *   "timeSeries": {
-     *     "2025-01-20T10:00:00": 3,
-     *     "2025-01-20T11:00:00": 1,
-     *     "2025-01-21T14:00:00": 2
-     *   },
-     *   "totalCount": 6,
-     *   "totalOomKills": 145,
-     *   "lastOomKilledAt": "2025-01-21T14:30:00"
-     * }
-     */
-    @GetMapping("/containers/{id}/oom-timeseries")
-    public ApiResponse<OomTimeSeriesResponseDTO> getOomTimeSeries(
-            @PathVariable("id") Long containerId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
-            @RequestParam(defaultValue = "HOURS") TimeBucket timeBucket
-    ) {
-        log.info("OOM 시계열 데이터 조회 요청 - containerId: {}, startTime: {}, endTime: {}, bucketSize: {}",
-                containerId, startTime, endTime, timeBucket.getUnit());
-
-        OomTimeSeriesResponseDTO response = containerService.getOomTimeSeries(
-                containerId, startTime, endTime, timeBucket.getUnit()
-        );
-        return ApiResponse.ok(response, "OOM 시계열 데이터 조회 성공");
-    }
 }

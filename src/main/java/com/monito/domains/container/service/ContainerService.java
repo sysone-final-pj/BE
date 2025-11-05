@@ -9,10 +9,7 @@ import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
-import com.monito.domains.container.dto.response.OomTimeSeriesResponseDTO;
 import org.springframework.data.domain.Sort.Direction;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -62,21 +59,4 @@ public interface ContainerService {
      * @param snapshot 컨테이너 상태 스냅샷
      */
     void processContainerStateChange(String agentKey, ContainerSnapshotRequestDTO snapshot);
-
-    /**
-     * OOM 시계열 데이터 조회 (Histogram/Heatmap용)
-     * - 캐시에서 최근 7일 이내 OOM 이벤트 조회
-     * - 시간대별 버킷으로 그룹핑하여 반환
-     * @param containerId 컨테이너 ID
-     * @param startTime 조회 시작 시간 (null이면 7일 전)
-     * @param endTime 조회 종료 시간 (null이면 현재)
-     * @param bucketSize 버킷 크기 (HOURS, DAYS 등)
-     * @return OOM 시계열 데이터
-     */
-    OomTimeSeriesResponseDTO getOomTimeSeries(
-            Long containerId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            ChronoUnit bucketSize
-    );
 }
