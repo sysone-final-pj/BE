@@ -12,6 +12,7 @@ import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.global.cache.AgentMetadataCache;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.List;
 public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
     private final ContainerRepository containerRepository;
+    private final AgentMetadataCache agentMetadataCache;
 
     @Override
     @Transactional(readOnly = true)
@@ -105,6 +107,9 @@ public class AgentServiceImpl implements AgentService {
         // Soft delete all containers belonging to this agent
         containerRepository.findAllByAgent_Id(id)
                 .forEach(c -> c.markAsDeleted());
+
+        // agent 메타 데이터 삭제
+        agentMetadataCache.removeMetadata(agent.getAgentKey());
     }
 
     @Override
