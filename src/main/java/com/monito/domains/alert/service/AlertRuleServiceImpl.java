@@ -95,18 +95,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     }
 
     /**
-     * 특정 메트릭 타입의 알림 규칙 조회
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId) {
-        return alertRuleRepository.findByMemberId(memberId)
-                .stream()
-                .map(AlertRuleResponseDTO::from)
-                .collect(Collectors.toList());
-    }
-
-    /**
      * 알림 규칙 수정
      */
     @Override

@@ -27,11 +27,6 @@ public interface AlertRuleService {
     List<AlertRuleResponseDTO> getAllAlertRules(Long memberId);
 
     /**
-     * 특정 컨테이너의 알림 규칙 조회
-     */
-    List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId);
-
-    /**
      * 알림 규칙 수정
      */
     AlertRuleResponseDTO updateAlertRule(Long ruleId, Long memberId, AlertRuleUpdateRequestDTO request);

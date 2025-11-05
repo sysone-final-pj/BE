@@ -46,9 +46,12 @@ public class DashboardController {
      * @param userDetails 현재 로그인한 사용자
      * @return 필터링 + 정렬된 컨테이너 목록
      */
-    @Operation(summary = "컨테이너 목록조회(필터+정렬)",
+    @Operation(summary = "컨테이너 목록조회(검색+필터+정렬)",
             description = """
-                    컨테이너 목록 조회 with 필터 + 정렬
+                    컨테이너 목록 조회 with 검색 + 필터 + 정렬
+
+                    **검색 옵션:**
+                    - keyword: 검색 키워드 (컨테이너 이름, 이미지명 검색)
 
                     **필터 옵션:**
                     - favoriteOnly: 즐겨찾기만 보기 (true/false)
@@ -61,6 +64,9 @@ public class DashboardController {
                     """)
     @GetMapping("/containers")
     public ApiResponse<List<ContainerDashboardResponseDTO>> getAllContainers(
+            @Parameter(description = "검색 키워드 (컨테이너 이름, 이미지명 등)")
+            @RequestParam(required = false) String keyword,
+
             @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
             @RequestParam(required = false) ContainerSortType sortBy,
 
@@ -80,16 +86,18 @@ public class DashboardController {
 
         Long memberId = userDetails != null ? Long.valueOf(userDetails.getId()) : null;
 
+
         // 필터 DTO 생성
         com.monito.domains.dashboard.dto.request.ContainerFilterDTO filter =
                 com.monito.domains.dashboard.dto.request.ContainerFilterDTO.builder()
+                        .keyword(keyword)
                         .favoriteOnly(favoriteOnly)
                         .states(states)
                         .healths(healths)
                         .agentIds(agentIds)
                         .build();
 
-        log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {}, memberId: {})", sortBy, memberId);
+        log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {}, memberId: {}, keyword: {})", sortBy, memberId, keyword);
 
         List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId, filter);
 

@@ -11,6 +11,7 @@ import java.util.List;
 
 /**
  * 대시보드 컨테이너 필터 DTO
+ * - 검색 키워드
  * - favorite/All 선택
  * - State 다중 선택
  * - Health 다중 선택
@@ -21,6 +22,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContainerFilterDTO {
+
+    /**
+     * 검색 키워드 (컨테이너 이름, 이미지명 검색)
+     */
+    private String keyword;
 
     /**
      * 즐겨찾기만 보기 (true: 즐겨찾기만, false or null: 전체)

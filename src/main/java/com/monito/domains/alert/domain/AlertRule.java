@@ -95,10 +95,10 @@ public class AlertRule {
 
     public void updateThresholds(BigDecimal infoThreshold, BigDecimal warningThreshold,
                                  BigDecimal highThreshold, BigDecimal criticalThreshold) {
-        if (infoThreshold != null) this.infoThreshold = infoThreshold;
-        if (warningThreshold != null) this.warningThreshold = warningThreshold;
-        if (highThreshold != null) this.highThreshold = highThreshold;
-        if (criticalThreshold != null) this.criticalThreshold = criticalThreshold;
+        this.infoThreshold = infoThreshold;
+        this.warningThreshold = warningThreshold;
+        this.highThreshold = highThreshold;
+        this.criticalThreshold = criticalThreshold;
     }
 
     public void updateCooldownSeconds(Integer cooldownSeconds) {
