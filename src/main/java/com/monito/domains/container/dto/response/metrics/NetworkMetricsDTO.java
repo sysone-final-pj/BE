@@ -1,10 +1,12 @@
 package com.monito.domains.container.dto.response.metrics;
 
+import com.monito.domains.container.domain.ContainerStatsLog;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,4 +40,32 @@ public class NetworkMetricsDTO {
     private Integer txDropped;                            // 송신 드롭 수
     private BigDecimal rxFailureRate;                     // 수신 실패율 (%)
     private BigDecimal txFailureRate;                     // 송신 실패율 (%)
+
+    /**
+     * 실시간 WebSocket 발행용 Network 메트릭 생성 (단일 데이터 포인트)
+     * @param statsLog 통계 로그
+     * @param timestamp 타임스탬프
+     * @return Network 메트릭 DTO
+     */
+    public static NetworkMetricsDTO forRealtimeUpdate(ContainerStatsLog statsLog, LocalDateTime timestamp) {
+        return NetworkMetricsDTO.builder()
+                .rxBytesPerSec(List.of(TimeSeriesDataDTO.from(timestamp, BigDecimal.valueOf(statsLog.getRxBytesPerSec()))))
+                .txBytesPerSec(List.of(TimeSeriesDataDTO.from(timestamp, BigDecimal.valueOf(statsLog.getTxBytesPerSec()))))
+                .rxPacketsPerSec(List.of(TimeSeriesDataDTO.from(timestamp, BigDecimal.valueOf(statsLog.getRxPps()))))
+                .txPacketsPerSec(List.of(TimeSeriesDataDTO.from(timestamp, BigDecimal.valueOf(statsLog.getTxPps()))))
+                .currentRxBytesPerSec(statsLog.getRxBytesPerSec())
+                .currentTxBytesPerSec(statsLog.getTxBytesPerSec())
+                .totalRxBytes(statsLog.getRxBytes())
+                .totalTxBytes(statsLog.getTxBytes())
+                .totalRxPackets(statsLog.getRxPackets())
+                .totalTxPackets(statsLog.getTxPackets())
+                .networkTotalBytes(statsLog.getNetworkTotalBytes())
+                .rxErrors(statsLog.getRxErrors())
+                .txErrors(statsLog.getTxErrors())
+                .rxDropped(statsLog.getRxDropped())
+                .txDropped(statsLog.getTxDropped())
+                .rxFailureRate(statsLog.getRxFailureRate())
+                .txFailureRate(statsLog.getTxFailureRate())
+                .build();
+    }
 }

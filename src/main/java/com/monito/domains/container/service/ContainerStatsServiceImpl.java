@@ -6,9 +6,12 @@ import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.cache.CpuMetricsBufferCache;
+import com.monito.infrastructure.messaging.StompMessagingClient;
+import com.monito.infrastructure.messaging.WsTopics;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -38,6 +41,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final AlertEvaluationFacade alertEvaluationFacade;
     private final SimpMessagingTemplate messagingTemplate;
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
+    private final StompMessagingClient messagingClient;
 
     @Override
     @Transactional
@@ -213,6 +217,18 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
 
+            // 11. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
+            try {
+                ContainerDetailResponseDTO detailMetrics = ContainerDetailResponseDTO.forRealtimeUpdate(container, agent, statsLog);
+                messagingClient.send(WsTopics.containerMetrics(container.getId()), detailMetrics);
+
+                log.info("컨테이너 상세 메트릭 발행 완료 - containerId: {}, containerName: {}",
+                    container.getId(), container.getName());
+            } catch (Exception e) {
+                log.error("컨테이너 상세 메트릭 발행 실패 - containerId: {}, error: {}",
+                    container.getId(), e.getMessage(), e);
+            }
+
         } catch (NotFoundException | BadRequestException e) {
             log.error("메트릭 처리 실패 - containerHash: {}, error: {}",
                     metricsDto.getContainerHash(), e.getMessage());
@@ -292,8 +308,6 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         );
 
         container.markMetricsInitialized();
-        containerRepository.save(container);
-
         log.info("최초 메트릭 수신 → 컨테이너 스펙 초기화 완료: {}", container.getContainerHash());
     }
 }

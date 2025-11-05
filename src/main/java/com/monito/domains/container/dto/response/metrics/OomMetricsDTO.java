@@ -1,5 +1,6 @@
 package com.monito.domains.container.dto.response.metrics;
 
+import com.monito.domains.container.domain.Container;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,4 +35,18 @@ public class OomMetricsDTO {
      * 마지막 OOM 발생 시각
      */
     private LocalDateTime lastOomKilledAt;
+
+    /**
+     * 실시간 WebSocket 발행용 OOM 메트릭 생성
+     * - timeSeries는 빈 맵 (실시간에서는 불필요)
+     * @param container 컨테이너
+     * @return OOM 메트릭 DTO
+     */
+    public static OomMetricsDTO forRealtimeUpdate(Container container) {
+        return OomMetricsDTO.builder()
+                .timeSeries(Map.of())  // 실시간에서는 빈 맵
+                .totalOomKills(container.getOomKills())
+                .lastOomKilledAt(container.getLastOomKilledAt())
+                .build();
+    }
 }

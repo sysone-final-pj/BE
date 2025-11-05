@@ -17,4 +17,14 @@ import java.time.LocalDateTime;
 public class TimeSeriesDataDTO {
     private LocalDateTime timestamp;
     private BigDecimal value;
+
+    public static TimeSeriesDataDTO from(
+        LocalDateTime timeStamp,
+        BigDecimal value
+    ){
+        return TimeSeriesDataDTO.builder()
+                .timestamp(timeStamp)
+                .value(value)
+                .build();
+    }
 }
