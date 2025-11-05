@@ -1,6 +1,5 @@
 package com.monito.domains.container.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
