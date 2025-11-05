@@ -1,6 +1,10 @@
 name: Deploy Backend to AWS EC2
 
 on:
+  pull_request:
+    branches:
+      - main
+      - deploy-test
   push:
     branches:
       - main
