@@ -1,0 +1,159 @@
+name: Deploy Backend to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: monito-backend
+  DOCKER_IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get GitHub Actions Runner IP
+        id: runner-ip
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          echo "ip=$RUNNER_IP" >> $GITHUB_OUTPUT
+          echo "GitHub Actions Runner IP: $RUNNER_IP"
+
+      - name: Allow SSH from GitHub Actions Runner
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32 \
+            --region ${{ env.AWS_REGION }} || echo "Rule already exists or failed to add"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to EC2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
+        run: |
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          # Create .env file content
+          cat > backend.env << EOF
+          SPRING_PROFILES_ACTIVE=prod
+          DB_URL=${{ secrets.DB_URL }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          SERVER_PORT=8080
+          EOF
+
+          # Transfer .env file to EC2
+          scp -o StrictHostKeyChecking=no -i private_key.pem \
+            backend.env ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/
+
+          # Deploy on EC2
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+            # Login to ECR
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+
+            # Pull new image
+            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+            # Stop and remove old container
+            docker stop monito-backend || true
+            docker rm monito-backend || true
+
+            # Run new container
+            docker run -d \
+              --name monito-backend \
+              -p 8080:8080 \
+              --env-file ~/backend.env \
+              --restart unless-stopped \
+              --network monito-network \
+              ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+            # Clean up
+            rm -f ~/backend.env
+            docker image prune -af
+          ENDSSH
+
+          rm -f private_key.pem backend.env
+
+      - name: Verify deployment
+        run: |
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+            # Wait for service to start
+            sleep 10
+
+            # Check if container is running
+            docker ps | grep monito-backend
+
+            # Check health
+            curl -f http://localhost:8080/actuator/health || exit 1
+          ENDSSH
+
+          rm -f private_key.pem
+
+      - name: Revoke SSH access from GitHub Actions Runner
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32 \
+            --region ${{ env.AWS_REGION }} || echo "Rule already removed or failed to revoke"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Backend deployment successful!"
+          else
+            echo "❌ Backend deployment failed!"
+            exit 1
+          fi
