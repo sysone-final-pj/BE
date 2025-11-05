@@ -130,14 +130,24 @@ jobs:
           chmod 600 private_key.pem
 
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
-            # Wait for service to start
-            sleep 10
+            # Wait for service to start (Spring Boot takes time)
+            echo "Waiting for Backend to start..."
+            sleep 30
 
             # Check if container is running
             docker ps | grep monito-backend
 
-            # Check health
-            curl -f http://localhost:8080/actuator/health || exit 1
+            # Check health with retry
+            for i in {1..5}; do
+              if curl -f http://localhost:8080/actuator/health; then
+                echo "Backend is healthy!"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            done
+            echo "Backend health check failed after 5 attempts"
+            exit 1
           ENDSSH
 
           rm -f private_key.pem
