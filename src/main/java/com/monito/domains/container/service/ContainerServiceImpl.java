@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,22 +67,22 @@ public class ContainerServiceImpl implements ContainerService {
 
         // 3. Container → DTO 변환 (최신 StatsLog 포함)
         Stream<ContainerSummaryResponseDTO> dtoStream = containers.stream()
-                .flatMap(container -> {
+                .map(container -> {
                     Agent agent = container.getAgent();
-                    return containerStatsLogRepository.findLatestByContainerHash(container.getContainerHash())
-                            .map(statsLog -> {
-                                ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(container, statsLog);
+                    Optional<ContainerStatsLog> statsLogOpt = containerStatsLogRepository.findLatestByContainerHash(container.getContainerHash());
 
-                                // storageLimit가 0이면 Agent 전체 디스크 용량으로 변경
-                                if (dto.getStorageLimit() == 0 && agent != null) {
-                                    AgentMetadata metadata = agentMetadataCache.getMetadata(agent.getAgentKey());
-                                    if (metadata != null && metadata.getHostTotalDiskSpace() != null) {
-                                        dto = dto.changeStorageLimit(metadata.getHostTotalDiskSpace());
-                                    }
-                                }
-                                return dto;
-                            })
-                            .stream();
+                    // statsLog가 없어도 컨테이너는 포함 (null로 전달)
+                    ContainerStatsLog statsLog = statsLogOpt.orElse(null);
+                    ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(container, statsLog);
+
+                    // storageLimit가 0이면 Agent 전체 디스크 용량으로 변경
+                    if (dto.getStorageLimit() == 0 && agent != null) {
+                        AgentMetadata metadata = agentMetadataCache.getMetadata(agent.getAgentKey());
+                        if (metadata != null && metadata.getHostTotalDiskSpace() != null) {
+                            dto = dto.changeStorageLimit(metadata.getHostTotalDiskSpace());
+                        }
+                    }
+                    return dto;
                 });
 
         // 4. state 필터링

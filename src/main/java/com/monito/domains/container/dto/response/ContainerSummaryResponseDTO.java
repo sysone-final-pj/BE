@@ -9,8 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -31,25 +29,26 @@ public class ContainerSummaryResponseDTO {
     private Long storageLimit;  // 0이면 무제한 (Agent 전체 디스크 용량)
 
     public static ContainerSummaryResponseDTO of(Container container, ContainerStatsLog containerStatsLog) {
-        ContainerState resolvedState = containerStatsLog.getState();
-        LocalDateTime collectedAt = containerStatsLog.getCollectedAt();
-        if (collectedAt != null && Duration.between(collectedAt, LocalDateTime.now()).getSeconds() > 30) {
-            resolvedState = ContainerState.UNKNOWN;
-        }
+        // 활성 상태일 때만 메트릭 표시 (RUNNING, RESTARTING, PAUSED)
+        // 나머지 상태(CREATED, EXITED, DEAD, DELETED, UNKNOWN)는 메트릭 0 표시
+        boolean isActiveState = container.getState() == ContainerState.RUNNING
+                || container.getState() == ContainerState.RESTARTING
+                || container.getState() == ContainerState.PAUSED;
+        boolean hasStatsLog = containerStatsLog != null && isActiveState;
 
         return ContainerSummaryResponseDTO.builder()
-                .agentName(container.getName())
+                .agentName(container.getAgent() != null ? container.getAgent().getAgentName() : null)
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
-                .cpuPercent(containerStatsLog.getCpuPercent())
-                .memUsage(containerStatsLog.getMemUsage())
+                .cpuPercent(hasStatsLog ? containerStatsLog.getCpuPercent() : BigDecimal.ZERO)
+                .memUsage(hasStatsLog ? containerStatsLog.getMemUsage() : 0L)
                 .memLimit(container.getMemLimit())
-                .rxBytesPerSec(containerStatsLog.getRxBytesPerSec())
-                .txBytesPerSec(containerStatsLog.getTxBytesPerSec())
+                .rxBytesPerSec(hasStatsLog ? containerStatsLog.getRxBytesPerSec() : 0L)
+                .txBytesPerSec(hasStatsLog ? containerStatsLog.getTxBytesPerSec() : 0L)
                 .imageSize(container.getImageSize())
-                .state(resolvedState)
-                .health(containerStatsLog.getHealth())
-                .sizeRootFs(containerStatsLog.getSizeRootFs())
+                .state(container.getState())
+                .health(hasStatsLog ? containerStatsLog.getHealth() : ContainerHealth.NONE)
+                .sizeRootFs(hasStatsLog ? containerStatsLog.getSizeRootFs() : 0L)
                 .storageLimit(container.getStorageLimit())
                 .build();
     }
