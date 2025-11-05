@@ -5,7 +5,6 @@ import com.monito.domains.alert.dto.request.AlertRuleCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertRuleUpdateRequestDTO;
 import com.monito.domains.alert.dto.response.AlertRuleResponseDTO;
 import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
