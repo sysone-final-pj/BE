@@ -36,3 +36,6 @@ app:
     oom-partition-cleanup:
       retention-days: 180
       cron: "0 0 3 * * *"
+    container-summary-push:
+      fixedDelay: 1000
+      initialDelay: 1000

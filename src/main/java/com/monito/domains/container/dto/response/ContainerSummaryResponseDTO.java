@@ -14,12 +14,14 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ContainerSummaryResponseDTO {
+    private Long id;
     private String agentName;
     private String containerHash;
     private String containerName;
     private BigDecimal cpuPercent;
     private Long memUsage;
     private Long memLimit;
+    private BigDecimal memPercent;
     private Long rxBytesPerSec;
     private Long txBytesPerSec;
     private ContainerState state;
@@ -37,10 +39,12 @@ public class ContainerSummaryResponseDTO {
         boolean hasStatsLog = containerStatsLog != null && isActiveState;
 
         return ContainerSummaryResponseDTO.builder()
+                .id(container.getId())
                 .agentName(container.getAgent() != null ? container.getAgent().getAgentName() : null)
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
                 .cpuPercent(hasStatsLog ? containerStatsLog.getCpuPercent() : BigDecimal.ZERO)
+                .memPercent(hasStatsLog ? containerStatsLog.getMemPercent() : BigDecimal.ZERO)
                 .memUsage(hasStatsLog ? containerStatsLog.getMemUsage() : 0L)
                 .memLimit(container.getMemLimit())
                 .rxBytesPerSec(hasStatsLog ? containerStatsLog.getRxBytesPerSec() : 0L)
@@ -60,6 +64,7 @@ public class ContainerSummaryResponseDTO {
      */
     public ContainerSummaryResponseDTO changeStorageLimit(Long newStorageLimit) {
         return ContainerSummaryResponseDTO.builder()
+                .id(this.id)
                 .agentName(this.agentName)
                 .containerHash(this.containerHash)
                 .containerName(this.containerName)

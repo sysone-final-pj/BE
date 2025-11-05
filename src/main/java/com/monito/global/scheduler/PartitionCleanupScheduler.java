@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class PartitionCleanupScheduler {
 
-    private final DataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${app.scheduler.metrics-partition-cleanup.retention-days:30}")
     private int metricsRetentionDays;
@@ -38,7 +38,6 @@ public class PartitionCleanupScheduler {
     public void cleanupOldMetricsPartitions() {
         log.info("파티션 정리 작업 시작 - 보관 기간: {}일", metricsRetentionDays);
 
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         LocalDate cutoffDate = LocalDate.now().minusDays(metricsRetentionDays);
 
         try {
@@ -64,7 +63,6 @@ public class PartitionCleanupScheduler {
     public void cleanupOldOOMPartitions() {
         log.info("OOM 파티션 정리 작업 시작 - 보관 기간: {}일", oomRetentionDays);
 
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         LocalDate cutoffDate = LocalDate.now().minusDays(oomRetentionDays);
 
         try {

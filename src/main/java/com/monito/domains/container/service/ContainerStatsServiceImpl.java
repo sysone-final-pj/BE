@@ -7,8 +7,10 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
+import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.infrastructure.messaging.StompMessagingClient;
 import com.monito.infrastructure.messaging.WsTopics;
@@ -42,6 +44,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final SimpMessagingTemplate messagingTemplate;
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final StompMessagingClient messagingClient;
+    private final ContainerSummaryCache containerSummaryCache;
 
     @Override
     @Transactional
@@ -88,49 +91,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             );
 
             // 6. Container 연결
-            statsLog = ContainerStatsLog.builder()
-                    .container(container)
-                    .containerHash(statsLog.getContainerHash())
-                    .state(statsLog.getState())
-                    .health(statsLog.getHealth())
-                    .collectedAt(statsLog.getCollectedAt())
-                    .cpuPercent(statsLog.getCpuPercent())
-                    .cpuCoreUsage(statsLog.getCpuCoreUsage())
-                    .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
-                    .cpuUsageTotal(statsLog.getCpuUsageTotal())
-                    .cpuUser(statsLog.getCpuUser())
-                    .cpuSystem(statsLog.getCpuSystem())
-                    .cpuQuota(statsLog.getCpuQuota())
-                    .cpuPeriod(statsLog.getCpuPeriod())
-                    .onlineCpus(statsLog.getOnlineCpus())
-                    .throttlingPeriods(statsLog.getThrottlingPeriods())
-                    .throttledPeriods(statsLog.getThrottledPeriods())
-                    .throttledTime(statsLog.getThrottledTime())
-                    .memPercent(statsLog.getMemPercent())
-                    .memUsage(statsLog.getMemUsage())
-                    .memMaxUsage(statsLog.getMemMaxUsage())
-                    .blkRead(statsLog.getBlkRead())
-                    .blkWrite(statsLog.getBlkWrite())
-                    .blkReadPerSec(statsLog.getBlkReadPerSec())
-                    .blkWritePerSec(statsLog.getBlkWritePerSec())
-                    .rxBytes(statsLog.getRxBytes())
-                    .txBytes(statsLog.getTxBytes())
-                    .rxPackets(statsLog.getRxPackets())
-                    .txPackets(statsLog.getTxPackets())
-                    .networkTotalBytes(statsLog.getNetworkTotalBytes())
-                    .rxBytesPerSec(statsLog.getRxBytesPerSec())
-                    .txBytesPerSec(statsLog.getTxBytesPerSec())
-                    .rxPps(statsLog.getRxPps())
-                    .txPps(statsLog.getTxPps())
-                    .rxFailureRate(statsLog.getRxFailureRate())
-                    .txFailureRate(statsLog.getTxFailureRate())
-                    .rxErrors(statsLog.getRxErrors())
-                    .txErrors(statsLog.getTxErrors())
-                    .rxDropped(statsLog.getRxDropped())
-                    .txDropped(statsLog.getTxDropped())
-                    .sizeRw(statsLog.getSizeRw())
-                    .sizeRootFs(statsLog.getSizeRootFs())
-                    .build();
+            statsLog = ContainerStatsLog.of(container, statsLog);
 
             // 7. INSERT (UPDATE 없음)
             statsLogRepository.save(statsLog);
@@ -228,6 +189,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 log.error("컨테이너 상세 메트릭 발행 실패 - containerId: {}, error: {}",
                     container.getId(), e.getMessage(), e);
             }
+
+            containerSummaryCache.update(ContainerSummaryResponseDTO.of(container, statsLog));
 
         } catch (NotFoundException | BadRequestException e) {
             log.error("메트릭 처리 실패 - containerHash: {}, error: {}",

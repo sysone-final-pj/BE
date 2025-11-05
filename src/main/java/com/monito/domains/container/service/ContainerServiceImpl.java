@@ -48,6 +48,7 @@ public class ContainerServiceImpl implements ContainerService {
     private final OomEventCache oomEventCache;
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final CpuMetricsCalculator cpuMetricsCalculator;
+    private final ContainerSummaryCache containerSummaryCache;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
@@ -421,6 +422,7 @@ public class ContainerServiceImpl implements ContainerService {
                 if (Boolean.TRUE.equals(snapshot.getOomKilled())) {
                     handleOomKillForNewContainer(newContainer, agentKey);
                 }
+                containerSummaryCache.update(ContainerSummaryResponseDTO.of(newContainer, null));
             }
         } else {
             // 3-2. 기존 컨테이너 업데이트
@@ -433,11 +435,18 @@ public class ContainerServiceImpl implements ContainerService {
                 // 컨테이너 삭제처리 될 경우 캐시 데이터에서도 삭제
                 cpuMetricsBufferCache.removeContainer(container.getId());
                 oomEventCache.removeContainer(container.getId());
+                containerSummaryCache.remove(container.getId());
             } else if(container.getState() != state) {
                 container.changeState(state);
                 // 상태만 업데이트 (이름이나 이미지 변경 가능성 대응)
                 log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
                         snapshot.getContainerHash(), state);
+
+                // 상태 변경 시 캐시 업데이트 (비활성 상태는 메트릭 0으로 표시)
+                ContainerStatsLog latestStats = containerStatsLogRepository
+                        .findLatestByContainerHash(container.getContainerHash())
+                        .orElse(null);
+                containerSummaryCache.update(ContainerSummaryResponseDTO.of(container, latestStats));
             }
 
             // 4. OOM Kill 감지 및 처리 (중복 방지)
