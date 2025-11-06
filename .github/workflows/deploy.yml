@@ -108,14 +108,14 @@ jobs:
             docker stop monito-backend || true
             docker rm monito-backend || true
 
-            # Run new container with health check
+            # Run new container with health check (TCP port check to avoid Spring Security)
             docker run -d \
               --name monito-backend \
               -p 8080:8080 \
               --env-file ~/backend.env \
               --restart unless-stopped \
               --network monito-network \
-              --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1" \
+              --health-cmd="timeout 3 bash -c '</dev/tcp/localhost/8080' || exit 1" \
               --health-interval=10s \
               --health-timeout=5s \
               --health-retries=3 \
