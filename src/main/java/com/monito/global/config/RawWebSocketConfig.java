@@ -16,7 +16,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @Configuration
 @EnableWebSocket
 @RequiredArgsConstructor
-public class WebSocketConfig implements WebSocketConfigurer {
+public class RawWebSocketConfig implements WebSocketConfigurer {
 
     private final AgentWebSocketHandler agentWebSocketHandler;
 
