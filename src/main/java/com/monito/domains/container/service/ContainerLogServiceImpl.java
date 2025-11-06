@@ -4,7 +4,6 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerLog;
-import com.monito.domains.container.domain.LogSource;
 import com.monito.domains.agent.dto.request.AgentLogsRequestDTO;
 import com.monito.domains.container.dto.request.ContainerLogItemRequestDTO;
 import com.monito.domains.container.dto.response.ContainerLogEntryDTO;
