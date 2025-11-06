@@ -227,7 +227,7 @@ public class ContainerServiceImpl implements ContainerService {
     /**
      * 로그 정렬 생성 (정렬 필드에 따라 JPQL 경로 매핑)
      */
-    private Sort createLogSort(com.monito.domains.container.domain.LogSortField sortBy, Sort.Direction direction) {
+    private Sort createLogSort(LogSortField sortBy, Sort.Direction direction) {
         String sortField = switch (sortBy) {
             case LOGGED_AT -> "loggedAt";
             case CONTAINER_NAME -> "container.name";
