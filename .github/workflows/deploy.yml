@@ -115,7 +115,7 @@ jobs:
               --env-file ~/backend.env \
               --restart unless-stopped \
               --network monito-network \
-              --health-cmd="timeout 3 bash -c '</dev/tcp/localhost/8080' || exit 1" \
+              --health-cmd="nc -z localhost 8080 || exit 1" \
               --health-interval=10s \
               --health-timeout=5s \
               --health-retries=3 \
