@@ -4,6 +4,7 @@ import com.monito.domains.alert.domain.Alert;
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.dto.internal.AlertCreationDTO;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
+import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 
@@ -84,5 +85,5 @@ public interface AlertService {
     /**
      * 필터 조건에 따른 알림 조회
      */
-    List<AlertListItemResponseDTO> getAlertsWithFilter(Long memberId, com.monito.domains.alert.dto.request.AlertFilterDTO filter);
+    List<AlertListItemResponseDTO> getAlertsWithFilter(Long memberId, AlertFilterDTO filter);
 }
