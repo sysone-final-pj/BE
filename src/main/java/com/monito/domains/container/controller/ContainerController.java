@@ -9,6 +9,7 @@ import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
 import com.monito.domains.container.service.ContainerService;
 import com.monito.global.common.response.ApiResponse;
+import com.monito.global.security.userdetails.CustomUserDetails;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -49,17 +51,18 @@ public class ContainerController {
      */
     @GetMapping("/containers")
     public ApiResponse<List<ContainerSummaryResponseDTO>> getContainerList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) List<ContainerState> states,
             @RequestParam(required = false) List<ContainerHealth> healths,
             @RequestParam(required = false) ContainerSortField sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
-        log.info("컨테이너 목록 조회 요청 - keyword: {}, states: {}, healths: {}, sortBy: {}, direction: {}",
-                keyword, states, healths, sortBy, direction);
+        log.info("컨테이너 목록 조회 요청 - memberId: {}, keyword: {}, states: {}, healths: {}, sortBy: {}, direction: {}",
+                userDetails.getId(), keyword, states, healths, sortBy, direction);
 
         List<ContainerSummaryResponseDTO> containers = containerService.getContainerList(
-                keyword, states, healths, sortBy, direction
+                userDetails.getId(), keyword, states, healths, sortBy, direction
         );
         return ApiResponse.ok(containers, "컨테이너 목록 조회 성공");
     }

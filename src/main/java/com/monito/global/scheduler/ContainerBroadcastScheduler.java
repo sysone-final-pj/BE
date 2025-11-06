@@ -20,6 +20,6 @@ public class ContainerBroadcastScheduler {
             initialDelayString = "${app.scheduler.container-summary-push.initialDelay}"
     )
     public void broadcastSummary() {
-        messagingClient.send(WsTopics.CONTAINER_SUMMARY, containerSummaryCache.snapshot());
+        messagingClient.send(WsTopics.CONTAINER_SUMMARY, containerSummaryCache.getAllSnapshots());
     }
 }

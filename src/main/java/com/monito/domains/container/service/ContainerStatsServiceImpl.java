@@ -7,7 +7,7 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
-import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
+import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.cache.ContainerSummaryCache;
@@ -190,7 +190,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     container.getId(), e.getMessage(), e);
             }
 
-            containerSummaryCache.update(ContainerSummaryResponseDTO.of(container, statsLog));
+            // 캐시에 Snapshot 업데이트
+            containerSummaryCache.update(ContainerSummarySnapshot.of(container, statsLog));
 
         } catch (NotFoundException | BadRequestException e) {
             log.error("메트릭 처리 실패 - containerHash: {}, error: {}",

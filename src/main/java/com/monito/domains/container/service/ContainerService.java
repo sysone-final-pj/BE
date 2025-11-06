@@ -19,14 +19,16 @@ public interface ContainerService {
 
     /**
      * 컨테이너 목록 조회 (검색/필터/정렬 지원)
+     * @param memberId 사용자 ID (즐겨찾기 상태 조회용)
      * @param keyword 검색어 (agent name, container hash, container name) - null 가능
      * @param states 상태 필터 (다중 선택) - null이면 전체
      * @param healths 헬스 필터 (다중 선택) - null이면 전체
      * @param sortBy 정렬 필드 - null이면 기본 정렬
      * @param direction 정렬 방향 (ASC/DESC) - null이면 DESC
-     * @return 컨테이너 목록
+     * @return 컨테이너 목록 (isFavorite 포함)
      */
     List<ContainerSummaryResponseDTO> getContainerList(
+            Long memberId,
             String keyword,
             List<ContainerState> states,
             List<ContainerHealth> healths,
