@@ -436,13 +436,13 @@ public class ContainerServiceImpl implements ContainerService {
                 cpuMetricsBufferCache.removeContainer(container.getId());
                 oomEventCache.removeContainer(container.getId());
                 containerSummaryCache.remove(container.getId());
-            } else if(container.getState() != state) {
-                container.changeState(state);
-                // 상태만 업데이트 (이름이나 이미지 변경 가능성 대응)
-                log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
-                        snapshot.getContainerHash(), state);
+            } else {
+                if(container.getState() != state) {
+                    container.changeState(state);
+                    log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
+                            snapshot.getContainerHash(), state);
+                }
 
-                // 상태 변경 시 캐시 업데이트 (비활성 상태는 메트릭 0으로 표시)
                 ContainerStatsLog latestStats = containerStatsLogRepository
                         .findLatestByContainerHash(container.getContainerHash())
                         .orElse(null);
