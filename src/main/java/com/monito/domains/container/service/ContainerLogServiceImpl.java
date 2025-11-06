@@ -7,11 +7,14 @@ import com.monito.domains.container.domain.ContainerLog;
 import com.monito.domains.container.domain.LogSource;
 import com.monito.domains.agent.dto.request.AgentLogsRequestDTO;
 import com.monito.domains.container.dto.request.ContainerLogItemRequestDTO;
+import com.monito.domains.container.dto.response.ContainerLogEntryDTO;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import com.monito.infrastructure.messaging.StompMessagingClient;
+import com.monito.infrastructure.messaging.WsTopics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class ContainerLogServiceImpl implements ContainerLogService {
     private final ContainerLogRepository containerLogRepository;
     private final ContainerRepository containerRepository;
     private final AgentRepository agentRepository;
+    private final StompMessagingClient messagingClient;
 
     @Override
     @Transactional
@@ -79,14 +83,7 @@ public class ContainerLogServiceImpl implements ContainerLogService {
 
                 // 6. 각 로그 항목을 ContainerLog 엔티티로 변환
                 for (ContainerLogItemRequestDTO logItem : logItems) {
-                    ContainerLog containerLog = ContainerLog.builder()
-                            .container(container)
-                            .logMessage(logItem.getMessage())
-                            .source(logItem.getSource())
-                            .loggedAt(logItem.getTimestamp())
-                            .build();
-
-                    containerLogs.add(containerLog);
+                    containerLogs.add(logItem.toEntity(container));
                     totalLogCount++;
                 }
             }
@@ -96,6 +93,13 @@ public class ContainerLogServiceImpl implements ContainerLogService {
                 containerLogRepository.saveAll(containerLogs);
                 log.info("로그 저장 완료 - agentKey: {}, 총 로그: {}개, 스킵된 컨테이너: {}개",
                         agentKey, totalLogCount, skippedContainerCount);
+
+                containerLogs.forEach(logEntity -> {
+                    messagingClient.send(
+                            WsTopics.containerLogs(logEntity.getContainer().getId()),
+                            ContainerLogEntryDTO.from(logEntity)
+                    );
+                });
             } else {
                 log.debug("저장할 로그가 없음 - agentKey: {}", agentKey);
             }
