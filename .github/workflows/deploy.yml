@@ -108,13 +108,18 @@ jobs:
             docker stop monito-backend || true
             docker rm monito-backend || true
 
-            # Run new container
+            # Run new container with health check
             docker run -d \
               --name monito-backend \
               -p 8080:8080 \
               --env-file ~/backend.env \
               --restart unless-stopped \
               --network monito-network \
+              --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1" \
+              --health-interval=10s \
+              --health-timeout=5s \
+              --health-retries=3 \
+              --health-start-period=60s \
               ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
             # Clean up
@@ -132,21 +137,34 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
             # Wait for service to start (Spring Boot takes ~25 seconds)
             echo "Waiting for Backend to start..."
-            sleep 50
+            sleep 30
 
             # Check if container is running
             docker ps | grep monito-backend
 
-            # Check health with retry
-            for i in {1..5}; do
-              if curl -f http://localhost:8080/actuator/health; then
-                echo "Backend is healthy!"
+            # Check Docker health status with retry
+            for i in {1..10}; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' monito-backend 2>/dev/null || echo "none")
+              echo "Attempt $i: Health status = $HEALTH_STATUS"
+
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "✅ Backend is healthy!"
                 exit 0
+              elif [ "$HEALTH_STATUS" = "none" ]; then
+                echo "⚠️  Container has no health check defined"
+                # Fallback to port check
+                if netstat -tuln | grep -q ':8080 '; then
+                  echo "✅ Backend port 8080 is listening"
+                  exit 0
+                fi
               fi
-              echo "Attempt $i failed, retrying in 10 seconds..."
+
+              echo "Waiting for health check... (Status: $HEALTH_STATUS)"
               sleep 10
             done
-            echo "Backend health check failed after 5 attempts"
+
+            echo "❌ Backend health check failed after 10 attempts"
+            docker logs --tail 50 monito-backend
             exit 1
           ENDSSH
 
