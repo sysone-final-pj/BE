@@ -11,4 +11,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     Optional<Favorite> findByMemberIdAndContainerId(Long memberId, Long containerId);
 
     void deleteByMemberIdAndContainerId(Long memberId, Long containerId);
+
+    void deleteByContainerId(Long containerId);
 }

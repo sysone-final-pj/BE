@@ -13,6 +13,7 @@ import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.CpuMetricsCalculator;
+import com.monito.domains.favorite.repository.FavoriteRepository;
 import com.monito.global.cache.*;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -49,6 +50,8 @@ public class ContainerServiceImpl implements ContainerService {
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final CpuMetricsCalculator cpuMetricsCalculator;
     private final ContainerSummaryCache containerSummaryCache;
+    private final FavoriteCache favoriteCache;
+    private final FavoriteRepository favoriteRepository;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
@@ -429,13 +432,18 @@ public class ContainerServiceImpl implements ContainerService {
             if (state == ContainerState.DELETED) {
                 // Soft delete 처리
                 container.markAsDeleted();
-                containerRepository.save(container);
                 log.info("컨테이너 삭제 처리 - Agent: {}, ContainerHash: {}",
                         agentKey, snapshot.getContainerHash());
-                // 컨테이너 삭제처리 될 경우 캐시 데이터에서도 삭제
+
+                // 컨테이너 삭제 시 관련된 모든 데이터 삭제
+                // 1. 메트릭 캐시 삭제
                 cpuMetricsBufferCache.removeContainer(container.getId());
                 oomEventCache.removeContainer(container.getId());
                 containerSummaryCache.remove(container.getId());
+
+                // 2. 즐겨찾기 데이터 삭제 (DB + 캐시)
+                favoriteRepository.deleteByContainerId(container.getId());  // DB 삭제
+                favoriteCache.removeContainerFromAll(container.getId());    // 캐시 삭제
             } else {
                 if(container.getState() != state) {
                     container.changeState(state);

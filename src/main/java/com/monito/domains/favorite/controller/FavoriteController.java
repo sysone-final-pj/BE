@@ -10,19 +10,25 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping
+@RequestMapping("/api/favorites")
 @RequiredArgsConstructor
 public class FavoriteController {
     private final FavoriteService favoriteService;
 
-    @PostMapping("/favorites")
-    public ApiResponse<Void> addFavorite(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam Long containerId) {
+    @PostMapping("/{containerId}")
+    public ApiResponse<Void> addFavorite(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long containerId
+    ) {
         favoriteService.addFavorite(userDetails.getId(), containerId);
         return ApiResponse.ok("즐겨찾기가 등록되었습니다.");
     }
 
-    @DeleteMapping("/favorites")
-    public ApiResponse<Void> removeFavorite(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam Long containerId) {
+    @DeleteMapping("/{containerId}")
+    public ApiResponse<Void> removeFavorite(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long containerId
+    ) {
         favoriteService.removeFavorite(userDetails.getId(), containerId);
         return ApiResponse.ok("즐겨찾기가 삭제되었습니다.");
     }
