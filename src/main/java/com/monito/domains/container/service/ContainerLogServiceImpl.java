@@ -93,12 +93,10 @@ public class ContainerLogServiceImpl implements ContainerLogService {
                 log.info("로그 저장 완료 - agentKey: {}, 총 로그: {}개, 스킵된 컨테이너: {}개",
                         agentKey, totalLogCount, skippedContainerCount);
 
-                containerLogs.forEach(logEntity -> {
-                    messagingClient.send(
-                            WsTopics.containerLogs(logEntity.getContainer().getId()),
-                            ContainerLogEntryDTO.from(logEntity)
-                    );
-                });
+                containerLogs.forEach(logEntity -> messagingClient.send(
+                        WsTopics.containerLogs(logEntity.getContainer().getId()),
+                        ContainerLogEntryDTO.from(logEntity)
+                ));
             } else {
                 log.debug("저장할 로그가 없음 - agentKey: {}", agentKey);
             }
