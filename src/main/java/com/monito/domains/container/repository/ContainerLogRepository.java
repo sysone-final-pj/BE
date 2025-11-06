@@ -48,4 +48,22 @@ public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long
             @Param("endTime") LocalDateTime endTime,
             Pageable pageable
     );
+
+    /**
+     * 특정 기간 동안 특정 소스의 로그 개수 카운트
+     *
+     * @param source 로그 소스 (STDOUT, STDERR 등)
+     * @param startTime 시작 시간
+     * @param endTime 종료 시간
+     * @return 로그 개수
+     */
+    @Query("SELECT COUNT(cl) FROM ContainerLog cl " +
+           "WHERE cl.source = :source " +
+           "AND cl.loggedAt >= :startTime " +
+           "AND cl.loggedAt < :endTime")
+    long countBySourceAndLoggedAtBetween(
+            @Param("source") LogSource source,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }

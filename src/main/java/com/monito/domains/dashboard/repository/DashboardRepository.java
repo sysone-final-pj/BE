@@ -3,6 +3,7 @@ package com.monito.domains.dashboard.repository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.dto.response.ContainerStorageUsageDTO;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -450,4 +451,25 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             @Param("agentIdsEmpty") boolean agentIdsEmpty,
             @Param("memberId") Long memberId
     );
+
+    /**
+     * 전체 컨테이너의 스토리지 사용량 조회
+     * @return 전체 컨테이너의 스토리지 할당량과 사용량 목록
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerStorageUsageDTO(
+                c.id,
+                c.name,
+                c.storageLimit,
+                COALESCE(latest.sizeRootFs, 0L)
+            )
+            FROM Container c
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            """)
+    List<ContainerStorageUsageDTO> findAllContainerStorageUsage();
 }

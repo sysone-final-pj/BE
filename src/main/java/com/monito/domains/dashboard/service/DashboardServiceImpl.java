@@ -1,12 +1,19 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.container.domain.ContainerStatsLog;
+import com.monito.domains.container.domain.LogSource;
+import com.monito.domains.container.repository.ContainerLogRepository;
+import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
-import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
-import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
-import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
-import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
+import com.monito.domains.dashboard.dto.request.TimeRange;
+import com.monito.domains.dashboard.dto.response.*;
 import com.monito.domains.dashboard.repository.DashboardRepository;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class DashboardServiceImpl implements DashboardService {
 
     private final DashboardRepository dashboardRepository;
+    private final ContainerLogRepository containerLogRepository;
+    private final ContainerStatsLogRepository containerStatsLogRepository;
+    private final ContainerRepository containerRepository;
 
     @Override
     public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter) {
@@ -203,5 +213,189 @@ public class DashboardServiceImpl implements DashboardService {
         return containersWithFavorite.stream()
                 .sorted(Comparator.comparing(ContainerWithFavoriteDTO::getIsFavorite).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public DailyLogCountDTO getDailyLogCount() {
+        log.info("대시보드: 당일 0시 기준 STDOUT/STDERR 로그 개수 조회");
+
+        // 당일 0시 계산
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        // 다음날 0시 계산
+        LocalDateTime startOfNextDay = startOfDay.plusDays(1);
+
+        // STDOUT 로그 개수 조회
+        long stdoutCount = containerLogRepository.countBySourceAndLoggedAtBetween(
+                LogSource.STDOUT,
+                startOfDay,
+                startOfNextDay
+        );
+
+        // STDERR 로그 개수 조회
+        long stderrCount = containerLogRepository.countBySourceAndLoggedAtBetween(
+                LogSource.STDERR,
+                startOfDay,
+                startOfNextDay
+        );
+
+        // 조회 기준일 (YYYY-MM-DD 형식)
+        String date = startOfDay.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        log.info("당일 로그 개수 - STDOUT: {}, STDERR: {}, 기준일: {}", stdoutCount, stderrCount, date);
+
+        return DailyLogCountDTO.builder()
+                .stdoutCount(stdoutCount)
+                .stderrCount(stderrCount)
+                .date(date)
+                .build();
+    }
+
+    @Override
+    public List<ContainerStorageUsageDTO> getAllContainerStorageUsage() {
+        log.info("대시보드: 전체 컨테이너 스토리지 사용량 조회");
+        return dashboardRepository.findAllContainerStorageUsage();
+    }
+
+    @Override
+    public NetworkStatsTimeSeriesDTO getNetworkStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail) {
+        log.info("대시보드: 네트워크 통계 시계열 데이터 조회 - containerId: {}, timeRange: {}, detail: {}",
+                containerId, timeRange, detail);
+
+        // 컨테이너 정보 조회
+        var container = containerRepository.findById(containerId)
+                .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다: " + containerId));
+
+        // 시간 범위 계산
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = now.minusMinutes(timeRange.getMinutes());
+
+        // 통계 데이터 조회
+        List<ContainerStatsLog> statsLogs = containerStatsLogRepository.findByContainerIdAndTimeRange(
+                containerId, startTime, now
+        );
+
+        // 샘플링 처리
+        int targetPoints = detail ? 200 : 50;
+        List<NetworkStatsDataPointDTO> dataPoints = sampleNetworkStats(statsLogs, targetPoints);
+
+        return NetworkStatsTimeSeriesDTO.builder()
+                .containerId(containerId)
+                .containerName(container.getName())
+                .timeRange(timeRange)
+                .dataPoints(dataPoints)
+                .build();
+    }
+
+    /**
+     * 네트워크 통계 데이터 샘플링
+     * @param statsLogs 원본 통계 로그
+     * @param targetPoints 목표 포인트 개수
+     * @return 샘플링된 데이터 포인트
+     */
+    private List<NetworkStatsDataPointDTO> sampleNetworkStats(List<ContainerStatsLog> statsLogs, int targetPoints) {
+        if (statsLogs.isEmpty()) {
+            return List.of();
+        }
+
+        // 원본 데이터가 목표보다 적으면 그대로 반환
+        if (statsLogs.size() <= targetPoints) {
+            return statsLogs.stream()
+                    .map(log -> NetworkStatsDataPointDTO.builder()
+                            .timestamp(log.getCollectedAt())
+                            .rxBytesPerSec(log.getRxBytesPerSec())
+                            .txBytesPerSec(log.getTxBytesPerSec())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        // 샘플링 간격 계산
+        double step = (double) statsLogs.size() / targetPoints;
+        List<NetworkStatsDataPointDTO> sampledData = new ArrayList<>();
+
+        for (int i = 0; i < targetPoints; i++) {
+            int index = (int) (i * step);
+            if (index < statsLogs.size()) {
+                ContainerStatsLog log = statsLogs.get(index);
+                sampledData.add(NetworkStatsDataPointDTO.builder()
+                        .timestamp(log.getCollectedAt())
+                        .rxBytesPerSec(log.getRxBytesPerSec())
+                        .txBytesPerSec(log.getTxBytesPerSec())
+                        .build());
+            }
+        }
+
+        return sampledData;
+    }
+
+    @Override
+    public BlockIOStatsTimeSeriesDTO getBlockIOStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail) {
+        log.info("대시보드: Block I/O 통계 시계열 데이터 조회 - containerId: {}, timeRange: {}, detail: {}",
+                containerId, timeRange, detail);
+
+        // 컨테이너 정보 조회
+        var container = containerRepository.findById(containerId)
+                .orElseThrow(() -> new IllegalArgumentException("컨테이너를 찾을 수 없습니다: " + containerId));
+
+        // 시간 범위 계산
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = now.minusMinutes(timeRange.getMinutes());
+
+        // 통계 데이터 조회
+        List<ContainerStatsLog> statsLogs = containerStatsLogRepository.findByContainerIdAndTimeRange(
+                containerId, startTime, now
+        );
+
+        // 샘플링 처리
+        int targetPoints = detail ? 200 : 50;
+        List<BlockIOStatsDataPointDTO> dataPoints = sampleBlockIOStats(statsLogs, targetPoints);
+
+        return BlockIOStatsTimeSeriesDTO.builder()
+                .containerId(containerId)
+                .containerName(container.getName())
+                .timeRange(timeRange)
+                .dataPointCount(dataPoints.size())
+                .dataPoints(dataPoints)
+                .build();
+    }
+
+    /**
+     * Block I/O 통계 데이터 샘플링
+     * @param statsLogs 원본 통계 로그
+     * @param targetPoints 목표 포인트 개수
+     * @return 샘플링된 데이터 포인트
+     */
+    private List<BlockIOStatsDataPointDTO> sampleBlockIOStats(List<ContainerStatsLog> statsLogs, int targetPoints) {
+        if (statsLogs.isEmpty()) {
+            return List.of();
+        }
+
+        // 원본 데이터가 목표보다 적으면 그대로 반환
+        if (statsLogs.size() <= targetPoints) {
+            return statsLogs.stream()
+                    .map(log -> BlockIOStatsDataPointDTO.builder()
+                            .timestamp(log.getCollectedAt())
+                            .blkRead(log.getBlkRead())
+                            .blkWrite(log.getBlkWrite())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        // 샘플링 간격 계산
+        double step = (double) statsLogs.size() / targetPoints;
+        List<BlockIOStatsDataPointDTO> sampledData = new ArrayList<>();
+
+        for (int i = 0; i < targetPoints; i++) {
+            int index = (int) (i * step);
+            if (index < statsLogs.size()) {
+                ContainerStatsLog log = statsLogs.get(index);
+                sampledData.add(BlockIOStatsDataPointDTO.builder()
+                        .timestamp(log.getCollectedAt())
+                        .blkRead(log.getBlkRead())
+                        .blkWrite(log.getBlkWrite())
+                        .build());
+            }
+        }
+
+        return sampledData;
     }
 }

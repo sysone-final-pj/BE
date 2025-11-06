@@ -1,10 +1,11 @@
 package com.monito.domains.dashboard.controller;
 
+import com.monito.domains.container.domain.ContainerHealth;
+import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
-import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
-import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
-import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
-import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
+import com.monito.domains.dashboard.dto.request.TimeRange;
+import com.monito.domains.dashboard.dto.response.*;
 import com.monito.domains.dashboard.service.DashboardService;
 import com.monito.global.common.response.ApiResponse;
 import java.util.List;
@@ -74,10 +75,10 @@ public class DashboardController {
             @RequestParam(required = false) Boolean favoriteOnly,
 
             @Parameter(description = "상태 필터 (다중 선택 가능)")
-            @RequestParam(required = false) List<com.monito.domains.container.domain.ContainerState> states,
+            @RequestParam(required = false) List<ContainerState> states,
 
             @Parameter(description = "헬스 필터 (다중 선택 가능)")
-            @RequestParam(required = false) List<com.monito.domains.container.domain.ContainerHealth> healths,
+            @RequestParam(required = false) List<ContainerHealth> healths,
 
             @Parameter(description = "에이전트 ID 필터 (다중 선택 가능)")
             @RequestParam(required = false) List<Long> agentIds,
@@ -88,8 +89,8 @@ public class DashboardController {
 
 
         // 필터 DTO 생성
-        com.monito.domains.dashboard.dto.request.ContainerFilterDTO filter =
-                com.monito.domains.dashboard.dto.request.ContainerFilterDTO.builder()
+        ContainerFilterDTO filter =
+                ContainerFilterDTO.builder()
                         .keyword(keyword)
                         .favoriteOnly(favoriteOnly)
                         .states(states)
@@ -186,5 +187,93 @@ public class DashboardController {
         List<ContainerWithFavoriteDTO> containers = dashboardService.getAllContainersSortedByFavorite(Long.valueOf(userDetails.getId()));
 
         return ApiResponse.ok(containers, "즐겨찾기 우선 정렬된 컨테이너 목록을 성공적으로 조회했습니다.");
+    }
+
+    /**
+     * 당일 0시 기준 STDOUT/STDERR 로그 개수 조회
+     * GET /api/dashboard/logs/daily-count
+     * @return 당일 STDOUT/STDERR 로그 개수
+     */
+    @Operation(summary = "당일 로그 개수 조회",
+            description = "당일 0시 기준으로 STDOUT과 STDERR 로그의 개수를 조회합니다.")
+    @GetMapping("/logs/daily-count")
+    public ApiResponse<DailyLogCountDTO> getDailyLogCount() {
+        log.info("GET /api/dashboard/logs/daily-count - 당일 로그 개수 조회");
+
+        DailyLogCountDTO dailyLogCount = dashboardService.getDailyLogCount();
+
+        return ApiResponse.ok(dailyLogCount, "당일 로그 개수를 성공적으로 조회했습니다.");
+    }
+
+    /**
+     * 전체 컨테이너의 스토리지 사용량 조회
+     * GET /api/dashboard/containers/storage-usage
+     * @return 전체 컨테이너의 스토리지 할당량과 사용량 목록
+     */
+    @Operation(summary = "컨테이너 스토리지 사용량 조회",
+            description = "전체 컨테이너의 스토리지 할당량(storageLimit)과 현재 사용량(sizeRootFs)을 조회합니다.")
+    @GetMapping("/containers/storage-usage")
+    public ApiResponse<List<ContainerStorageUsageDTO>> getAllContainerStorageUsage() {
+        log.info("GET /api/dashboard/containers/storage-usage - 전체 컨테이너 스토리지 사용량 조회");
+
+        List<ContainerStorageUsageDTO> storageUsage = dashboardService.getAllContainerStorageUsage();
+
+        return ApiResponse.ok(storageUsage, "컨테이너 스토리지 사용량을 성공적으로 조회했습니다.");
+    }
+
+    /**
+     * 컨테이너의 네트워크 통계 시계열 데이터 조회
+     * GET /api/dashboard/containers/{containerId}/network-stats
+     * @param containerId 컨테이너 ID
+     * @param timeRange 시간 범위 (FIFTEEN_MINUTES, THIRTY_MINUTES, ONE_HOUR)
+     * @param detail 상세 여부 (false: 50포인트, true: 200포인트)
+     * @return 네트워크 통계 시계열 데이터
+     */
+    @Operation(summary = "네트워크 통계 시계열 조회",
+            description = "컨테이너의 네트워크 rx/tx 속도 시계열 데이터를 조회합니다. detail=false는 대시보드용(50포인트), detail=true는 상세보기용(200포인트)")
+    @GetMapping("/containers/{containerId}/network-stats")
+    public ApiResponse<NetworkStatsTimeSeriesDTO> getNetworkStatsTimeSeries(
+            @PathVariable Long containerId,
+            @Parameter(description = "시간 범위 (FIFTEEN_MINUTES, THIRTY_MINUTES, ONE_HOUR)")
+            @RequestParam(defaultValue = "THIRTY_MINUTES") TimeRange timeRange,
+            @Parameter(description = "상세 여부 (false: 50포인트, true: 200포인트)")
+            @RequestParam(defaultValue = "false") boolean detail) {
+
+        log.info("GET /api/dashboard/containers/{}/network-stats - timeRange: {}, detail: {}",
+                containerId, timeRange, detail);
+
+        NetworkStatsTimeSeriesDTO networkStats = dashboardService.getNetworkStatsTimeSeries(
+                containerId, timeRange, detail
+        );
+
+        return ApiResponse.ok(networkStats, "네트워크 통계 시계열 데이터를 성공적으로 조회했습니다.");
+    }
+
+    /**
+     * 컨테이너의 Block I/O 통계 시계열 데이터 조회
+     * GET /api/dashboard/containers/{containerId}/blockio-stats
+     * @param containerId 컨테이너 ID
+     * @param timeRange 시간 범위 (ONE_MINUTES, THREE_MINUTES, FIFTEEN_MINUTES, THIRTY_MINUTES, ONE_HOUR)
+     * @param detail 상세 여부 (false: 50포인트, true: 200포인트)
+     * @return Block I/O 통계 시계열 데이터
+     */
+    @Operation(summary = "Block I/O 통계 시계열 조회",
+            description = "컨테이너의 블록 디바이스 읽기/쓰기 속도 시계열 데이터를 조회합니다. detail=false는 대시보드용(50포인트), detail=true는 상세보기용(200포인트)")
+    @GetMapping("/containers/{containerId}/blockio-stats")
+    public ApiResponse<BlockIOStatsTimeSeriesDTO> getBlockIOStatsTimeSeries(
+            @PathVariable Long containerId,
+            @Parameter(description = "시간 범위 (ONE_MINUTES, THREE_MINUTES, FIFTEEN_MINUTES, THIRTY_MINUTES, ONE_HOUR)")
+            @RequestParam(defaultValue = "ONE_MINUTES") TimeRange timeRange,
+            @Parameter(description = "상세 여부 (false: 50포인트, true: 200포인트)")
+            @RequestParam(defaultValue = "false") boolean detail) {
+
+        log.info("GET /api/dashboard/containers/{}/blockio-stats - timeRange: {}, detail: {}",
+                containerId, timeRange, detail);
+
+        BlockIOStatsTimeSeriesDTO blockIOStats = dashboardService.getBlockIOStatsTimeSeries(
+                containerId, timeRange, detail
+        );
+
+        return ApiResponse.ok(blockIOStats, "Block I/O 통계 시계열 데이터를 성공적으로 조회했습니다.");
     }
 }
