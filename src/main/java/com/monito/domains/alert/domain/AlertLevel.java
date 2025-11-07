@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AlertLevel {
-    CRITICAL("심각"),
-    HIGH("높음"),
-    WARNING("경고"),
-    INFO("보통");
+    CRITICAL("CRITICAL"),
+    HIGH("HIGH"),
+    WARNING("WARNING"),
+    INFO("INFO");
 
     private final String description;
 }

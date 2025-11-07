@@ -160,8 +160,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
         BigDecimal threshold = getThresholdForLevel(rule, alertLevel);
 
         return String.format(
-                "컨테이너 '%s'의 %s 사용률이 임계값을 초과했습니다. (현재: %s%%, 임계값: %s%%)",
-                containerStats.getContainer().getName(),
+                "%s 상태가 설정된 임계값을 초과했습니다. (현재: %s%%, 임계값: %s%%)",
                 metricName,
                 currentValue.setScale(2, BigDecimal.ROUND_HALF_UP),
                 threshold != null ? threshold.toString() : "N/A"
