@@ -19,8 +19,10 @@ public class ContainerSummaryResponseDTO {
     private String containerHash;
     private String containerName;
     private BigDecimal cpuPercent;
+    private Boolean isCpuUnlimited;
     private Long memUsage;
     private Long memLimit;
+    private Boolean isMemoryUnlimited;
     private BigDecimal memPercent;
     private Long rxBytesPerSec;
     private Long txBytesPerSec;
@@ -29,6 +31,7 @@ public class ContainerSummaryResponseDTO {
     private Long imageSize;
     private Long sizeRootFs;
     private Long storageLimit;  // 0이면 무제한 (Agent 전체 디스크 용량)
+    private Boolean isStorageUnlimited;
     private Boolean isFavorite;
 
     public static ContainerSummaryResponseDTO from(ContainerSummarySnapshot snapshot, boolean isFavorite) {
@@ -38,9 +41,11 @@ public class ContainerSummaryResponseDTO {
                 .containerHash(snapshot.getContainerHash())
                 .containerName(snapshot.getContainerName())
                 .cpuPercent(snapshot.getCpuPercent())
+                .isCpuUnlimited(snapshot.getIsCpuUnlimited())
                 .memPercent(snapshot.getMemPercent())
                 .memUsage(snapshot.getMemUsage())
                 .memLimit(snapshot.getMemLimit())
+                .isMemoryUnlimited(snapshot.getIsMemoryUnlimited())
                 .rxBytesPerSec(snapshot.getRxBytesPerSec())
                 .txBytesPerSec(snapshot.getTxBytesPerSec())
                 .state(snapshot.getState())
@@ -48,6 +53,7 @@ public class ContainerSummaryResponseDTO {
                 .imageSize(snapshot.getImageSize())
                 .sizeRootFs(snapshot.getSizeRootFs())
                 .storageLimit(snapshot.getStorageLimit())
+                .isStorageUnlimited(snapshot.getIsStorageUnlimited())
                 .isFavorite(isFavorite)
                 .build();
     }
@@ -67,9 +73,11 @@ public class ContainerSummaryResponseDTO {
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
                 .cpuPercent(hasStatsLog ? containerStatsLog.getCpuPercent() : BigDecimal.ZERO)
+                .isCpuUnlimited(container.getIsCpuUnlimited())
                 .memPercent(hasStatsLog ? containerStatsLog.getMemPercent() : BigDecimal.ZERO)
                 .memUsage(hasStatsLog ? containerStatsLog.getMemUsage() : 0L)
                 .memLimit(container.getMemLimit())
+                .isMemoryUnlimited(container.getIsMemoryUnlimited())
                 .rxBytesPerSec(hasStatsLog ? containerStatsLog.getRxBytesPerSec() : 0L)
                 .txBytesPerSec(hasStatsLog ? containerStatsLog.getTxBytesPerSec() : 0L)
                 .imageSize(container.getImageSize())
@@ -77,6 +85,7 @@ public class ContainerSummaryResponseDTO {
                 .health(hasStatsLog ? containerStatsLog.getHealth() : ContainerHealth.NONE)
                 .sizeRootFs(hasStatsLog ? containerStatsLog.getSizeRootFs() : 0L)
                 .storageLimit(container.getStorageLimit())
+                .isStorageUnlimited(container.getIsStorageUnlimited())
                 .isFavorite(false)  // 기본값
                 .build();
     }
@@ -93,9 +102,11 @@ public class ContainerSummaryResponseDTO {
                 .containerHash(this.containerHash)
                 .containerName(this.containerName)
                 .cpuPercent(this.cpuPercent)
+                .isCpuUnlimited(this.isCpuUnlimited)
                 .memPercent(this.memPercent)
                 .memUsage(this.memUsage)
                 .memLimit(this.memLimit)
+                .isMemoryUnlimited(this.isMemoryUnlimited)
                 .rxBytesPerSec(this.rxBytesPerSec)
                 .txBytesPerSec(this.txBytesPerSec)
                 .state(this.state)
@@ -103,6 +114,7 @@ public class ContainerSummaryResponseDTO {
                 .imageSize(this.imageSize)
                 .sizeRootFs(this.sizeRootFs)
                 .storageLimit(newStorageLimit)
+                .isStorageUnlimited(this.isStorageUnlimited)
                 .isFavorite(this.isFavorite)
                 .build();
     }

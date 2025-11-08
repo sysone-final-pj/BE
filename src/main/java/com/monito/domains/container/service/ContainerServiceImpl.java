@@ -466,7 +466,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     /**
-     * 스냅샷 데이터로 컨테이너 생성 (초기값 0, metricsInitialized = false)
+     * 스냅샷 데이터로 컨테이너 생성 (초기값 0)
      * @return 생성된 컨테이너
      */
     private Container createContainerFromSnapshot(Agent agent, ContainerSnapshotRequestDTO snapshot, ContainerState state) {
@@ -476,16 +476,18 @@ public class ContainerServiceImpl implements ContainerService {
                 .state(state)
                 .name(snapshot.getContainerName())
                 .imageName(snapshot.getImageName())
-                // 초기값 (메트릭 수신 전까지 0)
+                // 초기값 (메트릭 수신 시 업데이트됨)
                 .cpuQuota(0L)
                 .cpuPeriod(0L)
                 .cpuLimitCores(BigDecimal.ZERO)
                 .onlineCpus(1)
+                .isCpuUnlimited(false)
                 .memLimit(0L)
+                .isMemoryUnlimited(false)
                 .oomKills(0)
                 .storageLimit(0L)
+                .isStorageUnlimited(false)
                 .imageSize(snapshot.getImageSize())
-                .metricsInitialized(false)  // 메트릭 미수신 상태
                 .build();
 
         return containerRepository.save(container);

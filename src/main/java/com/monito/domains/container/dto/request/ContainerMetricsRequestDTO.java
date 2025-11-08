@@ -29,6 +29,7 @@ public class ContainerMetricsRequestDTO {
     private Long cpuQuota;
     private Long cpuPeriod;
     private Integer onlineCpus;
+    private Boolean isCpuUnlimited;  // CPU 제한이 없는지 여부
     private Long throttlingPeriods;
     private Long throttledPeriods;
     private Long throttledTime;
@@ -36,6 +37,7 @@ public class ContainerMetricsRequestDTO {
     // Memory 관련
     private Long memUsage;
     private Long memLimit;
+    private Boolean isMemoryUnlimited;  // 메모리 제한이 없는지 여부
 
     // Block I/O 관련
     private Long blkRead;
@@ -55,6 +57,7 @@ public class ContainerMetricsRequestDTO {
     private Long sizeRw;         // Read-Write Layer 크기
     private Long sizeRootFs;     // 전체 파일시스템 크기 (imageSize + sizeRw)
     private Long storageLimit;   // 스토리지 할당량 (0 = 무제한)
+    private Boolean isStorageUnlimited;  // 스토리지 제한이 없는지 여부
     private Long imageSize;      // 이미지 크기
     private String imageName;    // 이미지 이름
 }

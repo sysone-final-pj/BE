@@ -62,7 +62,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
                     .orElseGet(() -> createNewContainer(agent, metricsDto));
 
-            initializeSpecsIfFirstMetrics(container, metricsDto);
+            updateSpecsIfChanged(container, metricsDto);
 
             // 4. 이전 통계 조회 (계산용)
             ContainerStatsLog previousStats = statsLogRepository
@@ -233,45 +233,62 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .cpuPeriod(metricsDto.getCpuPeriod())
                 .cpuLimitCores(cpuLimitCores)
                 .onlineCpus(metricsDto.getOnlineCpus())
+                .isCpuUnlimited(metricsDto.getIsCpuUnlimited())
                 .memLimit(metricsDto.getMemLimit())
+                .isMemoryUnlimited(metricsDto.getIsMemoryUnlimited())
                 .imageName(metricsDto.getImageName())
                 .imageSize(metricsDto.getImageSize())
                 .storageLimit(metricsDto.getStorageLimit())
+                .isStorageUnlimited(metricsDto.getIsStorageUnlimited())
                 .build();
 
         container = containerRepository.save(container);
 
-        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores",
-                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores);
+        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores, isCpuUnlimited: {}, isMemoryUnlimited: {}, isStorageUnlimited: {}",
+                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores,
+                metricsDto.getIsCpuUnlimited(), metricsDto.getIsMemoryUnlimited(), metricsDto.getIsStorageUnlimited());
 
         return container;
     }
 
     /**
-     * 최초 메트릭 수신 시 컨테이너 리소스 스펙 초기화
+     * 리소스 제한값이 변경되었으면 업데이트 (실시간 반영)
+     * - docker update 등으로 실행 중 리소스 변경 시 자동 반영
      */
-    private void initializeSpecsIfFirstMetrics(Container container, ContainerMetricsRequestDTO metric) {
+    private void updateSpecsIfChanged(Container container, ContainerMetricsRequestDTO metric) {
+        // 리소스 제한값 변경 감지
+        boolean changed = !container.getCpuQuota().equals(metric.getCpuQuota()) ||
+                          !container.getMemLimit().equals(metric.getMemLimit()) ||
+                          !container.getStorageLimit().equals(metric.getStorageLimit()) ||
+                          !container.getIsCpuUnlimited().equals(metric.getIsCpuUnlimited()) ||
+                          !container.getIsMemoryUnlimited().equals(metric.getIsMemoryUnlimited()) ||
+                          !container.getIsStorageUnlimited().equals(metric.getIsStorageUnlimited());
 
-        if (Boolean.TRUE.equals(container.getMetricsInitialized())) {
-            return; // 이미 초기화됨 → Skip
+        if (!changed) {
+            return; // 변경 없음 → Skip
         }
 
-        BigDecimal cpuLimitCores = null;
-        if (metric.getCpuQuota() != null && metric.getCpuPeriod() > 0) {
-            cpuLimitCores = BigDecimal.valueOf(metric.getCpuQuota())
-                    .divide(BigDecimal.valueOf(metric.getCpuPeriod()), 2, RoundingMode.HALF_UP);
-        }
+        // CPU Limit Cores 계산
+        BigDecimal cpuLimitCores = metricsCalculator.calculateCpuLimitCores(
+                metric.getCpuQuota(),
+                metric.getCpuPeriod()
+        );
 
+        // 리소스 스펙 업데이트
         container.updateSpecs(
                 metric.getCpuQuota(),
                 metric.getCpuPeriod(),
                 cpuLimitCores,
                 metric.getOnlineCpus(),
+                metric.getIsCpuUnlimited(),
                 metric.getMemLimit(),
-                metric.getStorageLimit()
+                metric.getIsMemoryUnlimited(),
+                metric.getStorageLimit(),
+                metric.getIsStorageUnlimited()
         );
 
-        container.markMetricsInitialized();
-        log.info("최초 메트릭 수신 → 컨테이너 스펙 초기화 완료: {}", container.getContainerHash());
+        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}",
+                container.getContainerHash(), metric.getCpuQuota(), metric.getIsCpuUnlimited(),
+                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited());
     }
 }

@@ -19,6 +19,7 @@ public class CpuMetricsRequestDTO {
     private Integer onlineCpus;
     private Long cpuQuota;
     private Long cpuPeriod;
+    private Boolean isCpuUnlimited;  // CPU 제한이 없는지 여부
     private Long throttlingPeriods;
     private Long throttledPeriods;
     private Long throttledTime;

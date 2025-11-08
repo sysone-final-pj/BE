@@ -25,8 +25,10 @@ public class ContainerSummarySnapshot {
     private String containerHash;
     private String containerName;
     private BigDecimal cpuPercent;
+    private Boolean isCpuUnlimited;
     private Long memUsage;
     private Long memLimit;
+    private Boolean isMemoryUnlimited;
     private BigDecimal memPercent;
     private Long rxBytesPerSec;
     private Long txBytesPerSec;
@@ -35,6 +37,7 @@ public class ContainerSummarySnapshot {
     private Long imageSize;
     private Long sizeRootFs;
     private Long storageLimit;  // 0이면 무제한 (Agent 전체 디스크 용량)
+    private Boolean isStorageUnlimited;
 
     /**
      * Container + ContainerStatsLog → Snapshot 변환
@@ -53,9 +56,11 @@ public class ContainerSummarySnapshot {
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
                 .cpuPercent(hasStatsLog ? containerStatsLog.getCpuPercent() : BigDecimal.ZERO)
+                .isCpuUnlimited(container.getIsCpuUnlimited())
                 .memPercent(hasStatsLog ? containerStatsLog.getMemPercent() : BigDecimal.ZERO)
                 .memUsage(hasStatsLog ? containerStatsLog.getMemUsage() : 0L)
                 .memLimit(container.getMemLimit())
+                .isMemoryUnlimited(container.getIsMemoryUnlimited())
                 .rxBytesPerSec(hasStatsLog ? containerStatsLog.getRxBytesPerSec() : 0L)
                 .txBytesPerSec(hasStatsLog ? containerStatsLog.getTxBytesPerSec() : 0L)
                 .imageSize(container.getImageSize())
@@ -63,6 +68,7 @@ public class ContainerSummarySnapshot {
                 .health(hasStatsLog ? containerStatsLog.getHealth() : ContainerHealth.NONE)
                 .sizeRootFs(hasStatsLog ? containerStatsLog.getSizeRootFs() : 0L)
                 .storageLimit(container.getStorageLimit())
+                .isStorageUnlimited(container.getIsStorageUnlimited())
                 .build();
     }
 
@@ -78,8 +84,10 @@ public class ContainerSummarySnapshot {
                 .containerHash(this.containerHash)
                 .containerName(this.containerName)
                 .cpuPercent(this.cpuPercent)
+                .isCpuUnlimited(this.isCpuUnlimited)
                 .memUsage(this.memUsage)
                 .memLimit(this.memLimit)
+                .isMemoryUnlimited(this.isMemoryUnlimited)
                 .memPercent(this.memPercent)
                 .rxBytesPerSec(this.rxBytesPerSec)
                 .txBytesPerSec(this.txBytesPerSec)
@@ -88,6 +96,7 @@ public class ContainerSummarySnapshot {
                 .imageSize(this.imageSize)
                 .sizeRootFs(this.sizeRootFs)
                 .storageLimit(newStorageLimit)
+                .isStorageUnlimited(this.isStorageUnlimited)
                 .build();
     }
 }

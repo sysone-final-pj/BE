@@ -14,4 +14,5 @@ import lombok.Getter;
 public class MemoryMetricsRequestDTO {
     private Long memUsage;
     private Long memLimit;
+    private Boolean isMemoryUnlimited;  // 메모리 제한이 없는지 여부
 }
