@@ -39,8 +39,11 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional(readOnly = true)
-    public List<Member> getAllMembers() {
-        return memberRepository.findAll();
+    public List<Member> getAllMembers(String keyword) {
+        String searchKeyword = keyword != null && !keyword.trim().isEmpty()
+                ? keyword.trim()
+                : null;
+        return memberRepository.findAllWithSearch(searchKeyword);
     }
 
     @Override

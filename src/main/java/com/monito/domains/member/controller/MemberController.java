@@ -41,8 +41,8 @@ public class MemberController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ApiResponse<List<Member>> getAllMembers() {
-        List<Member> members = memberService.getAllMembers();
+    public ApiResponse<List<Member>> getAllMembers(@RequestParam String keyword) {
+        List<Member> members = memberService.getAllMembers(keyword);
         return ApiResponse.ok(members, "사용자 목록 조회 성공");
     }
 
