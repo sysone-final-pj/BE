@@ -44,6 +44,9 @@ public class Container extends BaseEntity {
     @Column(nullable = false)
     private ContainerState state;
 
+    @Column(length = 100)
+    private String status;
+
     @Column(nullable = false, length = 50)
     private String name;
 
@@ -166,6 +169,11 @@ public class Container extends BaseEntity {
 
     public void changeState(ContainerState state){
         this.state = state;
+    }
+
+    public void changeStateWithStatus(ContainerState state, String status) {
+        this.state = state;
+        this.status = status;
     }
 
     public void incrementOomKills() {

@@ -33,6 +33,7 @@ CREATE TABLE containers (
     id NUMBER PRIMARY KEY,
     agent_id NUMBER NOT NULL,
     container_hash VARCHAR2(64) NOT NULL,
+    status VARCHAR2(100),
     state VARCHAR2(20) NOT NULL,
     name VARCHAR2(50) NOT NULL,
     cpu_quota NUMBER NOT NULL,
