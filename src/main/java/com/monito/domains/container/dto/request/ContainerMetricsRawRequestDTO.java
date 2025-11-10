@@ -58,12 +58,14 @@ public class ContainerMetricsRawRequestDTO {
                 .cpuQuota(cpu != null ? cpu.getCpuQuota() : 0L)
                 .cpuPeriod(cpu != null ? cpu.getCpuPeriod() : 0L)
                 .onlineCpus(cpu != null ? cpu.getOnlineCpus() : 1)
+                .isCpuUnlimited(cpu != null && cpu.getIsCpuUnlimited() != null ? cpu.getIsCpuUnlimited() : false)
                 .throttlingPeriods(cpu != null ? cpu.getThrottlingPeriods() : 0L)
                 .throttledPeriods(cpu != null ? cpu.getThrottledPeriods() : 0L)
                 .throttledTime(cpu != null ? cpu.getThrottledTime() : 0L)
                 // Memory
                 .memUsage(memory != null ? memory.getMemUsage() : null)
                 .memLimit(memory != null ? memory.getMemLimit() : null)
+                .isMemoryUnlimited(memory != null && memory.getIsMemoryUnlimited() != null ? memory.getIsMemoryUnlimited() : false)
                 // Network
                 .rxBytes(network != null ? network.getRxBytes() : null)
                 .txBytes(network != null ? network.getTxBytes() : null)
@@ -80,6 +82,7 @@ public class ContainerMetricsRawRequestDTO {
                 .sizeRw(storage != null ? storage.getSizeRw() : 0L)
                 .sizeRootFs(storage != null ? storage.getSizeRootFs() : 0L)
                 .storageLimit(storage != null ? storage.getStorageLimit() : 0L)
+                .isStorageUnlimited(storage != null && storage.getIsStorageUnlimited() != null ? storage.getIsStorageUnlimited() : false)
                 .imageSize(storage != null ? storage.getImageSize() : null)
                 .imageName(storage != null ? storage.getImageName() : null)
                 .build();

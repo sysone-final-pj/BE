@@ -9,13 +9,13 @@ import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
+import java.util.Set;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
-import com.monito.global.cache.AgentMetadata;
-import com.monito.global.cache.AgentMetadataCache;
-import com.monito.global.cache.OomEvent;
-import com.monito.global.cache.OomEventCache;
+import com.monito.domains.container.util.CpuMetricsCalculator;
+import com.monito.domains.favorite.repository.FavoriteRepository;
+import com.monito.global.cache.*;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 
@@ -47,54 +47,57 @@ public class ContainerServiceImpl implements ContainerService {
     private final AgentMetadataCache agentMetadataCache;
     private final AgentRepository agentRepository;
     private final OomEventCache oomEventCache;
+    private final CpuMetricsBufferCache cpuMetricsBufferCache;
+    private final CpuMetricsCalculator cpuMetricsCalculator;
+    private final ContainerSummaryCache containerSummaryCache;
+    private final FavoriteCache favoriteCache;
+    private final FavoriteRepository favoriteRepository;
 
     @Override
     public List<ContainerSummaryResponseDTO> getContainerList(
+            Long memberId,
             String keyword,
             List<ContainerState> states,
             List<ContainerHealth> healths,
             ContainerSortField sortBy,
             Sort.Direction direction
     ) {
-        // 1. keyword trim 처리 (빈 문자열은 null로 변환)
-        String searchKeyword = keyword != null && !keyword.trim().isEmpty()
-                ? keyword.trim()
-                : null;
+        // 1. 캐시에서 모든 스냅샷 조회
+        List<ContainerSummarySnapshot> snapshots = containerSummaryCache.getAllSnapshots();
 
-        // 2. Container 검색 (Repository에서 JPQL 쿼리 실행)
-        List<Container> containers = containerRepository.findAllWithSearch(searchKeyword);
+        // 2. 사용자의 즐겨찾기 목록 조회 (FavoriteCache에서)
+        Set<Long> favoriteContainerIds = memberId != null
+                ? favoriteCache.getFavoriteSet(memberId)
+                : Set.of();
 
-        // 3. Container → DTO 변환 (최신 StatsLog 포함)
-        Stream<ContainerSummaryResponseDTO> dtoStream = containers.stream()
-                .flatMap(container -> {
-                    Agent agent = container.getAgent();
-                    return containerStatsLogRepository.findLatestByContainerHash(container.getContainerHash())
-                            .map(statsLog -> {
-                                ContainerSummaryResponseDTO dto = ContainerSummaryResponseDTO.of(container, statsLog);
-
-                                // storageLimit가 0이면 Agent 전체 디스크 용량으로 변경
-                                if (dto.getStorageLimit() == 0 && agent != null) {
-                                    AgentMetadata metadata = agentMetadataCache.getMetadata(agent.getAgentKey());
-                                    if (metadata != null && metadata.getHostTotalDiskSpace() != null) {
-                                        dto = dto.changeStorageLimit(metadata.getHostTotalDiskSpace());
-                                    }
-                                }
-                                return dto;
-                            })
-                            .stream();
+        // 3. Snapshot → ResponseDTO 변환 (isFavorite 포함)
+        Stream<ContainerSummaryResponseDTO> dtoStream = snapshots.stream()
+                .map(snapshot -> {
+                    boolean isFavorite = favoriteContainerIds.contains(snapshot.getId());
+                    return ContainerSummaryResponseDTO.from(snapshot, isFavorite);
                 });
 
-        // 4. state 필터링
+        // 4. keyword 필터링 (검색)
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String searchKeyword = keyword.trim().toLowerCase();
+            dtoStream = dtoStream.filter(dto ->
+                    (dto.getAgentName() != null && dto.getAgentName().toLowerCase().contains(searchKeyword)) ||
+                    (dto.getContainerHash() != null && dto.getContainerHash().toLowerCase().contains(searchKeyword)) ||
+                    (dto.getContainerName() != null && dto.getContainerName().toLowerCase().contains(searchKeyword))
+            );
+        }
+
+        // 5. state 필터링
         if (states != null && !states.isEmpty()) {
             dtoStream = dtoStream.filter(dto -> states.contains(dto.getState()));
         }
 
-        // 5. health 필터링
+        // 6. health 필터링
         if (healths != null && !healths.isEmpty()) {
             dtoStream = dtoStream.filter(dto -> healths.contains(dto.getHealth()));
         }
 
-        // 6. 정렬
+        // 7. 정렬
         if (sortBy != null) {
             Comparator<ContainerSummaryResponseDTO> comparator = getComparator(sortBy);
             if (direction == Sort.Direction.DESC) {
@@ -148,6 +151,7 @@ public class ContainerServiceImpl implements ContainerService {
         CpuMetricsDTO cpu = buildCpuMetrics(statsLogs, container);
         MemoryMetricsDTO memory = buildMemoryMetrics(statsLogs, container);
         NetworkMetricsDTO network = buildNetworkMetrics(statsLogs);
+        OomMetricsDTO oom = buildOomMetrics(container, startTime, endTime);
 
         // 6. 응답 생성
         return ContainerDetailResponseDTO.builder()
@@ -155,6 +159,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .cpu(cpu)
                 .memory(memory)
                 .network(network)
+                .oom(oom)
                 .startTime(startTime)
                 .endTime(endTime)
                 .dataPoints(statsLogs.size())
@@ -223,7 +228,7 @@ public class ContainerServiceImpl implements ContainerService {
     /**
      * 로그 정렬 생성 (정렬 필드에 따라 JPQL 경로 매핑)
      */
-    private Sort createLogSort(com.monito.domains.container.domain.LogSortField sortBy, Sort.Direction direction) {
+    private Sort createLogSort(LogSortField sortBy, Sort.Direction direction) {
         String sortField = switch (sortBy) {
             case LOGGED_AT -> "loggedAt";
             case CONTAINER_NAME -> "container.name";
@@ -279,6 +284,18 @@ public class ContainerServiceImpl implements ContainerService {
                     .multiply(BigDecimal.valueOf(100));
         }
 
+        // 통계 불러오기
+        List<BigDecimal> samples = cpuMetricsBufferCache.getSamples(container.getId());
+
+        // 요약 통계 계산 및 객체 생성
+        CpuMetricsSummaryDTO summary = CpuMetricsSummaryDTO.builder()
+                .current(cpuMetricsCalculator.avgLast(samples, 1))
+                .avg1m(cpuMetricsCalculator.avgLast(samples, 12))        // 1분
+                .avg5m(cpuMetricsCalculator.avgLast(samples, 12 * 5))    // 5분
+                .avg15m(cpuMetricsCalculator.avgLast(samples, 12 * 15))  // 15분
+                .p95(cpuMetricsCalculator.percentile(samples, 0.95))     // 95th percentile
+                .build();
+
         return CpuMetricsDTO.builder()
                 .cpuPercent(cpuPercent)
                 .cpuCoreUsage(cpuCoreUsage)
@@ -296,6 +313,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .throttledPeriods(latest != null ? latest.getThrottledPeriods() : null)
                 .throttledTime(latest != null ? latest.getThrottledTime() : null)
                 .throttleRate(throttleRate)
+                .summary(summary)
                 .build();
     }
 
@@ -405,20 +423,39 @@ public class ContainerServiceImpl implements ContainerService {
                 if (Boolean.TRUE.equals(snapshot.getOomKilled())) {
                     handleOomKillForNewContainer(newContainer, agentKey);
                 }
+
+                // 3-1-2. 캐시에 Snapshot 저장
+                containerSummaryCache.update(ContainerSummarySnapshot.of(newContainer, null));
             }
         } else {
             // 3-2. 기존 컨테이너 업데이트
             if (state == ContainerState.DELETED) {
                 // Soft delete 처리
                 container.markAsDeleted();
-                containerRepository.save(container);
                 log.info("컨테이너 삭제 처리 - Agent: {}, ContainerHash: {}",
                         agentKey, snapshot.getContainerHash());
-            } else if(container.getState() != state) {
-                container.changeState(state);
-                // 상태만 업데이트 (이름이나 이미지 변경 가능성 대응)
-                log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
-                        snapshot.getContainerHash(), state);
+
+                // 컨테이너 삭제 시 관련된 모든 데이터 삭제
+                // 1. 메트릭 캐시 삭제
+                cpuMetricsBufferCache.removeContainer(container.getId());
+                oomEventCache.removeContainer(container.getId());
+                containerSummaryCache.remove(container.getId());
+
+                // 2. 즐겨찾기 데이터 삭제 (DB + 캐시)
+                favoriteRepository.deleteByContainerId(container.getId());  // DB 삭제
+                favoriteCache.removeContainerFromAll(container.getId());    // 캐시 삭제
+            } else {
+                if(container.getState() != state) {
+                    container.changeState(state);
+                    log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
+                            snapshot.getContainerHash(), state);
+                }
+
+                // 캐시에 Snapshot 업데이트
+                ContainerStatsLog latestStats = containerStatsLogRepository
+                        .findLatestByContainerHash(container.getContainerHash())
+                        .orElse(null);
+                containerSummaryCache.update(ContainerSummarySnapshot.of(container, latestStats));
             }
 
             // 4. OOM Kill 감지 및 처리 (중복 방지)
@@ -429,7 +466,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     /**
-     * 스냅샷 데이터로 컨테이너 생성 (초기값 0, metricsInitialized = false)
+     * 스냅샷 데이터로 컨테이너 생성 (초기값 0)
      * @return 생성된 컨테이너
      */
     private Container createContainerFromSnapshot(Agent agent, ContainerSnapshotRequestDTO snapshot, ContainerState state) {
@@ -439,16 +476,18 @@ public class ContainerServiceImpl implements ContainerService {
                 .state(state)
                 .name(snapshot.getContainerName())
                 .imageName(snapshot.getImageName())
-                // 초기값 (메트릭 수신 전까지 0)
+                // 초기값 (메트릭 수신 시 업데이트됨)
                 .cpuQuota(0L)
                 .cpuPeriod(0L)
                 .cpuLimitCores(BigDecimal.ZERO)
                 .onlineCpus(1)
+                .isCpuUnlimited(false)
                 .memLimit(0L)
+                .isMemoryUnlimited(false)
                 .oomKills(0)
                 .storageLimit(0L)
+                .isStorageUnlimited(false)
                 .imageSize(snapshot.getImageSize())
-                .metricsInitialized(false)  // 메트릭 미수신 상태
                 .build();
 
         return containerRepository.save(container);
@@ -518,44 +557,17 @@ public class ContainerServiceImpl implements ContainerService {
                 container.getId(), container.getName(), container.getOomKills(), occurredAt);
     }
 
-    @Override
-    public OomTimeSeriesResponseDTO getOomTimeSeries(
-            Long containerId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            ChronoUnit bucketSize
-    ) {
-        // 1. 컨테이너 조회
-        Container container = containerRepository.findById(containerId)
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.DATA_NOT_FOUND));
-
-        // 2. 기본값 설정 (null이면 최근 7일)
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime effectiveStartTime = startTime != null ? startTime : now.minusDays(7);
-        LocalDateTime effectiveEndTime = endTime != null ? endTime : now;
-
-        // 3. 캐시에서 시간대별 Histogram 조회
+    private OomMetricsDTO buildOomMetrics(Container container, LocalDateTime startTime, LocalDateTime endTime) {
+        // 캐시에서 시간대별 Histogram 조회 (HOURS 고정)
         Map<LocalDateTime, Long> histogram = oomEventCache.getHistogram(
-                containerId,
-                effectiveStartTime,
-                effectiveEndTime,
-                bucketSize
+                container.getId(),
+                startTime,
+                endTime,
+                ChronoUnit.HOURS
         );
 
-        // 4. 기간 내 총 OOM 횟수 계산
-        int totalCount = histogram.values().stream()
-                .mapToInt(Long::intValue)
-                .sum();
-
-        // 5. 응답 DTO 생성
-        return OomTimeSeriesResponseDTO.builder()
-                .containerId(container.getId())
-                .containerName(container.getName())
-                .startTime(effectiveStartTime)
-                .endTime(effectiveEndTime)
-                .bucketSize(bucketSize.name())
+        return OomMetricsDTO.builder()
                 .timeSeries(histogram)
-                .totalCount(totalCount)
                 .totalOomKills(container.getOomKills())
                 .lastOomKilledAt(container.getLastOomKilledAt())
                 .build();

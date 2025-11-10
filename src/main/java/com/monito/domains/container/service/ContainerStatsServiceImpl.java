@@ -1,14 +1,19 @@
 package com.monito.domains.container.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
+import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
+import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.global.cache.ContainerSummaryCache;
+import com.monito.global.cache.CpuMetricsBufferCache;
+import com.monito.infrastructure.messaging.StompMessagingClient;
+import com.monito.infrastructure.messaging.WsTopics;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -37,6 +42,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CpuMetricsBufferCache cpuMetricsBufferCache;
+    private final StompMessagingClient messagingClient;
+    private final ContainerSummaryCache containerSummaryCache;
+
     @Override
     @Transactional
     public void processMetrics(String agentKey, ContainerMetricsRequestDTO metricsDto) {
@@ -53,7 +62,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
                     .orElseGet(() -> createNewContainer(agent, metricsDto));
 
-            initializeSpecsIfFirstMetrics(container, metricsDto);
+            updateSpecsIfChanged(container, metricsDto);
 
             // 4. 이전 통계 조회 (계산용)
             ContainerStatsLog previousStats = statsLogRepository
@@ -82,49 +91,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             );
 
             // 6. Container 연결
-            statsLog = ContainerStatsLog.builder()
-                    .container(container)
-                    .containerHash(statsLog.getContainerHash())
-                    .state(statsLog.getState())
-                    .health(statsLog.getHealth())
-                    .collectedAt(statsLog.getCollectedAt())
-                    .cpuPercent(statsLog.getCpuPercent())
-                    .cpuCoreUsage(statsLog.getCpuCoreUsage())
-                    .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
-                    .cpuUsageTotal(statsLog.getCpuUsageTotal())
-                    .cpuUser(statsLog.getCpuUser())
-                    .cpuSystem(statsLog.getCpuSystem())
-                    .cpuQuota(statsLog.getCpuQuota())
-                    .cpuPeriod(statsLog.getCpuPeriod())
-                    .onlineCpus(statsLog.getOnlineCpus())
-                    .throttlingPeriods(statsLog.getThrottlingPeriods())
-                    .throttledPeriods(statsLog.getThrottledPeriods())
-                    .throttledTime(statsLog.getThrottledTime())
-                    .memPercent(statsLog.getMemPercent())
-                    .memUsage(statsLog.getMemUsage())
-                    .memMaxUsage(statsLog.getMemMaxUsage())
-                    .blkRead(statsLog.getBlkRead())
-                    .blkWrite(statsLog.getBlkWrite())
-                    .blkReadPerSec(statsLog.getBlkReadPerSec())
-                    .blkWritePerSec(statsLog.getBlkWritePerSec())
-                    .rxBytes(statsLog.getRxBytes())
-                    .txBytes(statsLog.getTxBytes())
-                    .rxPackets(statsLog.getRxPackets())
-                    .txPackets(statsLog.getTxPackets())
-                    .networkTotalBytes(statsLog.getNetworkTotalBytes())
-                    .rxBytesPerSec(statsLog.getRxBytesPerSec())
-                    .txBytesPerSec(statsLog.getTxBytesPerSec())
-                    .rxPps(statsLog.getRxPps())
-                    .txPps(statsLog.getTxPps())
-                    .rxFailureRate(statsLog.getRxFailureRate())
-                    .txFailureRate(statsLog.getTxFailureRate())
-                    .rxErrors(statsLog.getRxErrors())
-                    .txErrors(statsLog.getTxErrors())
-                    .rxDropped(statsLog.getRxDropped())
-                    .txDropped(statsLog.getTxDropped())
-                    .sizeRw(statsLog.getSizeRw())
-                    .sizeRootFs(statsLog.getSizeRootFs())
-                    .build();
+            statsLog = ContainerStatsLog.of(container, statsLog);
 
             // 7. INSERT (UPDATE 없음)
             statsLogRepository.save(statsLog);
@@ -135,7 +102,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     statsLog.getMemPercent()
             );
 
-            // 8. 알림 규칙 평가 (자동 알림 발생)
+            // 8. CPU 통계치 계산을 위한 캐싱 처리
+            cpuMetricsBufferCache.addCpuSample(container.getId(), statsLog.getCpuPercent());
+
+            // 9. 알림 규칙 평가 (자동 알림 발생)
             try {
                 alertEvaluationFacade.evaluateContainerStats(statsLog);
             } catch (Exception e) {
@@ -143,7 +113,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 9. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
+            // 10. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
             try {
                 ContainerDashboardResponseDTO dashboardDto = ContainerDashboardResponseDTO.builder()
                         // 기본 정보
@@ -208,6 +178,21 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
 
+            // 11. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
+            try {
+                ContainerDetailResponseDTO detailMetrics = ContainerDetailResponseDTO.forRealtimeUpdate(container, agent, statsLog);
+                messagingClient.send(WsTopics.containerMetrics(container.getId()), detailMetrics);
+
+                log.info("컨테이너 상세 메트릭 발행 완료 - containerId: {}, containerName: {}",
+                    container.getId(), container.getName());
+            } catch (Exception e) {
+                log.error("컨테이너 상세 메트릭 발행 실패 - containerId: {}, error: {}",
+                    container.getId(), e.getMessage(), e);
+            }
+
+            // 캐시에 Snapshot 업데이트
+            containerSummaryCache.update(ContainerSummarySnapshot.of(container, statsLog));
+
         } catch (NotFoundException | BadRequestException e) {
             log.error("메트릭 처리 실패 - containerHash: {}, error: {}",
                     metricsDto.getContainerHash(), e.getMessage());
@@ -248,47 +233,62 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .cpuPeriod(metricsDto.getCpuPeriod())
                 .cpuLimitCores(cpuLimitCores)
                 .onlineCpus(metricsDto.getOnlineCpus())
+                .isCpuUnlimited(metricsDto.getIsCpuUnlimited())
                 .memLimit(metricsDto.getMemLimit())
+                .isMemoryUnlimited(metricsDto.getIsMemoryUnlimited())
                 .imageName(metricsDto.getImageName())
                 .imageSize(metricsDto.getImageSize())
                 .storageLimit(metricsDto.getStorageLimit())
+                .isStorageUnlimited(metricsDto.getIsStorageUnlimited())
                 .build();
 
         container = containerRepository.save(container);
 
-        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores",
-                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores);
+        log.info("새 컨테이너 생성 - Agent: {}, ContainerHash: {}, CPU Limit: {} cores, isCpuUnlimited: {}, isMemoryUnlimited: {}, isStorageUnlimited: {}",
+                agent.getAgentKey(), metricsDto.getContainerHash(), cpuLimitCores,
+                metricsDto.getIsCpuUnlimited(), metricsDto.getIsMemoryUnlimited(), metricsDto.getIsStorageUnlimited());
 
         return container;
     }
 
     /**
-     * 최초 메트릭 수신 시 컨테이너 리소스 스펙 초기화
+     * 리소스 제한값이 변경되었으면 업데이트 (실시간 반영)
+     * - docker update 등으로 실행 중 리소스 변경 시 자동 반영
      */
-    private void initializeSpecsIfFirstMetrics(Container container, ContainerMetricsRequestDTO metric) {
+    private void updateSpecsIfChanged(Container container, ContainerMetricsRequestDTO metric) {
+        // 리소스 제한값 변경 감지
+        boolean changed = !container.getCpuQuota().equals(metric.getCpuQuota()) ||
+                          !container.getMemLimit().equals(metric.getMemLimit()) ||
+                          !container.getStorageLimit().equals(metric.getStorageLimit()) ||
+                          !container.getIsCpuUnlimited().equals(metric.getIsCpuUnlimited()) ||
+                          !container.getIsMemoryUnlimited().equals(metric.getIsMemoryUnlimited()) ||
+                          !container.getIsStorageUnlimited().equals(metric.getIsStorageUnlimited());
 
-        if (Boolean.TRUE.equals(container.getMetricsInitialized())) {
-            return; // 이미 초기화됨 → Skip
+        if (!changed) {
+            return; // 변경 없음 → Skip
         }
 
-        BigDecimal cpuLimitCores = null;
-        if (metric.getCpuQuota() != null && metric.getCpuPeriod() > 0) {
-            cpuLimitCores = BigDecimal.valueOf(metric.getCpuQuota())
-                    .divide(BigDecimal.valueOf(metric.getCpuPeriod()), 2, RoundingMode.HALF_UP);
-        }
+        // CPU Limit Cores 계산
+        BigDecimal cpuLimitCores = metricsCalculator.calculateCpuLimitCores(
+                metric.getCpuQuota(),
+                metric.getCpuPeriod()
+        );
 
+        // 리소스 스펙 업데이트
         container.updateSpecs(
                 metric.getCpuQuota(),
                 metric.getCpuPeriod(),
                 cpuLimitCores,
                 metric.getOnlineCpus(),
+                metric.getIsCpuUnlimited(),
                 metric.getMemLimit(),
-                metric.getStorageLimit()
+                metric.getIsMemoryUnlimited(),
+                metric.getStorageLimit(),
+                metric.getIsStorageUnlimited()
         );
 
-        container.markMetricsInitialized();
-        containerRepository.save(container);
-
-        log.info("최초 메트릭 수신 → 컨테이너 스펙 초기화 완료: {}", container.getContainerHash());
+        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}",
+                container.getContainerHash(), metric.getCpuQuota(), metric.getIsCpuUnlimited(),
+                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited());
     }
 }

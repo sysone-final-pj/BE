@@ -1,5 +1,7 @@
 package com.monito.domains.container.dto.request;
 
+import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerLog;
 import com.monito.domains.container.domain.LogSource;
 import lombok.*;
 
@@ -27,4 +29,13 @@ public class ContainerLogItemRequestDTO {
      * 로그 발생 시각
      */
     private LocalDateTime timestamp;
+
+    public ContainerLog toEntity(Container container) {
+        return ContainerLog.builder()
+                .container(container)
+                .logMessage(message)
+                .source(source)
+                .loggedAt(timestamp)
+                .build();
+    }
 }

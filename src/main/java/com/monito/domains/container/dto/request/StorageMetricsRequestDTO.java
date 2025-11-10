@@ -15,6 +15,7 @@ public class StorageMetricsRequestDTO {
     private Long sizeRw;         // Read-Write Layer 크기 (bytes)
     private Long sizeRootFs;     // 전체 파일시스템 크기 (bytes)
     private Long storageLimit;   // 스토리지 할당량 (0 = 무제한)
+    private Boolean isStorageUnlimited;  // 스토리지 제한이 없는지 여부
     private Long imageSize;      // 이미지 크기 (bytes)
     private String imageName;    // 이미지 이름
 }

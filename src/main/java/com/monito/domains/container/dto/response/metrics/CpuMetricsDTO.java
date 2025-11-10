@@ -1,10 +1,14 @@
 package com.monito.domains.container.dto.response.metrics;
 
+import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerStatsLog;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -39,4 +43,50 @@ public class CpuMetricsDTO {
     private Long throttledPeriods;                        // Throttle된 기간 수
     private Long throttledTime;                           // Throttle된 총 시간 (nanoseconds)
     private BigDecimal throttleRate;                      // Throttle 비율 (%)
+
+    // cpu 요약 정보 (1분, 5분, 15분, p95)
+    private CpuMetricsSummaryDTO summary;
+
+    /**
+     * 실시간 WebSocket 발행용 CPU 메트릭 생성 (단일 데이터 포인트)
+     * @param container 컨테이너
+     * @param statsLog 통계 로그
+     * @param timestamp 타임스탬프
+     * @return CPU 메트릭 DTO
+     */
+    public static CpuMetricsDTO forRealtimeUpdate(Container container, ContainerStatsLog statsLog, LocalDateTime timestamp) {
+        BigDecimal throttleRate = calculateThrottleRate(statsLog);
+
+        return CpuMetricsDTO.builder()
+                .cpuPercent(List.of(TimeSeriesDataDTO.from(timestamp, statsLog.getCpuPercent())))
+                .cpuCoreUsage(List.of(TimeSeriesDataDTO.from(timestamp, statsLog.getCpuCoreUsage())))
+                .currentCpuPercent(statsLog.getCpuPercent())
+                .currentCpuCoreUsage(statsLog.getCpuCoreUsage())
+                .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
+                .cpuUsageTotal(statsLog.getCpuUsageTotal())
+                .cpuUser(statsLog.getCpuUser())
+                .cpuSystem(statsLog.getCpuSystem())
+                .cpuQuota(statsLog.getCpuQuota())
+                .cpuPeriod(statsLog.getCpuPeriod())
+                .onlineCpus(statsLog.getOnlineCpus())
+                .cpuLimitCores(container.getCpuLimitCores())
+                .throttlingPeriods(statsLog.getThrottlingPeriods())
+                .throttledPeriods(statsLog.getThrottledPeriods())
+                .throttledTime(statsLog.getThrottledTime())
+                .throttleRate(throttleRate)
+                .summary(null)  // 실시간 업데이트에서는 summary 불필요
+                .build();
+    }
+
+    /**
+     * Throttle Rate 계산
+     */
+    private static BigDecimal calculateThrottleRate(ContainerStatsLog statsLog) {
+        if (statsLog.getThrottlingPeriods() != null && statsLog.getThrottlingPeriods() > 0) {
+            return BigDecimal.valueOf(statsLog.getThrottledPeriods())
+                    .divide(BigDecimal.valueOf(statsLog.getThrottlingPeriods()), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+        }
+        return null;
+    }
 }

@@ -75,8 +75,24 @@ public class Container extends BaseEntity {
     @Column(nullable = false)
     private Integer onlineCpus;
 
+    /**
+     * CPU 제한이 없는지 여부 (unlimited)
+     * - true: 호스트 전체 CPU 사용 가능
+     * - false: cpuQuota/cpuPeriod로 제한됨
+     */
+    @Column(nullable = false)
+    private Boolean isCpuUnlimited;
+
     @Column(nullable = false)
     private Long memLimit;
+
+    /**
+     * 메모리 제한이 없는지 여부 (unlimited)
+     * - true: 호스트 전체 메모리 사용 가능
+     * - false: memLimit으로 제한됨
+     */
+    @Column(nullable = false)
+    private Boolean isMemoryUnlimited;
 
     @Column(nullable = false)
     private Integer oomKills;
@@ -98,12 +114,13 @@ public class Container extends BaseEntity {
     private Long storageLimit;
 
     /**
-     * 메트릭 초기화 플래그
-     * - false: CONTAINER_STATE_CHANGE로 생성된 초기 상태 (메트릭 0)
-     * - true: METRICS로 실제 메트릭 수신 완료
+     * 스토리지 제한이 없는지 여부 (unlimited)
+     * - true: 호스트 전체 디스크 용량 사용 가능
+     * - false: storageLimit으로 제한됨
      */
     @Column(nullable = false)
-    private Boolean metricsInitialized;
+    private Boolean isStorageUnlimited;
+
 
     /**
      * 컨테이너 이미지 이름
@@ -130,19 +147,21 @@ public class Container extends BaseEntity {
                             Long cpuPeriod,
                             BigDecimal cpuLimitCores,
                             Integer onlineCpus,
+                            Boolean isCpuUnlimited,
                             Long memLimit,
-                            Long storageLimit) {
+                            Boolean isMemoryUnlimited,
+                            Long storageLimit,
+                            Boolean isStorageUnlimited) {
 
         this.cpuQuota = cpuQuota;
         this.cpuPeriod = cpuPeriod;
         this.cpuLimitCores = cpuLimitCores;
         this.onlineCpus = onlineCpus;
+        this.isCpuUnlimited = isCpuUnlimited;
         this.memLimit = memLimit;
+        this.isMemoryUnlimited = isMemoryUnlimited;
         this.storageLimit = storageLimit;
-    }
-
-    public void markMetricsInitialized() {
-        this.metricsInitialized = true;
+        this.isStorageUnlimited = isStorageUnlimited;
     }
 
     public void changeState(ContainerState state){

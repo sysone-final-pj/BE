@@ -9,10 +9,7 @@ import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
-import com.monito.domains.container.dto.response.OomTimeSeriesResponseDTO;
 import org.springframework.data.domain.Sort.Direction;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -22,14 +19,16 @@ public interface ContainerService {
 
     /**
      * 컨테이너 목록 조회 (검색/필터/정렬 지원)
+     * @param memberId 사용자 ID (즐겨찾기 상태 조회용)
      * @param keyword 검색어 (agent name, container hash, container name) - null 가능
      * @param states 상태 필터 (다중 선택) - null이면 전체
      * @param healths 헬스 필터 (다중 선택) - null이면 전체
      * @param sortBy 정렬 필드 - null이면 기본 정렬
      * @param direction 정렬 방향 (ASC/DESC) - null이면 DESC
-     * @return 컨테이너 목록
+     * @return 컨테이너 목록 (isFavorite 포함)
      */
     List<ContainerSummaryResponseDTO> getContainerList(
+            Long memberId,
             String keyword,
             List<ContainerState> states,
             List<ContainerHealth> healths,
@@ -62,21 +61,4 @@ public interface ContainerService {
      * @param snapshot 컨테이너 상태 스냅샷
      */
     void processContainerStateChange(String agentKey, ContainerSnapshotRequestDTO snapshot);
-
-    /**
-     * OOM 시계열 데이터 조회 (Histogram/Heatmap용)
-     * - 캐시에서 최근 7일 이내 OOM 이벤트 조회
-     * - 시간대별 버킷으로 그룹핑하여 반환
-     * @param containerId 컨테이너 ID
-     * @param startTime 조회 시작 시간 (null이면 7일 전)
-     * @param endTime 조회 종료 시간 (null이면 현재)
-     * @param bucketSize 버킷 크기 (HOURS, DAYS 등)
-     * @return OOM 시계열 데이터
-     */
-    OomTimeSeriesResponseDTO getOomTimeSeries(
-            Long containerId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            ChronoUnit bucketSize
-    );
 }
