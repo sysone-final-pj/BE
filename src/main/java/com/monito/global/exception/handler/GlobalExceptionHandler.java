@@ -149,9 +149,8 @@ public class GlobalExceptionHandler {
     ProblemDetail handleInternalError(final Exception e) {
         log.error("Uncaught {} - {}", e.getClass().getSimpleName(), e.getMessage());
         e.printStackTrace();
-        ProblemDetail problemDetail = ProblemDetail
+        return ProblemDetail
                 .forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        return problemDetail;
     }
 
 
