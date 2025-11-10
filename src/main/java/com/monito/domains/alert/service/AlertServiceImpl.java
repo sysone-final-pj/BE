@@ -13,7 +13,6 @@ import com.monito.domains.alert.dto.response.AlertMessageResponseDTO;
 import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
 import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.alert.repository.AlertSpecification;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
@@ -29,8 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.monito.domains.alert.dto.request.AlertSortType;
 
 @Slf4j
 @Service
@@ -354,10 +355,70 @@ public class AlertServiceImpl implements AlertService {
         // QuickRangeType이 있으면 실제 날짜 범위로 변환
         AlertFilterDTO processedFilter = processQuickRangeType(filter);
 
-        return alertRepository.findAll(AlertSpecification.withFilter(memberId, processedFilter))
-                .stream()
+        // 필터가 null이면 빈 필터로 처리
+        if (processedFilter == null) {
+            processedFilter = AlertFilterDTO.builder().build();
+        }
+
+        // 필터링된 알림 조회
+        List<Alert> alerts = alertRepository.findAlertsWithFilters(
+                memberId,
+                processedFilter.getAlertLevel(),
+                processedFilter.getAlertLevel() == null,
+                processedFilter.getMetricType(),
+                processedFilter.getMetricType() == null,
+                processedFilter.getAgentName(),
+                processedFilter.getAgentName() == null || processedFilter.getAgentName().isBlank(),
+                processedFilter.getContainerName(),
+                processedFilter.getContainerName() == null || processedFilter.getContainerName().isBlank(),
+                processedFilter.getCollectedAtFrom(),
+                processedFilter.getCollectedAtFrom() == null,
+                processedFilter.getCollectedAtTo(),
+                processedFilter.getCollectedAtTo() == null,
+                processedFilter.getCreatedAtFrom(),
+                processedFilter.getCreatedAtFrom() == null,
+                processedFilter.getCreatedAtTo(),
+                processedFilter.getCreatedAtTo() == null,
+                processedFilter.getIsRead(),
+                processedFilter.getIsRead() == null
+        );
+
+        // 정렬 적용
+        List<Alert> sortedAlerts = sortAlerts(alerts, processedFilter.getSortType());
+
+        return sortedAlerts.stream()
                 .map(AlertListItemResponseDTO::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 알림 목록 정렬
+     */
+    private List<Alert> sortAlerts(List<Alert> alerts, AlertSortType sortType) {
+        if (sortType == null) {
+            // 기본 정렬: 생성 시간 내림차순 (최신순)
+            return alerts.stream()
+                    .sorted(Comparator.comparing(Alert::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+        }
+
+        return switch (sortType) {
+            case ALERT_LEVEL -> alerts.stream()
+                    .sorted(Comparator.comparing(Alert::getAlertLevel, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+            case METRIC_TYPE -> alerts.stream()
+                    .sorted(Comparator.comparing(Alert::getMetricType, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .collect(Collectors.toList());
+            case CONTAINER_NAME -> alerts.stream()
+                    .sorted(Comparator.comparing(a -> a.getContainer().getName(), Comparator.nullsLast(Comparator.naturalOrder())))
+                    .collect(Collectors.toList());
+            case METRIC_VALUE -> alerts.stream()
+                    .sorted(Comparator.comparing(Alert::getMetricValue, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+            case COLLECTED_AT -> alerts.stream()
+                    .sorted(Comparator.comparing(Alert::getCollectedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+        };
     }
 
     /**

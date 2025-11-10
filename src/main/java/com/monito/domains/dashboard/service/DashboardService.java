@@ -1,10 +1,10 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
-import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
-import com.monito.domains.dashboard.dto.response.AgentContainerGroupDTO;
-import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
-import com.monito.domains.dashboard.dto.response.ContainerWithFavoriteDTO;
+import com.monito.domains.dashboard.dto.request.TimeRange;
+import com.monito.domains.dashboard.dto.response.*;
+
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ public interface DashboardService {
      * @param filter 필터 조건
      * @return 컨테이너 목록
      */
-    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, com.monito.domains.dashboard.dto.request.ContainerFilterDTO filter);
+    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter);
 
     /**
      * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)
@@ -60,4 +60,34 @@ public interface DashboardService {
      * @return 즐겨찾기가 먼저 오는 모든 컨테이너 목록
      */
     List<ContainerWithFavoriteDTO> getAllContainersSortedByFavorite(Long memberId);
+
+    /**
+     * 당일 0시 기준 STDOUT/STDERR 로그 개수 조회
+     * @return 당일 STDOUT/STDERR 로그 개수
+     */
+    DailyLogCountDTO getDailyLogCount();
+
+    /**
+     * 전체 컨테이너의 스토리지 사용량 조회
+     * @return 전체 컨테이너의 스토리지 할당량과 사용량 목록
+     */
+    List<ContainerStorageUsageDTO> getAllContainerStorageUsage();
+
+    /**
+     * 컨테이너의 네트워크 통계 시계열 데이터 조회
+     * @param containerId 컨테이너 ID
+     * @param timeRange 시간 범위
+     * @param detail 상세 여부 (false: 50포인트, true: 200포인트)
+     * @return 네트워크 통계 시계열 데이터
+     */
+    NetworkStatsTimeSeriesDTO getNetworkStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail);
+
+    /**
+     * 컨테이너의 Block I/O 통계 시계열 데이터 조회
+     * @param containerId 컨테이너 ID
+     * @param timeRange 시간 범위
+     * @param detail 상세 여부 (false: 50포인트, true: 200포인트)
+     * @return Block I/O 통계 시계열 데이터
+     */
+    BlockIOStatsTimeSeriesDTO getBlockIOStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail);
 }

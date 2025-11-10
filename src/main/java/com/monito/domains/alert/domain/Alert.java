@@ -3,19 +3,7 @@ package com.monito.domains.alert.domain;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.MetricType;
 import com.monito.domains.member.domain.Member;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.NumericBooleanConverter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -31,13 +20,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(
         name = "alerts",
         indexes = {
-                @jakarta.persistence.Index(name = "IDX_ALERT_IS_READ", columnList = "is_read"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_MEMBER_IS_READ", columnList = "member_id, is_read"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_ALERT_LEVEL", columnList = "alert_level"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_METRIC_TYPE", columnList = "metric_type"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_COLLECTED_AT", columnList = "collected_at"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_CONTAINER_ID", columnList = "container_id"),
-                @jakarta.persistence.Index(name = "IDX_ALERT_CREATED_AT", columnList = "created_at")
+                @Index(name = "IDX_ALERT_IS_READ", columnList = "is_read"),
+                @Index(name = "IDX_ALERT_MEMBER_IS_READ", columnList = "member_id, is_read"),
+                @Index(name = "IDX_ALERT_ALERT_LEVEL", columnList = "alert_level"),
+                @Index(name = "IDX_ALERT_METRIC_TYPE", columnList = "metric_type"),
+                @Index(name = "IDX_ALERT_COLLECTED_AT", columnList = "collected_at"),
+                @Index(name = "IDX_ALERT_CONTAINER_ID", columnList = "container_id"),
+                @Index(name = "IDX_ALERT_CREATED_AT", columnList = "created_at")
         }
 )
 @Builder
@@ -80,18 +69,19 @@ public class Alert {
 
     @lombok.Builder.Default
     @Column(nullable = false)
+    @Convert(converter = NumericBooleanConverter.class)
     private Boolean isRead = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, length = 20)
     private AlertLevel alertLevel;
 
+    @Column(name = "collected_at")
+    private LocalDateTime collectedAt;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "collected_at")
-    private LocalDateTime collectedAt;
 
     @lombok.Builder.Default
     @Column(name = "is_deleted", nullable = false)

@@ -3,10 +3,8 @@ package com.monito.domains.dashboard.dto.response;
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import java.math.BigDecimal;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+
+import lombok.*;
 
 /**
  * 컨테이너 리스트 및 상세 조회용 DTO
@@ -17,7 +15,6 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ContainerDashboardResponseDTO {
 
     // 기본 정보
@@ -80,9 +77,10 @@ public class ContainerDashboardResponseDTO {
 
     /**
      * REST API용 생성자 (JPQL에서 사용)
-     * - 주요 메트릭만 포함 (16개 필드)
+     * - 모든 메트릭 포함
      */
     public ContainerDashboardResponseDTO(
+            // 기본 정보
             Long containerId,
             String containerHash,
             String containerName,
@@ -92,15 +90,50 @@ public class ContainerDashboardResponseDTO {
             ContainerHealth health,
             String imageName,
             Long imageSize,
+            // CPU 메트릭
             BigDecimal cpuPercent,
+            BigDecimal cpuCoreUsage,
+            Long cpuUsageTotal,
+            Long hostCpuUsageTotal,
+            Long cpuUser,
+            Long cpuSystem,
+            Long cpuQuota,
+            Long cpuPeriod,
+            Integer onlineCpus,
+            Long throttlingPeriods,
+            Long throttledPeriods,
+            Long throttledTime,
+            // Memory 메트릭
             BigDecimal memPercent,
             Long memUsage,
             Long memLimit,
+            Long memMaxUsage,
+            // Block I/O 메트릭
             Long blkRead,
             Long blkWrite,
+            Long blkReadPerSec,
+            Long blkWritePerSec,
+            // Network 메트릭
+            Long rxBytes,
+            Long txBytes,
+            Long rxPackets,
+            Long txPackets,
+            Long networkTotalBytes,
             Long rxBytesPerSec,
-            Long txBytesPerSec
+            Long txBytesPerSec,
+            Long rxPps,
+            Long txPps,
+            BigDecimal rxFailureRate,
+            BigDecimal txFailureRate,
+            Integer rxErrors,
+            Integer txErrors,
+            Integer rxDropped,
+            Integer txDropped,
+            // Storage 메트릭
+            Long sizeRw,
+            Long sizeRootFs
     ) {
+        // 기본 정보
         this.containerId = containerId;
         this.containerHash = containerHash;
         this.containerName = containerName;
@@ -110,44 +143,52 @@ public class ContainerDashboardResponseDTO {
         this.health = health;
         this.imageName = imageName;
         this.imageSize = imageSize;
+
+        // CPU 메트릭
         this.cpuPercent = cpuPercent;
+        this.cpuCoreUsage = cpuCoreUsage;
+        this.cpuUsageTotal = cpuUsageTotal;
+        this.hostCpuUsageTotal = hostCpuUsageTotal;
+        this.cpuUser = cpuUser;
+        this.cpuSystem = cpuSystem;
+        this.cpuQuota = cpuQuota;
+        this.cpuPeriod = cpuPeriod;
+        this.onlineCpus = onlineCpus;
+        this.throttlingPeriods = throttlingPeriods;
+        this.throttledPeriods = throttledPeriods;
+        this.throttledTime = throttledTime;
+
+        // Memory 메트릭
         this.memPercent = memPercent;
         this.memUsage = memUsage;
         this.memLimit = memLimit;
+        this.memMaxUsage = memMaxUsage;
+
+        // Block I/O 메트릭
         this.blkRead = blkRead;
         this.blkWrite = blkWrite;
+        this.blkReadPerSec = blkReadPerSec;
+        this.blkWritePerSec = blkWritePerSec;
+
+        // Network 메트릭
+        this.rxBytes = rxBytes;
+        this.txBytes = txBytes;
+        this.rxPackets = rxPackets;
+        this.txPackets = txPackets;
+        this.networkTotalBytes = networkTotalBytes;
         this.rxBytesPerSec = rxBytesPerSec;
         this.txBytesPerSec = txBytesPerSec;
+        this.rxPps = rxPps;
+        this.txPps = txPps;
+        this.rxFailureRate = rxFailureRate;
+        this.txFailureRate = txFailureRate;
+        this.rxErrors = rxErrors;
+        this.txErrors = txErrors;
+        this.rxDropped = rxDropped;
+        this.txDropped = txDropped;
 
-        // 나머지 필드는 null (WebSocket에서만 전체 제공)
-        this.cpuCoreUsage = null;
-        this.cpuUsageTotal = null;
-        this.hostCpuUsageTotal = null;
-        this.cpuUser = null;
-        this.cpuSystem = null;
-        this.cpuQuota = null;
-        this.cpuPeriod = null;
-        this.onlineCpus = null;
-        this.throttlingPeriods = null;
-        this.throttledPeriods = null;
-        this.throttledTime = null;
-        this.memMaxUsage = null;
-        this.blkReadPerSec = null;
-        this.blkWritePerSec = null;
-        this.rxBytes = null;
-        this.txBytes = null;
-        this.rxPackets = null;
-        this.txPackets = null;
-        this.networkTotalBytes = null;
-        this.rxPps = null;
-        this.txPps = null;
-        this.rxFailureRate = null;
-        this.txFailureRate = null;
-        this.rxErrors = null;
-        this.txErrors = null;
-        this.rxDropped = null;
-        this.txDropped = null;
-        this.sizeRw = null;
-        this.sizeRootFs = null;
+        // Storage 메트릭
+        this.sizeRw = sizeRw;
+        this.sizeRootFs = sizeRootFs;
     }
 }
