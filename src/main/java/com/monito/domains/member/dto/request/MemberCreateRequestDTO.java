@@ -47,7 +47,7 @@ public class MemberCreateRequestDTO {
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
-                .role(Role.USER)
+                .role(role)
                 .email(email)
                 .name(name)
                 .companyName(companyName)

@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -125,6 +126,18 @@ public class GlobalExceptionHandler {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
 
         problemDetail.setTitle("데이터 충돌");
+        return problemDetail;
+    }
+
+    /**
+     * Spring Security - 권한 검증 실패 (@PreAuthorize 등)
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleAccessDeniedException(final AccessDeniedException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+        problemDetail.setTitle("접근 권한 없음");
+
+        log.warn("Access denied: {}", e.getMessage());
         return problemDetail;
     }
 

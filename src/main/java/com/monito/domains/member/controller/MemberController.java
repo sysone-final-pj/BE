@@ -8,6 +8,7 @@ import com.monito.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +21,7 @@ public class MemberController {
     /**
      * 사용자 등록
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<Member> createMember(@Valid @RequestBody MemberCreateRequestDTO memberCreateRequestDTO) {
         return ApiResponse.created(memberService.createMember(memberCreateRequestDTO), "사용자가 성공적으로 등록되었습니다.");
@@ -37,6 +39,7 @@ public class MemberController {
     /**
      * 모든 사용자 조회
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ApiResponse<List<Member>> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
