@@ -6,6 +6,7 @@ import com.monito.domains.agent.dto.request.AgentCreateRequestDTO;
 import com.monito.domains.agent.dto.request.AgentUpdateRequestDTO;
 import com.monito.domains.agent.dto.response.AgentCreateResponseDTO;
 import com.monito.domains.agent.dto.response.AgentDetailResponseDTO;
+import com.monito.domains.agent.dto.response.AgentStatusChangeResponseDTO;
 import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 import com.monito.domains.agent.repository.AgentRepository;
@@ -16,6 +17,8 @@ import com.monito.global.cache.AgentMetadataCache;
 import com.monito.global.common.entity.BaseEntity;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
+import com.monito.infrastructure.messaging.StompMessagingClient;
+import com.monito.infrastructure.messaging.WsTopics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,7 @@ public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
     private final ContainerRepository containerRepository;
     private final AgentMetadataCache agentMetadataCache;
+    private final StompMessagingClient messagingClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -86,9 +90,15 @@ public class AgentServiceImpl implements AgentService {
     public void updateAgentStatus(String agentKey, AgentStatus status) {
         agentRepository.findByAgentKey(agentKey)
                 .ifPresent(agent -> {
+                    AgentStatus previousStatus = agent.getAgentStatus();
                     agent.updateStatus(status);
                     log.info("Agent 상태 변경 - agentKey: {}, status: {} -> {}",
-                            agentKey, agent.getAgentStatus(), status);
+                            agentKey, previousStatus, status);
+
+                    // WebSocket으로 상태 변경 알림 전송
+                    AgentStatusChangeResponseDTO statusChangeDTO = AgentStatusChangeResponseDTO.of(agent, previousStatus);
+
+                    messagingClient.send(WsTopics.AGENT_STATUS, statusChangeDTO);
 
                     if (status == AgentStatus.OFFLINE) {
                         markContainersAsUnknown(agent);
