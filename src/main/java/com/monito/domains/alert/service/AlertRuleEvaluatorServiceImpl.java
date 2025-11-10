@@ -81,10 +81,11 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
             case CPU -> containerStats.getCpuPercent();
             case MEMORY -> containerStats.getMemPercent();
             case NETWORK -> {
-                // 네트워크는 RX + TX 합계 (Mbps)
-                Long rxBytesPerSec = containerStats.getBlkReadPerSec() != null ? containerStats.getRxBytesPerSec() : 0L;
-                Long txBytesPerSec = containerStats.getTxBytesPerSec() != null ? containerStats.getTxBytesPerSec() : 0L;
-                yield BigDecimal.valueOf(rxBytesPerSec + txBytesPerSec);
+                // 송수신 실패율 중 높은 값 사용
+                BigDecimal rxFailureRate = containerStats.getRxFailureRate();
+                BigDecimal txFailureRate = containerStats.getTxFailureRate();
+
+                yield rxFailureRate.max(txFailureRate);
             }
             default -> null;
         };
@@ -159,8 +160,7 @@ public class AlertRuleEvaluatorServiceImpl implements AlertRuleEvaluatorService 
         BigDecimal threshold = getThresholdForLevel(rule, alertLevel);
 
         return String.format(
-                "컨테이너 '%s'의 %s 사용률이 임계값을 초과했습니다. (현재: %s%%, 임계값: %s%%)",
-                containerStats.getContainer().getName(),
+                "%s 상태가 설정된 임계값을 초과했습니다. (현재: %s%%, 임계값: %s%%)",
                 metricName,
                 currentValue.setScale(2, BigDecimal.ROUND_HALF_UP),
                 threshold != null ? threshold.toString() : "N/A"

@@ -40,6 +40,7 @@ public class AlertRuleUpdateRequestDTO {
     @DecimalMax(value = "100.00", message = "임계값은 100 이하여야 합니다.")
     private BigDecimal criticalThreshold;
 
+    @DecimalMin(value = "5.00", message = "쿨다운은 5 이상이어야 합니다.")
     private Integer cooldownSeconds;
 
     private Boolean isEnabled;

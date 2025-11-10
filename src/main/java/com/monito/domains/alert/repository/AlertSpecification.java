@@ -5,9 +5,7 @@ import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.request.AlertSortType;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Order;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
@@ -24,7 +22,7 @@ public class AlertSpecification {
 
             // 필수 조건: memberId 및 isDeleted = false
             predicates.add(criteriaBuilder.equal(root.get("member").get("id"), memberId));
-            predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
+            predicates.add(criteriaBuilder.equal(root.get("isDeleted"), 0));
 
             // Container 조인 (containerName 필터나 CONTAINER_NAME 정렬에 필요)
             Join<Alert, Container> containerJoin = null;
@@ -117,9 +115,9 @@ public class AlertSpecification {
      */
     private static Order getOrderBy(
             AlertSortType sortType,
-            jakarta.persistence.criteria.Root<Alert> root,
+            Root<Alert> root,
             Join<Alert, Container> containerJoin,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder) {
+            CriteriaBuilder criteriaBuilder) {
 
         if (sortType == null) {
             // 기본 정렬: 생성 시간 내림차순 (최신순)

@@ -5,7 +5,6 @@ import com.monito.domains.alert.dto.request.AlertRuleCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertRuleUpdateRequestDTO;
 import com.monito.domains.alert.dto.response.AlertRuleResponseDTO;
 import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
@@ -88,18 +87,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     @Transactional(readOnly = true)
     public List<AlertRuleResponseDTO> getAllAlertRules(Long memberId) {
-        return alertRuleRepository.findByMemberId(memberId)
-                .stream()
-                .map(AlertRuleResponseDTO::from)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 특정 메트릭 타입의 알림 규칙 조회
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<AlertRuleResponseDTO> getAlertRulesByContainer(Long memberId, Long containerId) {
         return alertRuleRepository.findByMemberId(memberId)
                 .stream()
                 .map(AlertRuleResponseDTO::from)

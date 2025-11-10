@@ -3,20 +3,26 @@ package com.monito.domains.alert.controller;
 import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertFilterDTO;
+import com.monito.domains.alert.dto.request.AlertSortType;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 import com.monito.domains.alert.service.AlertService;
+import com.monito.domains.container.domain.MetricType;
+import com.monito.domains.container.dto.request.QuickRangeType;
 import com.monito.global.common.response.ApiResponse;
 import com.monito.global.security.userdetails.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -177,38 +183,39 @@ public class AlertController {
     @GetMapping("/filter")
     public ApiResponse<List<AlertListItemResponseDTO>> getAlertsWithFilter(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @io.swagger.v3.oas.annotations.Parameter(description = "경고 레벨 (CRITICAL, HIGH, WARNING, INFO)")
-            @RequestParam(required = false) com.monito.domains.alert.domain.AlertLevel alertLevel,
+            @Parameter(description = "경고 레벨 (CRITICAL, HIGH, WARNING, INFO)")
+            @RequestParam(required = false) AlertLevel alertLevel,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "메트릭 타입 (CPU_PERCENT, MEM_PERCENT, DISK_USAGE_GB, NETWORK_TOTAL_BYTES 등)")
-            @RequestParam(required = false) com.monito.domains.container.domain.MetricType metricType,
+            //@io.swagger.v3.oas.annotations.Parameter(description = "메트릭 타입 (CPU_PERCENT, MEM_PERCENT, DISK_USAGE_GB, NETWORK_TOTAL_BYTES 등)")
+            @Parameter(description = "메트릭 타입 (CPU_PERCENT, MEM_PERCENT, DISK_USAGE_GB, NETWORK_TOTAL_BYTES 등)")
+            @RequestParam(required = false) MetricType metricType,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "에이전트 이름 (부분 일치)")
+            @Parameter(description = "에이전트 이름 (부분 일치)")
             @RequestParam(required = false) String agentName,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "컨테이너 이름 (부분 일치)")
+            @Parameter(description = "컨테이너 이름 (부분 일치)")
             @RequestParam(required = false) String containerName,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "빠른 시간 범위 선택 (LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR, LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS). 이 값이 있으면 collectedAtFrom/To는 무시됨")
-            @RequestParam(required = false) com.monito.domains.container.dto.request.QuickRangeType quickRangeType,
+            @Parameter(description = "빠른 시간 범위 선택 (LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR, LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS). 이 값이 있으면 collectedAtFrom/To는 무시됨")
+            @RequestParam(required = false) QuickRangeType quickRangeType,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "수집 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00) - quickRangeType이 없을 때 사용")
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtFrom,
+            @Parameter(description = "수집 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00) - quickRangeType이 없을 때 사용")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime collectedAtFrom,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "수집 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59) - quickRangeType이 없을 때 사용")
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime collectedAtTo,
+            @Parameter(description = "수집 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59) - quickRangeType이 없을 때 사용")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime collectedAtTo,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "생성 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAtFrom,
+            @Parameter(description = "생성 시작 시간 (ISO 8601 형식: 2024-10-01T00:00:00)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "생성 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59)")
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAtTo,
+            @Parameter(description = "생성 종료 시간 (ISO 8601 형식: 2024-10-31T23:59:59)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "읽음 여부 (true: 읽음, false: 안읽음)")
+            @Parameter(description = "읽음 여부 (true: 읽음, false: 안읽음)")
             @RequestParam(required = false) Boolean isRead,
 
-            @io.swagger.v3.oas.annotations.Parameter(description = "정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT). 기본값: CREATED_AT")
-            @RequestParam(required = false) com.monito.domains.alert.dto.request.AlertSortType sortBy
+            @Parameter(description = "정렬 기준 (ALERT_LEVEL, METRIC_TYPE, CONTAINER_NAME, METRIC_VALUE, COLLECTED_AT). 기본값: CREATED_AT")
+            @RequestParam(required = false) AlertSortType sortBy
     ) {
         AlertFilterDTO filter = AlertFilterDTO.builder()
                 .alertLevel(alertLevel)

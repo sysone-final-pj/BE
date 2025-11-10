@@ -61,19 +61,6 @@ public class AlertRuleController {
     }
 
     /**
-     * 특정 컨테이너의 알림 규칙 조회
-     */
-    @Operation(summary = "컨테이너별 알림 규칙 조회", description = "특정 컨테이너에 설정된 알림 규칙을 조회합니다.")
-    @GetMapping("/container/{containerId}")
-    public ApiResponse<List<AlertRuleResponseDTO>> getAlertRulesByContainer(
-            @PathVariable Long containerId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<AlertRuleResponseDTO> rules = alertRuleService.getAlertRulesByContainer(
-                userDetails.getId(), containerId);
-        return ApiResponse.ok(rules, "컨테이너별 알림 규칙 조회 성공");
-    }
-
-    /**
      * 알림 규칙 수정
      */
     @Operation(summary = "알림 규칙 수정", description = "알림 규칙을 수정합니다. (본인 규칙만 가능)")
