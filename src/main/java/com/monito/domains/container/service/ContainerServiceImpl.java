@@ -445,10 +445,15 @@ public class ContainerServiceImpl implements ContainerService {
                 favoriteRepository.deleteByContainerId(container.getId());  // DB 삭제
                 favoriteCache.removeContainerFromAll(container.getId());    // 캐시 삭제
             } else {
-                if(container.getState() != state) {
-                    container.changeState(state);
-                    log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}",
-                            snapshot.getContainerHash(), state);
+                // state 또는 status가 변경된 경우 업데이트
+                boolean stateChanged = container.getState() != state;
+                boolean statusChanged = snapshot.getStatus() != null
+                        && !snapshot.getStatus().equals(container.getStatus());
+
+                if(stateChanged || statusChanged) {
+                    container.changeStateWithStatus(state, snapshot.getStatus());
+                    log.debug("컨테이너 상태 변경 - ContainerHash: {}, State: {}, Status: {}",
+                            snapshot.getContainerHash(), state, snapshot.getStatus());
                 }
 
                 // 캐시에 Snapshot 업데이트
@@ -474,6 +479,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .agent(agent)
                 .containerHash(snapshot.getContainerHash())
                 .state(state)
+                .status(snapshot.getStatus())
                 .name(snapshot.getContainerName())
                 .imageName(snapshot.getImageName())
                 // 초기값 (메트릭 수신 시 업데이트됨)

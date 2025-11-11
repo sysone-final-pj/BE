@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -129,6 +130,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Spring Security - 권한 검증 실패 (@PreAuthorize 등)
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleAccessDeniedException(final AccessDeniedException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+        problemDetail.setTitle("접근 권한 없음");
+
+        log.warn("Access denied: {}", e.getMessage());
+        return problemDetail;
+    }
+
+    /**
      * Internal Server Error 5xx :
      * 예외처리가 제대로 되지 않았거나 코드 자체의 문제인 경우일 확률 높음 코드를 고치거나 해당 예외처리 핸들러를 추가해줘야 함
      */
@@ -136,9 +149,8 @@ public class GlobalExceptionHandler {
     ProblemDetail handleInternalError(final Exception e) {
         log.error("Uncaught {} - {}", e.getClass().getSimpleName(), e.getMessage());
         e.printStackTrace();
-        ProblemDetail problemDetail = ProblemDetail
+        return ProblemDetail
                 .forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        return problemDetail;
     }
 
 

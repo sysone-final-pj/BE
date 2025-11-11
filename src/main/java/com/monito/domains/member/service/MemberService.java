@@ -8,7 +8,7 @@ import java.util.List;
 public interface MemberService {
     Member createMember(MemberCreateRequestDTO memberCreateRequestDTO);
     Member getMemberById(Long id);
-    List<Member> getAllMembers();
+    List<Member> getAllMembers(String keyword);
     void updateMember(Long id, MemberUpdateRequestDTO memberUpdateRequestDTO);
     void deleteMember(Long id);
     void existsByUsername(String username);
