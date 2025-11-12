@@ -1,7 +1,9 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.domain.LogSource;
+import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
@@ -20,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.monito.global.exception.ExceptionMessage;
+import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -397,5 +402,27 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return sampledData;
+    }
+
+    @Override
+    public ContainerDetailResponseDTO getContainerDetailMetrics(Long containerId) {
+        log.info("컨테이너 상세 메트릭 조회 - containerId: {}", containerId);
+
+        // 컨테이너 조회
+        Container container = containerRepository.findById(containerId)
+                .orElseThrow(() -> new NotFoundException(
+                        ExceptionMessage.CONTAINER_NOT_FOUND));
+
+        // 최신 StatsLog 조회
+        ContainerStatsLog statsLog = containerStatsLogRepository.findTopByContainerIdOrderByCollectedAtDesc(containerId)
+                .orElseThrow(() -> new NotFoundException(
+                        ExceptionMessage.CONTAINER_STATS_LOG_NOT_FOUND));
+
+        // ContainerDetailResponseDTO 생성 (WebSocket과 동일한 형식)
+        return ContainerDetailResponseDTO.forRealtimeUpdate(
+                container,
+                container.getAgent(),
+                statsLog
+        );
     }
 }

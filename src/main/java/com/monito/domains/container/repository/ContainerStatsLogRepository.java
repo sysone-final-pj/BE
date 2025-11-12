@@ -39,4 +39,11 @@ public interface ContainerStatsLogRepository extends JpaRepository<ContainerStat
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    /**
+     * 특정 컨테이너의 최신 통계 로그 조회
+     * @param containerId 컨테이너 ID
+     * @return 최신 ContainerStatsLog
+     */
+    Optional<ContainerStatsLog> findTopByContainerIdOrderByCollectedAtDesc(Long containerId);
 }

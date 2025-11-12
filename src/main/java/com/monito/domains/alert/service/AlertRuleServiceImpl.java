@@ -5,10 +5,10 @@ import com.monito.domains.alert.dto.request.AlertRuleCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertRuleUpdateRequestDTO;
 import com.monito.domains.alert.dto.response.AlertRuleResponseDTO;
 import com.monito.domains.alert.repository.AlertRuleRepository;
+import com.monito.domains.container.domain.MetricType;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.repository.MemberRepository;
-import com.monito.global.exception.ConflictException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.ForbiddenException;
 import com.monito.global.exception.NotFoundException;
@@ -38,13 +38,8 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.MEMBER_NOT_FOUND));
 
-        // 동일한 메트릭 타입 규칙이 이미 존재하는지 확인
-        boolean exists = alertRuleRepository.existsByMemberIdAndMetricType(
-                memberId, request.getMetricType());
-
-        if (exists) {
-            throw new ConflictException(ExceptionMessage.ALERT_RULE_ALREADY_EXISTS);
-        }
+        // 동일 metricType에 enable=true인 룰이 있으면 비활성화 (새 룰이 enable=true로 생성되므로)
+        disableOtherRulesForMetricType(memberId, request.getMetricType());
 
         AlertRule alertRule = AlertRule.builder()
                 .member(member)
@@ -122,6 +117,8 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         }
         if (request.getIsEnabled() != null) {
             if (request.getIsEnabled()) {
+                // enable=true로 변경 시 동일 metricType의 다른 룰들 비활성화
+                disableOtherRulesForMetricType(memberId, alertRule.getMetricType(), ruleId);
                 alertRule.enable();
             } else {
                 alertRule.disable();
@@ -165,6 +162,8 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         }
 
         if (enabled) {
+            // enable=true로 변경 시 동일 metricType의 다른 룰들 비활성화
+            disableOtherRulesForMetricType(memberId, alertRule.getMetricType(), ruleId);
             alertRule.enable();
         } else {
             alertRule.disable();
@@ -174,5 +173,34 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         log.info("알림 규칙 {}화 완료: ruleId={}, memberId={}", enabled ? "활성" : "비활성", ruleId, memberId);
 
         return AlertRuleResponseDTO.from(updated);
+    }
+
+    /**
+     * 동일 metricType의 다른 활성화된 룰들을 비활성화
+     * @param memberId 사용자 ID
+     * @param metricType 메트릭 타입
+     */
+    private void disableOtherRulesForMetricType(Long memberId, MetricType metricType) {
+        disableOtherRulesForMetricType(memberId, metricType, null);
+    }
+
+    /**
+     * 동일 metricType의 다른 활성화된 룰들을 비활성화 (특정 룰 제외)
+     * @param memberId 사용자 ID
+     * @param metricType 메트릭 타입
+     * @param excludeRuleId 제외할 룰 ID (null 가능)
+     */
+    private void disableOtherRulesForMetricType(Long memberId, MetricType metricType, Long excludeRuleId) {
+        List<AlertRule> enabledRules = alertRuleRepository.findByMemberIdAndMetricTypeAndIsEnabledTrue(memberId, metricType);
+
+        for (AlertRule rule : enabledRules) {
+            // excludeRuleId가 지정되어 있으면 해당 룰은 제외
+            if (excludeRuleId != null && rule.getId().equals(excludeRuleId)) {
+                continue;
+            }
+            rule.disable();
+            alertRuleRepository.save(rule);
+            log.info("동일 metricType의 기존 활성 룰 비활성화: ruleId={}, metricType={}", rule.getId(), metricType);
+        }
     }
 }

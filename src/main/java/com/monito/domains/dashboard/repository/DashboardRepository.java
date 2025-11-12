@@ -472,4 +472,22 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                 )
             """)
     List<ContainerStorageUsageDTO> findAllContainerStorageUsage();
+
+    /**
+     * 특정 컨테이너의 스토리지 사용량 조회
+     * @param containerId 컨테이너 ID
+     * @return 해당 컨테이너의 스토리지 사용량 (storageUsed)
+     */
+    @Query(value = """
+            SELECT COALESCE(latest.sizeRootFs, 0L)
+            FROM Container c
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            WHERE c.id = :containerId
+            """)
+    Long findStorageUsedByContainerId(@Param("containerId") Long containerId);
 }

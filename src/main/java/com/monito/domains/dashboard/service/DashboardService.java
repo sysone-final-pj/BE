@@ -1,5 +1,6 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
@@ -90,4 +91,12 @@ public interface DashboardService {
      * @return Block I/O 통계 시계열 데이터
      */
     BlockIOStatsTimeSeriesDTO getBlockIOStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail);
+
+    /**
+     * 컨테이너 상세 메트릭 조회 (최초 상세 패널 로드용)
+     * WebSocket으로 발행되는 것과 동일한 형식의 데이터 반환
+     * @param containerId 컨테이너 ID
+     * @return 컨테이너 상세 메트릭 (시계열 포함)
+     */
+    ContainerDetailResponseDTO getContainerDetailMetrics(Long containerId);
 }

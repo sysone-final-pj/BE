@@ -1,9 +1,7 @@
 package com.monito.domains.alert.service;
 
 import com.monito.domains.alert.domain.Alert;
-import com.monito.domains.alert.domain.AlertLevel;
 import com.monito.domains.alert.dto.internal.AlertCreationDTO;
-import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
@@ -31,16 +29,6 @@ public interface AlertService {
      * 알림 읽음 처리
      */
     void markAsRead(Long alertId, Long memberId);
-
-    /**
-     * 모든 사용자에게 브로드캐스트 (관리자용)
-     */
-    void broadcastAlert(String title, String message, AlertLevel alertLevel);
-
-    /**
-     * 알림 생성 (수동)
-     */
-    AlertDetailResponseDTO createAlert(Long memberId, AlertCreateRequestDTO request);
 
     /**
      * 특정 알림 조회
