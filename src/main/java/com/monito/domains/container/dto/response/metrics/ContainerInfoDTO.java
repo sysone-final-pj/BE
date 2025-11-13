@@ -36,8 +36,8 @@ public class ContainerInfoDTO {
                 .containerHash(container.getContainerHash())
                 .containerName(container.getName())
                 .agentName(agent.getAgentName())
-                .imageName(container.getImageName())
-                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
+                .imageName(ImageIdUtil.removePrefix(container.getImageName()))
+                .imageId(ImageIdUtil.removePrefix(container.getImageId()))
                 .imageSize(container.getImageSize())
                 .state(state)
                 .build();

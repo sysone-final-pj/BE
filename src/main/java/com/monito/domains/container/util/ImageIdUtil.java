@@ -6,34 +6,46 @@ package com.monito.domains.container.util;
 public class ImageIdUtil {
 
     /**
-     * Docker Image ID를 짧은 형태로 변환 (알고리즘 prefix 제거)
+     * Docker Image ID/Name에서 알고리즘 prefix 제거
      * <p>
      * 예시:
-     * - sha256:07ccdb7838758e758a4d52a9761636c385125a327355c0c94a6acff9babff938 → 07ccdb783875
-     * - sha512:abc123def456... → abc123def456
-     * - 07ccdb78... → 07ccdb78 (알고리즘 prefix 없는 경우)
+     * - sha256:07ccdb7838758e758a4d52a9761636c385125a327355c0c94a6acff9babff938
+     *   → 07ccdb7838758e758a4d52a9761636c385125a327355c0c94a6acff9babff938
+     * - sha512:abc123def456... → abc123def456...
+     * - nginx → nginx (prefix 없으면 그대로)
      *
-     * @param imageId 전체 이미지 ID
-     * @return 짧은 이미지 ID (해시 앞 12자만, 알고리즘 prefix 제거)
+     * @param value 이미지 ID 또는 이름
+     * @return prefix 제거된 값
      */
+    public static String removePrefix(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+
+        // "sha256:hash" → ["sha256", "hash"]
+        String[] parts = value.split(":", 2);
+
+        if (parts.length == 2) {
+            // "sha256:" 같은 알고리즘 prefix 제거
+            return parts[1];
+        } else {
+            // ":" 없으면 그대로 반환
+            return value;
+        }
+    }
+
+    /**
+     * 짧은 이미지 ID 반환 (앞 12자만)
+     * - 호환성 유지용 메서드
+     *
+     * @deprecated removePrefix() 사용 권장
+     */
+    @Deprecated
     public static String shortenImageId(String imageId) {
-        if (imageId == null || imageId.isEmpty()) {
+        String hash = removePrefix(imageId);
+        if (hash == null) {
             return null;
         }
-
-        // "sha256:07ccdb78..." → ["sha256", "07ccdb78..."]
-        String[] parts = imageId.split(":", 2);
-
-        String hash;
-        if (parts.length == 2) {
-            // "sha256:hash" 형태
-            hash = parts[1];
-        } else {
-            // ":" 없으면 전체가 해시
-            hash = imageId;
-        }
-
-        // 해시 앞 12자만 반환
         return hash.length() > 12 ? hash.substring(0, 12) : hash;
     }
 

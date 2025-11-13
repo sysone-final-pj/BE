@@ -49,25 +49,28 @@ public class DashboardContainerInfoDTO {
     @Schema(description = "이미지 태그 (imageName을 ':'로 split한 [1])")
     private String tag;
 
-    @Schema(description = "이미지 이름 (원본)")
+    @Schema(description = "이미지 이름 (sha256: prefix 제거됨)", example = "nginx")
     private String imageName;
 
-    @Schema(description = "이미지 ID (앞 12자)", example = "07ccdb783875")
+    @Schema(description = "이미지 ID (전체, sha256: prefix 제거됨)", example = "07ccdb7838758e758a4d52a9761636c385125a327355c0c94a6acff9babff938")
     private String imageId;
 
     @Schema(description = "이미지 크기 (bytes)")
     private Long imageSize;
 
     public static DashboardContainerInfoDTO from(Container container, Agent agent, ContainerStatsLog statsLog) {
+        // Image Name에서 sha256: prefix 제거
+        String processedImageName = ImageIdUtil.removePrefix(container.getImageName());
+
         // Image Name 파싱: repository와 tag 분리
         String repository = null;
         String tag = null;
-        if (container.getImageName() != null && container.getImageName().contains(":")) {
-            String[] parts = container.getImageName().split(":", 2);
+        if (processedImageName != null && processedImageName.contains(":")) {
+            String[] parts = processedImageName.split(":", 2);
             repository = parts[0];
             tag = parts.length > 1 ? parts[1] : null;
         } else {
-            repository = container.getImageName();
+            repository = processedImageName;
             tag = "latest"; // 기본값
         }
 
@@ -82,8 +85,8 @@ public class DashboardContainerInfoDTO {
                 // 이미지 정보
                 .repository(repository)
                 .tag(tag)
-                .imageName(container.getImageName())
-                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
+                .imageName(processedImageName)
+                .imageId(ImageIdUtil.removePrefix(container.getImageId()))
                 .imageSize(container.getImageSize())
                 .build();
     }

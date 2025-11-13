@@ -71,8 +71,8 @@ public class ContainerCardResponseDTO {
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
                 .health(statsLog.getHealth().name())
-                .imageName(container.getImageName())
-                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
+                .imageName(ImageIdUtil.removePrefix(container.getImageName()))
+                .imageId(ImageIdUtil.removePrefix(container.getImageId()))
                 .build();
     }
 }

@@ -516,10 +516,6 @@ public class ContainerServiceImpl implements ContainerService {
                 .imageSize(snapshot.getImageSize())
                 .build();
 
-        log.warn("==========================================================================");
-        log.warn("image id is {}", container.getImageId());
-        log.warn("==========================================================================");
-
         return containerRepository.save(container);
     }
 
