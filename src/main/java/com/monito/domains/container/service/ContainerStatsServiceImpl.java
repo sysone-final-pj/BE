@@ -8,8 +8,11 @@ import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
-import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
+import com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO;
+import com.monito.domains.dashboard.dto.response.DashboardContainerDetailDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.repository.ContainerLogRepository;
+import com.monito.domains.dashboard.repository.DashboardRepository;
 import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.infrastructure.messaging.StompMessagingClient;
@@ -21,7 +24,6 @@ import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
     private final ContainerStatsLogRepository statsLogRepository;
     private final ContainerRepository containerRepository;
+    private final ContainerLogRepository containerLogRepository;
+    private final DashboardRepository dashboardRepository;
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
@@ -113,69 +117,29 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 10. STOMP 메시지 브로드캐스트 (모든 상세 메트릭 포함)
+            // 10. 컨테이너 리스트 브로드캐스트 (/topic/dashboard/list)
             try {
-                ContainerDashboardResponseDTO dashboardDto = ContainerDashboardResponseDTO.builder()
-                        // 기본 정보
-                        .containerId(container.getId())
-                        .containerHash(container.getContainerHash())
-                        .containerName(container.getName())
-                        .agentId(agent.getId())
-                        .agentName(agent.getAgentName())
-                        .state(statsLog.getState())
-                        .health(statsLog.getHealth())
-                        .imageName(container.getImageName())
-                        .imageSize(container.getImageSize())
-                        // CPU 메트릭
-                        .cpuPercent(statsLog.getCpuPercent())
-                        .cpuCoreUsage(statsLog.getCpuCoreUsage())
-                        .cpuUsageTotal(statsLog.getCpuUsageTotal())
-                        .hostCpuUsageTotal(statsLog.getHostCpuUsageTotal())
-                        .cpuUser(statsLog.getCpuUser())
-                        .cpuSystem(statsLog.getCpuSystem())
-                        .cpuQuota(statsLog.getCpuQuota())
-                        .cpuPeriod(statsLog.getCpuPeriod())
-                        .onlineCpus(statsLog.getOnlineCpus())
-                        .throttlingPeriods(statsLog.getThrottlingPeriods())
-                        .throttledPeriods(statsLog.getThrottledPeriods())
-                        .throttledTime(statsLog.getThrottledTime())
-                        // Memory 메트릭
-                        .memPercent(statsLog.getMemPercent())
-                        .memUsage(statsLog.getMemUsage())
-                        .memLimit(container.getMemLimit())
-                        .memMaxUsage(statsLog.getMemMaxUsage())
-                        // Block I/O 메트릭
-                        .blkRead(statsLog.getBlkRead())
-                        .blkWrite(statsLog.getBlkWrite())
-                        .blkReadPerSec(statsLog.getBlkReadPerSec())
-                        .blkWritePerSec(statsLog.getBlkWritePerSec())
-                        // Network 메트릭
-                        .rxBytes(statsLog.getRxBytes())
-                        .txBytes(statsLog.getTxBytes())
-                        .rxPackets(statsLog.getRxPackets())
-                        .txPackets(statsLog.getTxPackets())
-                        .networkTotalBytes(statsLog.getNetworkTotalBytes())
-                        .rxBytesPerSec(statsLog.getRxBytesPerSec())
-                        .txBytesPerSec(statsLog.getTxBytesPerSec())
-                        .rxPps(statsLog.getRxPps())
-                        .txPps(statsLog.getTxPps())
-                        .rxFailureRate(statsLog.getRxFailureRate())
-                        .txFailureRate(statsLog.getTxFailureRate())
-                        .rxErrors(statsLog.getRxErrors())
-                        .txErrors(statsLog.getTxErrors())
-                        .rxDropped(statsLog.getRxDropped())
-                        .txDropped(statsLog.getTxDropped())
-                        // Storage 메트릭
-                        .sizeRw(statsLog.getSizeRw())
-                        .sizeRootFs(statsLog.getSizeRootFs())
-                        .build();
+                ContainerCardResponseDTO cardDto = ContainerCardResponseDTO.of(container, statsLog);
+                messagingTemplate.convertAndSend(WsTopics.DASHBOARD_STATUS, cardDto);
 
-                // STOMP를 통한 브로드캐스트 (/topic/dashboard 구독자 전체에게 전송)
-                messagingTemplate.convertAndSend("/topic/dashboard", dashboardDto);
-
-                log.debug("대시보드 STOMP 브로드캐스트 전송 완료 - Container: {}", container.getName());
+                log.debug("대시보드 리스트 브로드캐스트 전송 완료 - Container: {}", container.getName());
             } catch (Exception e) {
-                log.error("대시보드 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
+                log.error("대시보드 리스트 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
+            }
+
+            // 10-1. 대시보드 컨테이너 상세 발행 (/topic/dashboard/detail/{id})
+            // - logs, storage 집계 데이터 포함
+            try {
+                DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
+                        container, agent, statsLog, containerLogRepository, dashboardRepository
+                );
+                messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
+
+                log.debug("대시보드 상세 정보 발행 완료 (집계 포함) - containerId: {}, containerName: {}",
+                    container.getId(), container.getName());
+            } catch (Exception e) {
+                log.error("대시보드 상세 정보 발행 실패 - containerId: {}, error: {}",
+                    container.getId(), e.getMessage(), e);
             }
 
             // 11. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
@@ -237,6 +201,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .memLimit(metricsDto.getMemLimit())
                 .isMemoryUnlimited(metricsDto.getIsMemoryUnlimited())
                 .imageName(metricsDto.getImageName())
+                .imageId(metricsDto.getImageId())
                 .imageSize(metricsDto.getImageSize())
                 .storageLimit(metricsDto.getStorageLimit())
                 .isStorageUnlimited(metricsDto.getIsStorageUnlimited())
@@ -274,7 +239,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 metric.getCpuPeriod()
         );
 
-        // 리소스 스펙 업데이트
+        // 리소스 스펙 업데이트 (이미지 정보 포함)
         container.updateSpecs(
                 metric.getCpuQuota(),
                 metric.getCpuPeriod(),
@@ -284,11 +249,15 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 metric.getMemLimit(),
                 metric.getIsMemoryUnlimited(),
                 metric.getStorageLimit(),
-                metric.getIsStorageUnlimited()
+                metric.getIsStorageUnlimited(),
+                metric.getImageName(),
+                metric.getImageId(),
+                metric.getImageSize()
         );
 
-        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}",
+        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}, imageId: {}",
                 container.getContainerHash(), metric.getCpuQuota(), metric.getIsCpuUnlimited(),
-                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited());
+                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited(),
+                metric.getImageId());
     }
 }

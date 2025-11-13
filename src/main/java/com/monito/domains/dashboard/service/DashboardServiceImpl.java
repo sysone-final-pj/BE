@@ -1,5 +1,6 @@
 package com.monito.domains.dashboard.service;
 
+import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.domain.LogSource;
 import com.monito.domains.container.repository.ContainerLogRepository;
@@ -20,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.monito.global.exception.ExceptionMessage;
+import com.monito.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -397,5 +401,29 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return sampledData;
+    }
+
+    @Override
+    public DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId) {
+        log.info("컨테이너 상세 메트릭 조회 - containerId: {}", containerId);
+
+        // 컨테이너 조회
+        Container container = containerRepository.findById(containerId)
+                .orElseThrow(() -> new NotFoundException(
+                        ExceptionMessage.CONTAINER_NOT_FOUND));
+
+        // 최신 StatsLog 조회
+        ContainerStatsLog statsLog = containerStatsLogRepository.findTopByContainerIdOrderByCollectedAtDesc(containerId)
+                .orElseThrow(() -> new NotFoundException(
+                        ExceptionMessage.CONTAINER_STATS_LOG_NOT_FOUND));
+
+        // DashboardContainerDetailDTO 생성 (최초 API 호출용 - 로그, 스토리지 포함)
+        return DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
+                container,
+                container.getAgent(),
+                statsLog,
+                containerLogRepository,
+                dashboardRepository
+        );
     }
 }

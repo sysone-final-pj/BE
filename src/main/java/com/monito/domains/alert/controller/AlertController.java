@@ -79,31 +79,6 @@ public class AlertController {
         return ApiResponse.ok("알림이 읽음 처리되었습니다.");
 
     }
-    /**
-     * 관리자용 브로드캐스트 알림(관리자용 알림)
-     */
-    @Operation(summary = "브로드캐스트 알림", description = "모든 사용자에게 알림을 전송합니다. (관리자 전용)")
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/broadcast")
-    public ApiResponse<Void> broadcastAlert(
-            @RequestParam String title,
-            @RequestParam String message,
-            @RequestParam AlertLevel alertLevel) {
-        alertService.broadcastAlert(title, message, alertLevel);
-        return ApiResponse.ok("브로드캐스트 알림이 전송되었습니다.");
-    }
-
-    /**
-     * 알림 생성
-     */
-    @Operation(summary = "알림 생성", description = "새로운 알림을 생성합니다.")
-    @PostMapping
-    public ApiResponse<AlertDetailResponseDTO> createAlert(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody AlertCreateRequestDTO request) {
-        AlertDetailResponseDTO response = alertService.createAlert(userDetails.getId(), request);
-        return ApiResponse.ok(response, "알림이 생성되었습니다.");
-    }
 
     /**
      * 특정 알림 상세 조회(개인)

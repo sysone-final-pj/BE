@@ -45,6 +45,7 @@ CREATE TABLE containers (
     is_memory_unlimited NUMBER(1) NOT NULL,
     oom_kills NUMBER NOT NULL,
     image_name VARCHAR2(255),
+    image_id VARCHAR2(100),
     image_size NUMBER,
     storage_limit NUMBER NOT NULL,
     is_storage_unlimited NUMBER(1) NOT NULL,

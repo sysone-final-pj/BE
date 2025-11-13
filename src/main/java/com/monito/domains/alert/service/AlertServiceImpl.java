@@ -1,22 +1,13 @@
 package com.monito.domains.alert.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monito.domains.alert.domain.Alert;
-import com.monito.domains.alert.domain.AlertLevel;
-import com.monito.domains.alert.domain.AlertRule;
 import com.monito.domains.alert.dto.internal.AlertCreationDTO;
-import com.monito.domains.alert.dto.request.AlertCreateRequestDTO;
 import com.monito.domains.alert.dto.request.AlertFilterDTO;
 import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 import com.monito.domains.alert.dto.response.AlertMessageResponseDTO;
 import com.monito.domains.alert.dto.response.ContainerInfoResponseDTO;
 import com.monito.domains.alert.repository.AlertRepository;
-import com.monito.domains.alert.repository.AlertRuleRepository;
-import com.monito.domains.container.domain.Container;
-import com.monito.domains.container.repository.ContainerRepository;
-import com.monito.domains.member.domain.Member;
-import com.monito.domains.member.repository.MemberRepository;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.ForbiddenException;
 import com.monito.global.exception.NotFoundException;
@@ -40,11 +31,7 @@ import com.monito.domains.alert.dto.request.AlertSortType;
 public class AlertServiceImpl implements AlertService {
 
     private final AlertRepository alertRepository;
-    private final AlertRuleRepository alertRuleRepository;
-    private final MemberRepository memberRepository;
-    private final ContainerRepository containerRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final ObjectMapper objectMapper;
 
     /**
      * 알림 생성 및 웹소켓 전송
@@ -67,6 +54,7 @@ public class AlertServiceImpl implements AlertService {
 
             AlertMessageResponseDTO alertMessage = AlertMessageResponseDTO.builder()
                     .alertId(alert.getId())
+                    .agentName(dto.getContainer().getAgent().getAgentName())
                     .metricType(dto.getMetricType().name())
                     .title(dto.getAlertLevel() != null ? dto.getAlertLevel().getDescription() : "알림")
                     .message(dto.getMessage())
@@ -81,8 +69,8 @@ public class AlertServiceImpl implements AlertService {
                     alertMessage
             );
 
-            log.info("알림 생성 및 전송 완료: memberId={}, containerId={}, alertLevel={}, metricValue={}",
-                    dto.getMember().getId(), dto.getContainer().getId(), dto.getAlertLevel(), dto.getMetricValue());
+            log.info("알림 생성 및 전송 완료: agentId={}, memberId={}, containerId={}, alertLevel={}, metricValue={}",
+                    dto.getContainer().getAgent().getAgentName(), dto.getMember().getId(), dto.getContainer().getId(), dto.getAlertLevel(), dto.getMetricValue());
 
         } catch (Exception e) {
             log.error("알림 생성 중 에러 발생: memberId={}, containerId={}",
@@ -127,60 +115,6 @@ public class AlertServiceImpl implements AlertService {
         sendReadStatusUpdate(memberId, alertId, true);
 
         log.info("알림 읽음 처리 완료: alertId={}, memberId={}", alertId, memberId);
-    }
-
-    /**
-     * 모든 사용자에게 브로드캐스트 (관리자용)
-     */
-    @Override
-    public void broadcastAlert(String title, String message, AlertLevel alertLevel) {
-        try {
-            AlertMessageResponseDTO alertMessage = AlertMessageResponseDTO.builder()
-                    .metricType("SYSTEM")
-                    .title(title)
-                    .message(message)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            // STOMP를 통한 브로드캐스트 (/topic/alerts 구독자 전체에게 전송)
-            messagingTemplate.convertAndSend("/topic/alerts", alertMessage);
-
-            log.info("브로드캐스트 알림 전송: title={}, level={}", title, alertLevel);
-        } catch (Exception e) {
-            log.error("브로드캐스트 중 에러 발생", e);
-        }
-    }
-
-    /**
-     * 알림 생성 (수동 생성용)
-     */
-    @Override
-    public AlertDetailResponseDTO createAlert(Long memberId, AlertCreateRequestDTO request) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.MEMBER_NOT_FOUND));
-
-        AlertRule alertRule = alertRuleRepository.findById(request.getRuleId())
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.ALERT_RULE_NOT_FOUND));
-
-        Container container = containerRepository.findById(request.getContainerId())
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.CONTAINER_NOT_FOUND));
-
-        Alert alert = Alert.builder()
-                .member(member)
-                .alertRule(alertRule)
-                .container(container)
-                .message(request.getMessage())
-                .metricType(request.getMetricType())
-                .metricValue(request.getMetricValue())
-                .alertLevel(request.getAlertLevel())
-                .collectedAt(request.getCollectedAt())
-                .isRead(false)
-                .build();
-
-        Alert savedAlert = alertRepository.save(alert);
-        log.info("알림 생성 완료: alertId={}, memberId={}", savedAlert.getId(), memberId);
-
-        return AlertDetailResponseDTO.from(savedAlert);
     }
 
     /**

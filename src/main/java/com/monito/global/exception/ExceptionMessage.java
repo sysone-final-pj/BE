@@ -90,6 +90,7 @@ public enum ExceptionMessage {
     CONTAINER_HASH_INVALID("유효하지 않은 컨테이너 해시입니다."),
     CONTAINER_METRICS_PROCESSING_FAILED("컨테이너 메트릭 처리 중 오류가 발생했습니다."),
     CONTAINER_LOGS_PROCESSING_FAILED("컨테이너 로그 처리 중 오류가 발생했습니다."),
+    CONTAINER_STATS_LOG_NOT_FOUND("컨테이너 통계 로그를 찾을 수 없습니다."),
 
     // Favorite 관련
     FAVORITE_NOT_FOUND("즐겨찾기를 찾을 수 없습니다."),

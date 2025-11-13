@@ -456,6 +456,26 @@ public class ContainerServiceImpl implements ContainerService {
                             snapshot.getContainerHash(), state, snapshot.getStatus());
                 }
 
+                // 이미지 정보 업데이트 (Agent가 보낸 경우만)
+                boolean imageInfoUpdated = false;
+                if (snapshot.getImageId() != null && !snapshot.getImageId().equals(container.getImageId())) {
+                    container.updateImageId(snapshot.getImageId());
+                    imageInfoUpdated = true;
+                }
+                if (snapshot.getImageName() != null && !snapshot.getImageName().equals(container.getImageName())) {
+                    container.updateImageName(snapshot.getImageName());
+                    imageInfoUpdated = true;
+                }
+                if (snapshot.getImageSize() != null && !snapshot.getImageSize().equals(container.getImageSize())) {
+                    container.updateImageSize(snapshot.getImageSize());
+                    imageInfoUpdated = true;
+                }
+
+                if (imageInfoUpdated) {
+                    log.info("컨테이너 이미지 정보 업데이트 - ContainerHash: {}, ImageId: {}, ImageName: {}, ImageSize: {}",
+                            snapshot.getContainerHash(), snapshot.getImageId(), snapshot.getImageName(), snapshot.getImageSize());
+                }
+
                 // 캐시에 Snapshot 업데이트
                 ContainerStatsLog latestStats = containerStatsLogRepository
                         .findLatestByContainerHash(container.getContainerHash())
@@ -482,7 +502,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .status(snapshot.getStatus())
                 .name(snapshot.getContainerName())
                 .imageName(snapshot.getImageName())
-                // 초기값 (메트릭 수신 시 업데이트됨)
+                .imageId(snapshot.getImageId())
                 .cpuQuota(0L)
                 .cpuPeriod(0L)
                 .cpuLimitCores(BigDecimal.ZERO)

@@ -18,6 +18,7 @@ public class ContainerSnapshotRequestDTO {
     private String state;
     private String status;
     private String imageName;
+    private String imageId;
     private Long imageSize;
     private Boolean oomKilled;
 }

@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ContainerInfoResponseDTO {
     private Long containerId;
+    private String agentName;
     private String containerName;
     private String containerHash;
     private String metricType;
