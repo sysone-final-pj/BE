@@ -200,4 +200,25 @@ public class Container extends BaseEntity {
     public void updateLastOomKilledAt(LocalDateTime occurredAt) {
         this.lastOomKilledAt = occurredAt;
     }
+
+    /**
+     * 이미지 ID 업데이트
+     */
+    public void updateImageId(String imageId) {
+        this.imageId = imageId;
+    }
+
+    /**
+     * 이미지 이름 업데이트
+     */
+    public void updateImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    /**
+     * 이미지 크기 업데이트
+     */
+    public void updateImageSize(Long imageSize) {
+        this.imageSize = imageSize;
+    }
 }

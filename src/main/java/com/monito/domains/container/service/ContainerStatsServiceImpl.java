@@ -201,6 +201,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 .memLimit(metricsDto.getMemLimit())
                 .isMemoryUnlimited(metricsDto.getIsMemoryUnlimited())
                 .imageName(metricsDto.getImageName())
+                .imageId(metricsDto.getImageId())
                 .imageSize(metricsDto.getImageSize())
                 .storageLimit(metricsDto.getStorageLimit())
                 .isStorageUnlimited(metricsDto.getIsStorageUnlimited())
@@ -254,8 +255,9 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 metric.getImageSize()
         );
 
-        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}",
+        log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}, imageId: {}",
                 container.getContainerHash(), metric.getCpuQuota(), metric.getIsCpuUnlimited(),
-                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited());
+                metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited(),
+                metric.getImageId());
     }
 }

@@ -18,4 +18,5 @@ public class StorageMetricsRequestDTO {
     private Boolean isStorageUnlimited;  // 스토리지 제한이 없는지 여부
     private Long imageSize;      // 이미지 크기 (bytes)
     private String imageName;    // 이미지 이름
+    private String imageId;      // 이미지 ID (sha256:...)
 }

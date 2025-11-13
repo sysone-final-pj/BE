@@ -3,6 +3,7 @@ package com.monito.domains.dashboard.dto.response.metrics;
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
+import com.monito.domains.container.util.ImageIdUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,8 +52,8 @@ public class DashboardContainerInfoDTO {
     @Schema(description = "이미지 이름 (원본)")
     private String imageName;
 
-    @Schema(description = "이미지 ID (Docker Image ID)")
-    private String imageId;  // TODO: Agent에서 수집 필요
+    @Schema(description = "이미지 ID (앞 12자)", example = "07ccdb783875")
+    private String imageId;
 
     @Schema(description = "이미지 크기 (bytes)")
     private Long imageSize;
@@ -82,7 +83,7 @@ public class DashboardContainerInfoDTO {
                 .repository(repository)
                 .tag(tag)
                 .imageName(container.getImageName())
-                .imageId(container.getImageId())
+                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
                 .imageSize(container.getImageSize())
                 .build();
     }

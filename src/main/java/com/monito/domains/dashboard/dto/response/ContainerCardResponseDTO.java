@@ -2,6 +2,7 @@ package com.monito.domains.dashboard.dto.response;
 
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
+import com.monito.domains.container.util.ImageIdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,6 +51,16 @@ public class ContainerCardResponseDTO {
     private String health;
 
     /**
+     * 이미지 이름
+     */
+    private String imageName;
+
+    /**
+     * 이미지 ID (짧은 버전)
+     */
+    private String imageId;
+
+    /**
      * Container와 StatsLog로부터 생성
      */
     public static ContainerCardResponseDTO of(Container container, ContainerStatsLog statsLog) {
@@ -60,6 +71,8 @@ public class ContainerCardResponseDTO {
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
                 .health(statsLog.getHealth().name())
+                .imageName(container.getImageName())
+                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
                 .build();
     }
 }

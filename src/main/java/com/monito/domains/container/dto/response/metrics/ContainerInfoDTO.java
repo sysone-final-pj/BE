@@ -4,6 +4,7 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.container.util.ImageIdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class ContainerInfoDTO {
     private String containerName;
     private String agentName;
     private String imageName;
+    private String imageId;
     private Long imageSize;
     private ContainerState state;
     private ContainerHealth health;
@@ -35,6 +37,7 @@ public class ContainerInfoDTO {
                 .containerName(container.getName())
                 .agentName(agent.getAgentName())
                 .imageName(container.getImageName())
+                .imageId(ImageIdUtil.shortenImageId(container.getImageId()))
                 .imageSize(container.getImageSize())
                 .state(state)
                 .build();

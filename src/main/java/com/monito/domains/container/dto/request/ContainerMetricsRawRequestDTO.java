@@ -85,6 +85,7 @@ public class ContainerMetricsRawRequestDTO {
                 .isStorageUnlimited(storage != null && storage.getIsStorageUnlimited() != null ? storage.getIsStorageUnlimited() : false)
                 .imageSize(storage != null ? storage.getImageSize() : null)
                 .imageName(storage != null ? storage.getImageName() : null)
+                .imageId(storage != null ? storage.getImageId() : null)
                 .build();
     }
 
