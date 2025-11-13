@@ -187,4 +187,10 @@ public class Container extends BaseEntity {
     public void updateLastOomKilledAt(LocalDateTime occurredAt) {
         this.lastOomKilledAt = occurredAt;
     }
+
+    @Override
+    public void markAsDeleted() {
+        super.markAsDeleted();
+        this.state = ContainerState.DELETED;
+    }
 }
