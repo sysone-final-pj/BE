@@ -482,7 +482,7 @@ public class ContainerServiceImpl implements ContainerService {
                 .status(snapshot.getStatus())
                 .name(snapshot.getContainerName())
                 .imageName(snapshot.getImageName())
-                // 초기값 (메트릭 수신 시 업데이트됨)
+                .imageId(snapshot.getImageId())
                 .cpuQuota(0L)
                 .cpuPeriod(0L)
                 .cpuLimitCores(BigDecimal.ZERO)
@@ -495,6 +495,10 @@ public class ContainerServiceImpl implements ContainerService {
                 .isStorageUnlimited(false)
                 .imageSize(snapshot.getImageSize())
                 .build();
+
+        log.warn("==========================================================================");
+        log.warn("image id is {}", container.getImageId());
+        log.warn("==========================================================================");
 
         return containerRepository.save(container);
     }

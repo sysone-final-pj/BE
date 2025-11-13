@@ -3,7 +3,6 @@ package com.monito.domains.dashboard.service;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.domain.LogSource;
-import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
@@ -405,7 +404,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public ContainerDetailResponseDTO getContainerDetailMetrics(Long containerId) {
+    public DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId) {
         log.info("컨테이너 상세 메트릭 조회 - containerId: {}", containerId);
 
         // 컨테이너 조회
@@ -418,11 +417,13 @@ public class DashboardServiceImpl implements DashboardService {
                 .orElseThrow(() -> new NotFoundException(
                         ExceptionMessage.CONTAINER_STATS_LOG_NOT_FOUND));
 
-        // ContainerDetailResponseDTO 생성 (WebSocket과 동일한 형식)
-        return ContainerDetailResponseDTO.forRealtimeUpdate(
+        // DashboardContainerDetailDTO 생성 (최초 API 호출용 - 로그, 스토리지 포함)
+        return DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
                 container,
                 container.getAgent(),
-                statsLog
+                statsLog,
+                containerLogRepository,
+                dashboardRepository
         );
     }
 }

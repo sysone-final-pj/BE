@@ -50,3 +50,22 @@ PURGE RECYCLEBIN;
 SELECT 'Tables remaining: ' || COUNT(*) AS result FROM user_tables;
 SELECT 'Sequences remaining: ' || COUNT(*) AS result FROM user_sequences;
 SELECT COUNT(*) FROM user_recyclebin;
+
+
+-- admin 추가
+INSERT INTO members
+    (
+        id, username, password,
+        role, email, company_name,
+        position, mobile_number, office_phone,
+        name, note,
+        created_at, updated_at, is_deleted
+    )
+VALUES
+    (
+        MEMBER_SEQ.NEXTVAL, 'admin', '$2a$12$DL94YAWu4HqMh4wmJKXu8OXq093TJ12n0py2oLqNewqfP8sfrWoh.',
+        'ADMIN', 'admin@admin.com', 'admin',
+        'admin', 'admin', 'admin',
+        'admin', 'admin',
+        SYSDATE, SYSDATE, 0
+    );

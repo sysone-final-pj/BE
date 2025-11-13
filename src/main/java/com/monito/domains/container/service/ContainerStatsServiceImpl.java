@@ -11,6 +11,8 @@ import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO;
 import com.monito.domains.dashboard.dto.response.DashboardContainerDetailDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.repository.ContainerLogRepository;
+import com.monito.domains.dashboard.repository.DashboardRepository;
 import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.infrastructure.messaging.StompMessagingClient;
@@ -38,6 +40,8 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
     private final ContainerStatsLogRepository statsLogRepository;
     private final ContainerRepository containerRepository;
+    private final ContainerLogRepository containerLogRepository;
+    private final DashboardRepository dashboardRepository;
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;
@@ -124,11 +128,14 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             }
 
             // 10-1. 대시보드 컨테이너 상세 발행 (/topic/dashboard/detail/{id})
+            // - logs, storage 집계 데이터 포함
             try {
-                DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdate(container, agent, statsLog);
+                DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
+                        container, agent, statsLog, containerLogRepository, dashboardRepository
+                );
                 messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 
-                log.debug("대시보드 상세 정보 발행 완료 - containerId: {}, containerName: {}",
+                log.debug("대시보드 상세 정보 발행 완료 (집계 포함) - containerId: {}, containerName: {}",
                     container.getId(), container.getName());
             } catch (Exception e) {
                 log.error("대시보드 상세 정보 발행 실패 - containerId: {}, error: {}",
@@ -231,7 +238,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 metric.getCpuPeriod()
         );
 
-        // 리소스 스펙 업데이트
+        // 리소스 스펙 업데이트 (이미지 정보 포함)
         container.updateSpecs(
                 metric.getCpuQuota(),
                 metric.getCpuPeriod(),
@@ -241,7 +248,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 metric.getMemLimit(),
                 metric.getIsMemoryUnlimited(),
                 metric.getStorageLimit(),
-                metric.getIsStorageUnlimited()
+                metric.getIsStorageUnlimited(),
+                metric.getImageName(),
+                metric.getImageId(),
+                metric.getImageSize()
         );
 
         log.info("리소스 제한값 변경 감지 및 업데이트 완료 - containerHash: {}, cpuQuota: {}, isCpuUnlimited: {}, memLimit: {}, isMemoryUnlimited: {}, storageLimit: {}, isStorageUnlimited: {}",
