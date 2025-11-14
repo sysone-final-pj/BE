@@ -81,6 +81,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                 case "AGENT_INFO":
                     handleAgentInfo(session, data);
                     break;
+                case "CONTAINER_SYNC":
+                    handleContainerSync(session, data);
+                    break;
                 case "CONTAINER_STATE_CHANGE":
                     handleContainerStateChange(session, data);
                     break;
@@ -300,6 +303,92 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             sendMessage(session, Map.of(
                     "type", "ERROR",
                     "message", "Failed to process logs: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 컨테이너 전체 동기화 (CONTAINER_SYNC)
+     * - Agent 연결 직후 1회만 실행
+     * - Agent가 보유한 모든 컨테이너 목록을 받아 DB와 동기화
+     * - DB에는 있지만 Agent에 없는 컨테이너 = 삭제된 것으로 간주하여 DELETED 처리
+     */
+    private void handleContainerSync(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 컨테이너 동기화 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> syncData = (Map<String, Object>) data.get("data");
+            ContainerStateChangeRequestDTO sync = objectMapper.convertValue(
+                    syncData,
+                    ContainerStateChangeRequestDTO.class
+            );
+
+            int totalContainers = sync.getContainers() != null ? sync.getContainers().size() : 0;
+
+            log.info("═══════════════════════════════════════");
+            log.info("🔄 컨테이너 전체 동기화 시작");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   Agent 컨테이너 개수: {}", totalContainers);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            // 1. Agent가 보낸 컨테이너들을 생성/업데이트
+            int successCount = 0;
+            int failCount = 0;
+            java.util.Set<String> agentContainerHashes = new java.util.HashSet<>();
+
+            if (sync.getContainers() != null) {
+                for (ContainerSnapshotRequestDTO snapshot : sync.getContainers()) {
+                    try {
+                        containerService.processContainerStateChange(agentKey, snapshot);
+                        agentContainerHashes.add(snapshot.getContainerHash());
+                        successCount++;
+
+                        log.debug("컨테이너 동기화 성공 - Hash: {}, Name: {}, State: {}",
+                                snapshot.getContainerHash(),
+                                snapshot.getContainerName(),
+                                snapshot.getState());
+                    } catch (Exception e) {
+                        failCount++;
+                        log.error("컨테이너 동기화 실패 - Hash: {}",
+                                snapshot.getContainerHash(), e);
+                    }
+                }
+            }
+
+            // 2. DB에는 있지만 Agent가 보내지 않은 컨테이너 삭제 처리
+            try {
+                containerService.syncAgentContainers(agentKey, agentContainerHashes);
+            } catch (Exception e) {
+                log.error("컨테이너 삭제 동기화 실패 - agentKey: {}", agentKey, e);
+            }
+
+            log.info("컨테이너 전체 동기화 완료 - 성공: {}, 실패: {}", successCount, failCount);
+
+            sendMessage(session, Map.of(
+                    "type", "CONTAINER_SYNC_ACK",
+                    "message", String.format("Container sync completed: %d success, %d failed", successCount, failCount),
+                    "successCount", successCount,
+                    "failCount", failCount,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
+        } catch (Exception e) {
+            log.error("컨테이너 동기화 처리 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to process container sync: " + e.getMessage()
             ));
         }
     }

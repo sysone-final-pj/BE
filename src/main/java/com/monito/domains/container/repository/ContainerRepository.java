@@ -2,8 +2,10 @@ package com.monito.domains.container.repository;
 
 import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.container.domain.Container;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -52,4 +54,21 @@ public interface ContainerRepository extends JpaRepository<Container, Long>, Jpa
             "LOWER(c.containerHash) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Container> findAllWithSearch(@Param("keyword") String keyword);
+
+    /**
+     * 삭제된 컨테이너 목록 조회 (24시간 이내)
+     * - is_deleted = 1인 컨테이너만 조회
+     * - updatedAt(삭제 시간)이 24시간 이내인 것만 조회
+     * - updatedAt 기준 내림차순 정렬 (최근 삭제된 것부터)
+     * - @SQLRestriction 우회를 위해 네이티브 쿼리 사용
+     * - N+1 문제는 Service 레이어에서 agent를 명시적으로 로드하여 해결
+     * @param since 조회 시작 시간 (현재 시간 - 24시간)
+     * @return 삭제된 Container 리스트
+     */
+    @Query(value = "SELECT c.* FROM containers c " +
+            "WHERE c.is_deleted = 1 " +
+            "AND c.updated_at >= :since " +
+            "ORDER BY c.updated_at DESC",
+            nativeQuery = true)
+    List<Container> findAllDeletedWithin24Hours(@Param("since") LocalDateTime since);
 }

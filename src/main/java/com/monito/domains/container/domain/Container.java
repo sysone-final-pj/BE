@@ -201,6 +201,12 @@ public class Container extends BaseEntity {
         this.lastOomKilledAt = occurredAt;
     }
 
+    @Override
+    public void markAsDeleted() {
+        super.markAsDeleted();
+        this.state = ContainerState.DELETED;
+    }
+
     /**
      * 이미지 ID 업데이트
      */

@@ -7,6 +7,7 @@ import com.monito.domains.container.dto.request.QuickRangeType;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
+import com.monito.domains.container.dto.response.DeletedContainerResponseDTO;
 import com.monito.domains.container.service.ContainerService;
 import com.monito.global.common.response.ApiResponse;
 import com.monito.global.security.userdetails.CustomUserDetails;
@@ -145,6 +146,21 @@ public class ContainerController {
                 ContainerLogsRequest.of(lastLogId, lastLoggedAt, size, quickRange, startTime, endTime, logSource, agentName, sortBy, direction)
         );
         return ApiResponse.ok(response, "컨테이너 로그 조회 성공");
+    }
+
+    /**
+     * 삭제된 컨테이너 목록 조회 (24시간 이내)
+     * GET /api/containers/deleted
+     *
+     * 예시:
+     * - GET /api/containers/deleted
+     */
+    @GetMapping("/containers/deleted")
+    public ApiResponse<List<DeletedContainerResponseDTO>> getDeletedContainers() {
+        log.info("삭제된 컨테이너 목록 조회 요청");
+
+        List<DeletedContainerResponseDTO> deletedContainers = containerService.getDeletedContainers();
+        return ApiResponse.ok(deletedContainers, "삭제된 컨테이너 목록 조회 성공");
     }
 
 }

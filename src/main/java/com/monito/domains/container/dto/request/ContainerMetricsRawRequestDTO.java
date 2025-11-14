@@ -57,7 +57,7 @@ public class ContainerMetricsRawRequestDTO {
                 .cpuSystem(cpu != null ? cpu.getCpuSystem() : null)
                 .cpuQuota(cpu != null ? cpu.getCpuQuota() : 0L)
                 .cpuPeriod(cpu != null ? cpu.getCpuPeriod() : 0L)
-                .onlineCpus(cpu != null ? cpu.getOnlineCpus() : 1)
+                .onlineCpus(cpu != null && cpu.getOnlineCpus() != null ? cpu.getOnlineCpus() : 1)
                 .isCpuUnlimited(cpu != null && cpu.getIsCpuUnlimited() != null ? cpu.getIsCpuUnlimited() : false)
                 .throttlingPeriods(cpu != null ? cpu.getThrottlingPeriods() : 0L)
                 .throttledPeriods(cpu != null ? cpu.getThrottledPeriods() : 0L)
