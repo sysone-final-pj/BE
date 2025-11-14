@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/ws/**").permitAll() // STOMP WebSocket
+                        .requestMatchers("api/ws/**").permitAll() // STOMP WebSocket
                         .requestMatchers("/agent/**").permitAll() // Agent Raw WebSocket
                         // ADMIN 권한이 필요한 경로
                         .requestMatchers("/api/admin/**").hasRole("MASTER")
