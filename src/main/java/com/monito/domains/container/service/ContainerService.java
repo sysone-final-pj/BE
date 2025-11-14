@@ -9,6 +9,7 @@ import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
+import com.monito.domains.container.dto.response.DeletedContainerResponseDTO;
 import org.springframework.data.domain.Sort.Direction;
 import java.util.List;
 
@@ -61,4 +62,10 @@ public interface ContainerService {
      * @param snapshot 컨테이너 상태 스냅샷
      */
     void processContainerStateChange(String agentKey, ContainerSnapshotRequestDTO snapshot);
+
+    /**
+     * 삭제된 컨테이너 목록 조회 (24시간 이내)
+     * @return 삭제된 컨테이너 목록
+     */
+    List<DeletedContainerResponseDTO> getDeletedContainers();
 }

@@ -595,4 +595,23 @@ public class ContainerServiceImpl implements ContainerService {
             return ContainerState.UNKNOWN;
         }
     }
+
+    @Override
+    public List<DeletedContainerResponseDTO> getDeletedContainers() {
+        // 24시간 이내 삭제된 컨테이너 조회 (현재 시간 - 24시간)
+        LocalDateTime since = LocalDateTime.now().minusHours(24);
+
+        List<Container> deletedContainers = containerRepository.findAllDeletedWithin24Hours(since);
+
+        // N+1 방지: Agent를 명시적으로 로드 (Lazy Loading 강제 초기화)
+        deletedContainers.forEach(container -> {
+            if (container.getAgent() != null) {
+                container.getAgent().getAgentName(); // Agent 프록시 초기화
+            }
+        });
+
+        return deletedContainers.stream()
+                .map(DeletedContainerResponseDTO::from)
+                .toList();
+    }
 }
