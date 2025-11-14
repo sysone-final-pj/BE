@@ -126,11 +126,18 @@ public class Container extends BaseEntity {
 
 
     /**
-     * 컨테이너 이미지 이름
+     * 컨테이너 이미지 이름 - : 이하는 태그명
      * 예: "nginx:latest", "ubuntu:20.04"
      */
     @Column(length = 255)
     private String imageName;
+
+    /**
+     * 컨테이너 이미지 ID (Docker Image ID)
+     * 예: "sha256:abc123..." 또는 짧은 형식 "abc123"
+     */
+    @Column(length = 100)
+    private String imageId;
 
     /**
      * 컨테이너 이미지 크기 (bytes)
@@ -154,7 +161,10 @@ public class Container extends BaseEntity {
                             Long memLimit,
                             Boolean isMemoryUnlimited,
                             Long storageLimit,
-                            Boolean isStorageUnlimited) {
+                            Boolean isStorageUnlimited,
+                            String imageName,
+                            String imageId,
+                            Long imageSize) {
 
         this.cpuQuota = cpuQuota;
         this.cpuPeriod = cpuPeriod;
@@ -165,6 +175,9 @@ public class Container extends BaseEntity {
         this.isMemoryUnlimited = isMemoryUnlimited;
         this.storageLimit = storageLimit;
         this.isStorageUnlimited = isStorageUnlimited;
+        this.imageName = imageName;
+        this.imageId = imageId;
+        this.imageSize = imageSize;
     }
 
     public void changeState(ContainerState state){
@@ -192,5 +205,26 @@ public class Container extends BaseEntity {
     public void markAsDeleted() {
         super.markAsDeleted();
         this.state = ContainerState.DELETED;
+    }
+
+    /**
+     * 이미지 ID 업데이트
+     */
+    public void updateImageId(String imageId) {
+        this.imageId = imageId;
+    }
+
+    /**
+     * 이미지 이름 업데이트
+     */
+    public void updateImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    /**
+     * 이미지 크기 업데이트
+     */
+    public void updateImageSize(Long imageSize) {
+        this.imageSize = imageSize;
     }
 }

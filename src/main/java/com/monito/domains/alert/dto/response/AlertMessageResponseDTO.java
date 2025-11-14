@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AlertMessageResponseDTO {
     private Long alertId;
+    private String agentName;
     private String metricType;
     private String title;
     private String message;

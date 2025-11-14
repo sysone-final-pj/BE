@@ -14,13 +14,13 @@ import java.util.List;
 public interface DashboardService {
 
     /**
-     * 전체 컨테이너 목록 조회 (최신 통계 포함)
+     * 전체 컨테이너 목록 조회 (최신 통계 포함) - 경량화된 DTO
      * @param sortType 정렬 타입 (null이면 정렬하지 않음)
      * @param memberId 회원 ID (FAVORITE 정렬 시 필수)
      * @param filter 필터 조건
-     * @return 컨테이너 목록
+     * @return 컨테이너 카드 목록
      */
-    List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter);
+    List<ContainerCardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter);
 
     /**
      * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)
@@ -90,4 +90,12 @@ public interface DashboardService {
      * @return Block I/O 통계 시계열 데이터
      */
     BlockIOStatsTimeSeriesDTO getBlockIOStatsTimeSeries(Long containerId, TimeRange timeRange, boolean detail);
+
+    /**
+     * 컨테이너 상세 메트릭 조회 (최초 상세 패널 로드용)
+     * WebSocket으로 발행되는 것과 동일한 형식의 데이터 반환
+     * @param containerId 컨테이너 ID
+     * @return 컨테이너 상세 메트릭 (로그, 스토리지 포함)
+     */
+    DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId);
 }

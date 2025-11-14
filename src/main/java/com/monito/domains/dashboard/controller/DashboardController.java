@@ -49,7 +49,7 @@ public class DashboardController {
      */
     @Operation(summary = "컨테이너 목록조회(검색+필터+정렬)",
             description = """
-                    컨테이너 목록 조회 with 검색 + 필터 + 정렬
+                    컨테이너 목록 조회 with 검색 + 필터 + 정렬 (경량화된 카드 DTO 사용, 즐겨찾기 여부 포함)
 
                     **검색 옵션:**
                     - keyword: 검색 키워드 (컨테이너 이름, 이미지명 검색)
@@ -61,14 +61,17 @@ public class DashboardController {
                     - agentIds: 에이전트 ID 필터
 
                     **정렬 옵션:**
-                    - sortBy: CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE
+                    - sortBy: CPU_PERCENT, MEM_PERCENT, FAVORITE
+
+                    **응답 데이터:**
+                    - isFavorite: 즐겨찾기 여부 (true/false) 포함
                     """)
     @GetMapping("/containers")
-    public ApiResponse<List<ContainerDashboardResponseDTO>> getAllContainers(
+    public ApiResponse<List<ContainerCardResponseDTO>> getAllContainers(
             @Parameter(description = "검색 키워드 (컨테이너 이름, 이미지명 등)")
             @RequestParam(required = false) String keyword,
 
-            @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, NETWORK_TOTAL_BYTES, FAVORITE)")
+            @Parameter(description = "정렬 기준 (CPU_PERCENT, MEM_PERCENT, FAVORITE)")
             @RequestParam(required = false) ContainerSortType sortBy,
 
             @Parameter(description = "즐겨찾기만 보기 (true: 즐겨찾기만, false/null: 전체)")
@@ -100,7 +103,7 @@ public class DashboardController {
 
         log.info("GET /api/dashboard/containers - 대시보드용 컨테이너 목록 조회 (정렬: {}, memberId: {}, keyword: {})", sortBy, memberId, keyword);
 
-        List<ContainerDashboardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId, filter);
+        List<ContainerCardResponseDTO> containers = dashboardService.getAllContainers(sortBy, memberId, filter);
 
         return ApiResponse.ok(containers, "대시보드 컨테이너 목록을 성공적으로 조회했습니다.");
     }
@@ -275,5 +278,25 @@ public class DashboardController {
         );
 
         return ApiResponse.ok(blockIOStats, "Block I/O 통계 시계열 데이터를 성공적으로 조회했습니다.");
+    }
+
+    /**
+     * 컨테이너 상세 메트릭 조회 (최초 로드용)
+     * GET /api/dashboard/containers/{containerId}/metrics
+     * @param containerId 컨테이너 ID
+     * @return 컨테이너 상세 메트릭 (중첩 구조, 로그/스토리지 포함)
+     */
+    @Operation(summary = "컨테이너 상세 메트릭 조회",
+            description = "최초 상세 패널 로드 시 사용하는 API. 중첩 구조로 구성된 컨테이너 상세 정보(로그, 스토리지 포함)를 반환합니다.")
+    @GetMapping("/containers/{containerId}/metrics")
+    public ApiResponse<DashboardContainerDetailDTO> getContainerDetailMetrics(
+            @PathVariable Long containerId) {
+
+        log.info("GET /api/dashboard/containers/{}/metrics - 컨테이너 상세 메트릭 조회", containerId);
+
+        DashboardContainerDetailDTO metrics =
+                dashboardService.getContainerDetailMetrics(containerId);
+
+        return ApiResponse.ok(metrics, "컨테이너 상세 메트릭을 성공적으로 조회했습니다.");
     }
 }
