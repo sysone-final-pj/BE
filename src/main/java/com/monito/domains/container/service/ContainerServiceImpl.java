@@ -614,4 +614,39 @@ public class ContainerServiceImpl implements ContainerService {
                 .map(DeletedContainerResponseDTO::from)
                 .toList();
     }
+
+    @Override
+    @Transactional
+    public void syncAgentContainers(String agentKey, Set<String> agentContainerHashes) {
+        // 1. Agent 조회
+        Agent agent = agentRepository.findByAgentKey(agentKey)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+
+        // 2. DB에서 해당 Agent의 활성 컨테이너 조회
+        List<Container> dbContainers = containerRepository.findAllByAgent_Id(agent.getId());
+
+        // 3. DB에는 있지만 Agent가 보내지 않은 컨테이너 = 삭제된 것
+        List<Container> missingContainers = dbContainers.stream()
+                .filter(container -> !agentContainerHashes.contains(container.getContainerHash()))
+                .toList();
+
+        // 4. 삭제 처리
+        if (!missingContainers.isEmpty()) {
+            log.info("Agent 동기화 - 삭제된 컨테이너 감지: {}개 (Agent: {})",
+                    missingContainers.size(), agentKey);
+
+            for (Container container : missingContainers) {
+                container.markAsDeleted();
+                log.info("컨테이너 자동 삭제 처리 - Agent: {}, ContainerHash: {}, Name: {}",
+                        agentKey, container.getContainerHash(), container.getName());
+
+                // 캐시 및 관련 데이터 삭제
+                cpuMetricsBufferCache.removeContainer(container.getId());
+                oomEventCache.removeContainer(container.getId());
+                containerSummaryCache.remove(container.getId());
+                favoriteRepository.deleteByContainerId(container.getId());
+                favoriteCache.removeContainerFromAll(container.getId());
+            }
+        }
+    }
 }

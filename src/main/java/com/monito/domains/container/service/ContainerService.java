@@ -12,6 +12,7 @@ import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
 import com.monito.domains.container.dto.response.DeletedContainerResponseDTO;
 import org.springframework.data.domain.Sort.Direction;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 컨테이너 조회 서비스
@@ -68,4 +69,12 @@ public interface ContainerService {
      * @return 삭제된 컨테이너 목록
      */
     List<DeletedContainerResponseDTO> getDeletedContainers();
+
+    /**
+     * Agent가 보낸 컨테이너 목록과 DB를 동기화
+     * - Agent가 보내지 않은 컨테이너는 삭제된 것으로 간주하여 DELETED 처리
+     * @param agentKey Agent 식별 키
+     * @param agentContainerHashes Agent가 현재 보유한 컨테이너 해시 목록
+     */
+    void syncAgentContainers(String agentKey, Set<String> agentContainerHashes);
 }
