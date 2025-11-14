@@ -615,4 +615,58 @@ public class ContainerServiceImpl implements ContainerService {
             return ContainerState.UNKNOWN;
         }
     }
+
+    @Override
+    public List<DeletedContainerResponseDTO> getDeletedContainers() {
+        // 24시간 이내 삭제된 컨테이너 조회 (현재 시간 - 24시간)
+        LocalDateTime since = LocalDateTime.now().minusHours(24);
+
+        List<Container> deletedContainers = containerRepository.findAllDeletedWithin24Hours(since);
+
+        // N+1 방지: Agent를 명시적으로 로드 (Lazy Loading 강제 초기화)
+        deletedContainers.forEach(container -> {
+            if (container.getAgent() != null) {
+                container.getAgent().getAgentName(); // Agent 프록시 초기화
+            }
+        });
+
+        return deletedContainers.stream()
+                .map(DeletedContainerResponseDTO::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void syncAgentContainers(String agentKey, Set<String> agentContainerHashes) {
+        // 1. Agent 조회
+        Agent agent = agentRepository.findByAgentKey(agentKey)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+
+        // 2. DB에서 해당 Agent의 활성 컨테이너 조회
+        List<Container> dbContainers = containerRepository.findAllByAgent_Id(agent.getId());
+
+        // 3. DB에는 있지만 Agent가 보내지 않은 컨테이너 = 삭제된 것
+        List<Container> missingContainers = dbContainers.stream()
+                .filter(container -> !agentContainerHashes.contains(container.getContainerHash()))
+                .toList();
+
+        // 4. 삭제 처리
+        if (!missingContainers.isEmpty()) {
+            log.info("Agent 동기화 - 삭제된 컨테이너 감지: {}개 (Agent: {})",
+                    missingContainers.size(), agentKey);
+
+            for (Container container : missingContainers) {
+                container.markAsDeleted();
+                log.info("컨테이너 자동 삭제 처리 - Agent: {}, ContainerHash: {}, Name: {}",
+                        agentKey, container.getContainerHash(), container.getName());
+
+                // 캐시 및 관련 데이터 삭제
+                cpuMetricsBufferCache.removeContainer(container.getId());
+                oomEventCache.removeContainer(container.getId());
+                containerSummaryCache.remove(container.getId());
+                favoriteRepository.deleteByContainerId(container.getId());
+                favoriteCache.removeContainerFromAll(container.getId());
+            }
+        }
+    }
 }
