@@ -2,6 +2,7 @@ package com.monito.domains.dashboard.repository;
 
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
+import com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO;
 import com.monito.domains.dashboard.dto.response.ContainerDashboardResponseDTO;
 import com.monito.domains.dashboard.dto.response.ContainerStorageUsageDTO;
 import java.util.List;
@@ -490,4 +491,95 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             WHERE c.id = :containerId
             """)
     Long findStorageUsedByContainerId(@Param("containerId") Long containerId);
+
+    /**
+     * 컨테이너 카드 목록 조회 (경량화된 DTO, 즐겨찾기 여부 포함)
+     * @param memberId 회원 ID (즐겨찾기 여부 확인용)
+     * @return 컨테이너 카드 목록
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO(
+                c.id,
+                c.name,
+                latest.cpuPercent,
+                latest.memPercent,
+                latest.state,
+                latest.health,
+                c.imageName,
+                c.imageId,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM com.monito.domains.favorite.domain.Favorite f
+                    WHERE f.container.id = c.id AND f.member.id = :memberId
+                ) THEN true ELSE false END
+            )
+            FROM Container c
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            """)
+    List<ContainerCardResponseDTO> findAllContainerCardsForDashboard(@Param("memberId") Long memberId);
+
+    /**
+     * 필터링된 컨테이너 카드 목록 조회 (경량화된 DTO, 즐겨찾기 여부 포함)
+     * @param keyword 검색 키워드
+     * @param keywordEmpty 키워드 비어있음 여부
+     * @param favoriteOnly 즐겨찾기만 보기
+     * @param states 상태 필터
+     * @param statesEmpty 상태 필터 비어있음 여부
+     * @param healths 헬스 필터
+     * @param healthsEmpty 헬스 필터 비어있음 여부
+     * @param agentIds 에이전트 ID 필터
+     * @param agentIdsEmpty 에이전트 ID 필터 비어있음 여부
+     * @param memberId 회원 ID (즐겨찾기 여부 확인용)
+     * @return 필터링된 컨테이너 카드 목록
+     */
+    @Query(value = """
+            SELECT new com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO(
+                c.id,
+                c.name,
+                latest.cpuPercent,
+                latest.memPercent,
+                latest.state,
+                latest.health,
+                c.imageName,
+                c.imageId,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM com.monito.domains.favorite.domain.Favorite f
+                    WHERE f.container.id = c.id AND f.member.id = :memberId
+                ) THEN true ELSE false END
+            )
+            FROM Container c
+            JOIN c.agent a
+            LEFT JOIN ContainerStatsLog latest ON latest.container = c
+                AND latest.createdAt = (
+                    SELECT MAX(csl.createdAt)
+                    FROM ContainerStatsLog csl
+                    WHERE csl.container = c
+                )
+            WHERE (:keywordEmpty = true OR
+                   LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(c.imageName) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            AND (:favoriteOnly = false OR c.id IN (
+                SELECT f.container.id FROM com.monito.domains.favorite.domain.Favorite f
+                WHERE f.member.id = :memberId
+            ))
+            AND (:statesEmpty = true OR latest.state IN :states)
+            AND (:healthsEmpty = true OR latest.health IN :healths)
+            AND (:agentIdsEmpty = true OR a.id IN :agentIds)
+            """)
+    List<ContainerCardResponseDTO> findContainerCardsWithFilters(
+            @Param("keyword") String keyword,
+            @Param("keywordEmpty") boolean keywordEmpty,
+            @Param("favoriteOnly") boolean favoriteOnly,
+            @Param("states") List<com.monito.domains.container.domain.ContainerState> states,
+            @Param("statesEmpty") boolean statesEmpty,
+            @Param("healths") List<com.monito.domains.container.domain.ContainerHealth> healths,
+            @Param("healthsEmpty") boolean healthsEmpty,
+            @Param("agentIds") List<Long> agentIds,
+            @Param("agentIdsEmpty") boolean agentIdsEmpty,
+            @Param("memberId") Long memberId
+    );
 }

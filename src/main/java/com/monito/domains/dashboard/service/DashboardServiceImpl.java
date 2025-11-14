@@ -41,14 +41,14 @@ public class DashboardServiceImpl implements DashboardService {
     private final ContainerRepository containerRepository;
 
     @Override
-    public List<ContainerDashboardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter) {
+    public List<ContainerCardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter) {
         log.info("대시보드: 전체 컨테이너 목록 조회 (정렬: {}, memberId: {}, 필터: {})", sortType, memberId, filter != null);
 
-        List<ContainerDashboardResponseDTO> containers;
+        List<ContainerCardResponseDTO> containers;
 
         // 필터가 있으면 필터링 적용
         if (hasActiveFilter(filter)) {
-            containers = dashboardRepository.findContainersWithFilters(
+            containers = dashboardRepository.findContainerCardsWithFilters(
                     filter.getKeyword(),
                     filter.getKeyword() == null || filter.getKeyword().trim().isEmpty(),
                     filter.getFavoriteOnly() != null && filter.getFavoriteOnly(),
@@ -61,7 +61,7 @@ public class DashboardServiceImpl implements DashboardService {
                     memberId
             );
         } else {
-            containers = dashboardRepository.findAllContainersForDashboard();
+            containers = dashboardRepository.findAllContainerCardsForDashboard(memberId);
         }
 
         // 정렬 타입이 없으면 기본값으로 즐겨찾기 정렬 적용
@@ -70,7 +70,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         // 정렬 타입에 따라 정렬
-        return sortContainers(containers, sortType, memberId);
+        return sortContainerCards(containers, sortType, memberId);
     }
 
     /**
@@ -85,6 +85,55 @@ public class DashboardServiceImpl implements DashboardService {
                 (filter.getStates() != null && !filter.getStates().isEmpty()) ||
                 (filter.getHealths() != null && !filter.getHealths().isEmpty()) ||
                 (filter.getAgentIds() != null && !filter.getAgentIds().isEmpty());
+    }
+
+    /**
+     * 컨테이너 카드 목록 정렬
+     */
+    private List<ContainerCardResponseDTO> sortContainerCards(
+            List<ContainerCardResponseDTO> containers,
+            ContainerSortType sortType,
+            Long memberId) {
+
+        return switch (sortType) {
+            case NAME -> containers.stream()
+                    .sorted(Comparator.comparing(ContainerCardResponseDTO::getContainerName,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .collect(Collectors.toList());
+
+            case CPU_PERCENT -> containers.stream()
+                    .sorted(Comparator.comparing(ContainerCardResponseDTO::getCpuPercent,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+
+            case MEM_PERCENT -> containers.stream()
+                    .sorted(Comparator.comparing(ContainerCardResponseDTO::getMemPercent,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+
+            case NETWORK_TOTAL_BYTES -> {
+                // ContainerCardResponseDTO에는 networkTotalBytes가 없으므로 정렬하지 않음
+                log.warn("NETWORK_TOTAL_BYTES 정렬은 ContainerCardResponseDTO에서 지원되지 않습니다.");
+                yield containers;
+            }
+
+            case FAVORITE -> {
+                if (memberId == null) {
+                    log.warn("FAVORITE 정렬 시 memberId가 필요하지만 null입니다. 정렬하지 않고 반환합니다.");
+                    yield containers;
+                }
+
+                // isFavorite 필드로 정렬 (true가 먼저 오도록)
+                yield containers.stream()
+                        .sorted((c1, c2) -> {
+                            boolean isFav1 = c1.getIsFavorite() != null && c1.getIsFavorite();
+                            boolean isFav2 = c2.getIsFavorite() != null && c2.getIsFavorite();
+                            // 즐겨찾기가 먼저 오도록: true > false
+                            return Boolean.compare(isFav2, isFav1);
+                        })
+                        .collect(Collectors.toList());
+            }
+        };
     }
 
     /**
