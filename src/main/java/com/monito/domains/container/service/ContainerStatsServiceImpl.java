@@ -24,6 +24,7 @@ import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,9 +69,12 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
             updateSpecsIfChanged(container, metricsDto);
 
-            // 4. 이전 통계 조회 (계산용)
+            // 4. 이전 통계 조회 (계산용) - 파티션 프루닝을 위해 1시간 전부터 조회
             ContainerStatsLog previousStats = statsLogRepository
-                    .findLatestByContainerHash(metricsDto.getContainerHash())
+                    .findLatestByContainerHash(
+                            metricsDto.getContainerHash(),
+                            LocalDateTime.now().minusHours(1)
+                    )
                     .orElse(null);
 
             // [DEBUG] 이전 데이터 확인

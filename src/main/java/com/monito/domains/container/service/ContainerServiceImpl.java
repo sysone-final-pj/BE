@@ -476,9 +476,12 @@ public class ContainerServiceImpl implements ContainerService {
                             snapshot.getContainerHash(), snapshot.getImageId(), snapshot.getImageName(), snapshot.getImageSize());
                 }
 
-                // 캐시에 Snapshot 업데이트
+                // 캐시에 Snapshot 업데이트 - 파티션 프루닝을 위해 1시간 전부터 조회
                 ContainerStatsLog latestStats = containerStatsLogRepository
-                        .findLatestByContainerHash(container.getContainerHash())
+                        .findLatestByContainerHash(
+                                container.getContainerHash(),
+                                LocalDateTime.now().minusHours(1)
+                        )
                         .orElse(null);
                 containerSummaryCache.update(ContainerSummarySnapshot.of(container, latestStats));
             }

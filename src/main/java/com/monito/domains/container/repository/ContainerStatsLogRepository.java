@@ -13,15 +13,20 @@ import org.springframework.stereotype.Repository;
 public interface ContainerStatsLogRepository extends JpaRepository<ContainerStatsLog, Long> {
 
     /**
-     * 특정 컨테이너 해시의 최신 통계 로그 조회
+     * 특정 컨테이너 해시의 최신 통계 로그 조회 (파티션 프루닝 최적화)
      * @param containerHash 컨테이너 해시
+     * @param afterTime 조회 시작 시간 (파티션 프루닝용 - 권장: 1시간 전)
      * @return 최신 ContainerStatsLog
      */
     @Query("SELECT csl FROM ContainerStatsLog csl " +
            "WHERE csl.containerHash = :containerHash " +
-           "ORDER BY csl.createdAt DESC " +
+           "AND csl.collectedAt >= :afterTime " +
+           "ORDER BY csl.collectedAt DESC " +
            "LIMIT 1")
-    Optional<ContainerStatsLog> findLatestByContainerHash(@Param("containerHash") String containerHash);
+    Optional<ContainerStatsLog> findLatestByContainerHash(
+            @Param("containerHash") String containerHash,
+            @Param("afterTime") LocalDateTime afterTime
+    );
 
     /**
      * 특정 컨테이너의 특정 기간 내 통계 로그 조회
@@ -41,9 +46,18 @@ public interface ContainerStatsLogRepository extends JpaRepository<ContainerStat
     );
 
     /**
-     * 특정 컨테이너의 최신 통계 로그 조회
+     * 특정 컨테이너의 최신 통계 로그 조회 (파티션 프루닝 최적화)
      * @param containerId 컨테이너 ID
+     * @param afterTime 조회 시작 시간 (파티션 프루닝용 - 권장: 1시간 전)
      * @return 최신 ContainerStatsLog
      */
-    Optional<ContainerStatsLog> findTopByContainerIdOrderByCollectedAtDesc(Long containerId);
+    @Query("SELECT csl FROM ContainerStatsLog csl " +
+           "WHERE csl.container.id = :containerId " +
+           "AND csl.collectedAt >= :afterTime " +
+           "ORDER BY csl.collectedAt DESC " +
+           "LIMIT 1")
+    Optional<ContainerStatsLog> findLatestByContainerId(
+            @Param("containerId") Long containerId,
+            @Param("afterTime") LocalDateTime afterTime
+    );
 }
