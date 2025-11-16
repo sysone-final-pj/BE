@@ -31,6 +31,11 @@ public class ContainerHistoryResponse {
     private String containerName;
 
     /**
+     * 컨테이너 해시
+     */
+    private String containerHash;
+
+    /**
      * 에이전트 이름
      */
     private String agentName;

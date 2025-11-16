@@ -2,9 +2,11 @@ package com.monito.domains.history.service;
 
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.history.dto.request.ContainerHistoryRequest;
 import com.monito.domains.history.dto.response.ContainerHistoryPageResponse;
 import com.monito.domains.history.dto.response.ContainerHistoryResponse;
+import com.monito.domains.history.dto.response.ContainerListForHistoryDTO;
 import com.monito.domains.history.repository.ContainerHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 public class ContainerHistoryServiceImpl implements ContainerHistoryService {
 
     private final ContainerHistoryRepository containerHistoryRepository;
+    private final ContainerRepository containerRepository;
 
     @Override
     public ContainerHistoryPageResponse getContainerHistory(ContainerHistoryRequest request) {
@@ -80,6 +83,7 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
                 // 기본 정보
                 .collectedAt((LocalDateTime) row[idx++])
                 .containerName((String) row[idx++])
+                .containerHash((String) row[idx++])
                 .agentName((String) row[idx++])
                 .imgNameTag((String) row[idx++])
                 .state((ContainerState) row[idx++])
@@ -141,5 +145,23 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
                 .isStorageUnlimited((Boolean) row[idx++])
 
                 .build();
+    }
+
+    @Override
+    public List<ContainerListForHistoryDTO> getContainerListForHistory(Integer isDeleted) {
+        log.info("히스토리 조회용 컨테이너 목록 조회 - isDeleted: {}", isDeleted);
+
+        // Repository에서 네이티브 쿼리로 조회
+        List<Object[]> resultList = containerRepository.findContainerListForHistory(isDeleted);
+
+        // Object[] -> ContainerListForHistoryDTO 변환
+        return resultList.stream()
+                .map(row -> ContainerListForHistoryDTO.builder()
+                        .id(((Number) row[0]).longValue())
+                        .containerName((String) row[1])
+                        .containerHash((String) row[2])
+                        .isDeleted(((Number) row[3]).intValue())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
