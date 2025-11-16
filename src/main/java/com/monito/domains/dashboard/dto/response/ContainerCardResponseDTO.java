@@ -107,7 +107,8 @@ public class ContainerCardResponseDTO {
     public ContainerCardResponseDTO(Long containerId, String containerName,
                                      BigDecimal cpuPercent, BigDecimal memPercent,
                                      ContainerState state, ContainerHealth health,
-                                     String imageName, String imageId, Boolean isFavorite) {
+                                     String imageName, String imageId,
+                                     Boolean isFavorite) {
         this.containerId = containerId;
         this.containerName = containerName;
         this.cpuPercent = cpuPercent;
