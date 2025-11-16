@@ -33,6 +33,16 @@ public class ContainerCardResponseDTO {
     private String containerName;
 
     /**
+     * 컨테이너 해시 (12자리)
+     */
+    private String containerHash;
+
+    /**
+     * Agent ID
+     */
+    private Long agentId;
+
+    /**
      * CPU 사용률 (%)
      */
     private BigDecimal cpuPercent;
@@ -74,6 +84,8 @@ public class ContainerCardResponseDTO {
         return ContainerCardResponseDTO.builder()
                 .containerId(container.getId())
                 .containerName(container.getName())
+                .containerHash(container.getContainerHash())
+                .agentId(container.getAgent().getId())
                 .cpuPercent(statsLog.getCpuPercent())
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
@@ -91,6 +103,8 @@ public class ContainerCardResponseDTO {
         return ContainerCardResponseDTO.builder()
                 .containerId(container.getId())
                 .containerName(container.getName())
+                .containerHash(container.getContainerHash())
+                .agentId(container.getAgent().getId())
                 .cpuPercent(statsLog.getCpuPercent())
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
@@ -104,13 +118,15 @@ public class ContainerCardResponseDTO {
     /**
      * JPQL 쿼리에서 사용하는 생성자 (enum 타입 직접 수용)
      */
-    public ContainerCardResponseDTO(Long containerId, String containerName,
+    public ContainerCardResponseDTO(Long containerId, String containerName, String containerHash, Long agentId,
                                      BigDecimal cpuPercent, BigDecimal memPercent,
                                      ContainerState state, ContainerHealth health,
                                      String imageName, String imageId,
                                      Boolean isFavorite) {
         this.containerId = containerId;
         this.containerName = containerName;
+        this.containerHash = containerHash;
+        this.agentId = agentId;
         this.cpuPercent = cpuPercent;
         this.memPercent = memPercent;
         this.state = state != null ? state.name() : null;

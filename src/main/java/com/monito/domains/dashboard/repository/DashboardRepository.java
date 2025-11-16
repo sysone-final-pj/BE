@@ -74,6 +74,8 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             SELECT new com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO(
                 c.id,
                 c.name,
+                c.containerHash,
+                a.id,
                 (SELECT sl.cpuPercent
                  FROM ContainerStatsLog sl
                  WHERE sl.container.id = c.id
@@ -164,6 +166,8 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             SELECT new com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO(
                 c.id,
                 c.name,
+                c.containerHash,
+                a.id,
                 (SELECT sl.cpuPercent
                  FROM ContainerStatsLog sl
                  WHERE sl.container.id = c.id
