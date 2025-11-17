@@ -105,7 +105,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
             @Param("createdAtFromEmpty") boolean createdAtFromEmpty,
             @Param("createdAtTo") LocalDateTime createdAtTo,
             @Param("createdAtToEmpty") boolean createdAtToEmpty,
-            @Param("isRead") boolean isRead,
+            @Param("isRead") Boolean isRead,
             @Param("isReadEmpty") boolean isReadEmpty
     );
 }
