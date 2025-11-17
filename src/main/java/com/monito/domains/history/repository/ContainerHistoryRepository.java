@@ -16,6 +16,7 @@ public interface ContainerHistoryRepository extends JpaRepository<ContainerStats
 
     /**
      * 컨테이너 히스토리 조회 (페이지네이션)
+     * 삭제된 컨테이너(is_deleted = 1)의 히스토리도 조회 가능
      * @param startTime 시작 시간
      * @param endTime 종료 시간
      * @param containerId 컨테이너 ID (null 가능)
@@ -23,74 +24,84 @@ public interface ContainerHistoryRepository extends JpaRepository<ContainerStats
      * @param pageable 페이지 정보
      * @return 컨테이너 히스토리 페이지
      */
-    @Query("""
+    @Query(value = """
         SELECT
-            csl.collectedAt,
+            csl.collected_at,
             c.name,
-            c.containerHash,
-            a.agentName,
-            c.imageName,
+            c.container_hash,
+            a.agent_name,
+            c.image_name,
             csl.state,
             csl.health,
-            c.createdAt,
-            c.isDeleted,
+            c.created_at,
+            c.is_deleted,
 
-            csl.cpuPercent,
-            csl.cpuCoreUsage,
-            csl.hostCpuUsageTotal,
-            csl.cpuUsageTotal,
-            csl.cpuUser,
-            csl.cpuSystem,
-            csl.cpuQuota,
-            csl.cpuPeriod,
-            csl.onlineCpus,
-            csl.throttlingPeriods,
-            csl.throttledPeriods,
-            csl.throttledTime,
-            c.cpuLimitCores,
-            c.isCpuUnlimited,
+            csl.cpu_percent,
+            csl.cpu_core_usage,
+            csl.host_cpu_usage_total,
+            csl.cpu_usage_total,
+            csl.cpu_user,
+            csl.cpu_system,
+            csl.cpu_quota,
+            csl.cpu_period,
+            csl.online_cpus,
+            csl.throttling_periods,
+            csl.throttled_periods,
+            csl.throttled_time,
+            c.cpu_limit_cores,
+            c.is_cpu_unlimited,
 
-            csl.memPercent,
-            csl.memUsage,
-            csl.memMaxUsage,
-            c.memLimit,
-            c.isMemoryUnlimited,
-            c.lastOomKilledAt,
+            csl.mem_percent,
+            csl.mem_usage,
+            csl.mem_max_usage,
+            c.mem_limit,
+            c.is_memory_unlimited,
+            c.last_oom_killed_at,
 
-            csl.blkRead,
-            csl.blkWrite,
-            csl.blkReadPerSec,
-            csl.blkWritePerSec,
+            csl.blk_read,
+            csl.blk_write,
+            csl.blk_read_per_sec,
+            csl.blk_write_per_sec,
 
-            csl.rxBytes,
-            csl.txBytes,
-            csl.rxPackets,
-            csl.txPackets,
-            csl.networkTotalBytes,
-            csl.rxBytesPerSec,
-            csl.txBytesPerSec,
-            csl.rxPps,
-            csl.txPps,
-            csl.rxFailureRate,
-            csl.txFailureRate,
-            csl.rxErrors,
-            csl.txErrors,
-            csl.rxDropped,
-            csl.txDropped,
+            csl.rx_bytes,
+            csl.tx_bytes,
+            csl.rx_packets,
+            csl.tx_packets,
+            csl.network_total_bytes,
+            csl.rx_bytes_per_sec,
+            csl.tx_bytes_per_sec,
+            csl.rx_pps,
+            csl.tx_pps,
+            csl.rx_failure_rate,
+            csl.tx_failure_rate,
+            csl.rx_errors,
+            csl.tx_errors,
+            csl.rx_dropped,
+            csl.tx_dropped,
 
-            csl.sizeRw,
-            csl.sizeRootFs,
-            c.storageLimit,
-            c.isStorageUnlimited
+            csl.size_rw,
+            csl.size_root_fs,
+            c.storage_limit,
+            c.is_storage_unlimited
 
-        FROM ContainerStatsLog csl
-        JOIN csl.container c
-        JOIN c.agent a
-        WHERE csl.collectedAt BETWEEN :startTime AND :endTime
+        FROM container_stats_logs csl
+        INNER JOIN containers c ON csl.container_id = c.id
+        INNER JOIN agents a ON c.agent_id = a.id
+        WHERE csl.collected_at BETWEEN :startTime AND :endTime
             AND (:containerId IS NULL OR c.id = :containerId)
-            AND (:isDeleted IS NULL OR c.isDeleted = :isDeleted)
-        ORDER BY csl.collectedAt DESC
-        """)
+            AND (:isDeleted IS NULL OR c.is_deleted = :isDeleted)
+        ORDER BY csl.collected_at DESC
+        """,
+        countQuery = """
+        SELECT COUNT(*)
+        FROM container_stats_logs csl
+        INNER JOIN containers c ON csl.container_id = c.id
+        INNER JOIN agents a ON c.agent_id = a.id
+        WHERE csl.collected_at BETWEEN :startTime AND :endTime
+            AND (:containerId IS NULL OR c.id = :containerId)
+            AND (:isDeleted IS NULL OR c.is_deleted = :isDeleted)
+        """,
+        nativeQuery = true)
     Page<Object[]> findContainerHistory(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
