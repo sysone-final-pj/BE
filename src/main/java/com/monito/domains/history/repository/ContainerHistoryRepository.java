@@ -27,6 +27,7 @@ public interface ContainerHistoryRepository extends JpaRepository<ContainerStats
         SELECT
             csl.collectedAt,
             c.name,
+            c.containerHash,
             a.agentName,
             c.imageName,
             csl.state,

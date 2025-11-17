@@ -24,6 +24,7 @@ import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -131,7 +132,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             // - logs, storage 집계 데이터 포함
             try {
                 DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
-                        container, agent, statsLog, containerLogRepository, dashboardRepository
+                        container, agent, statsLog, containerLogRepository, dashboardRepository, LocalDate.now()
                 );
                 messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 
