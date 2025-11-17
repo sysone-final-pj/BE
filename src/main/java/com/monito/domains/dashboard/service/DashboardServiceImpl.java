@@ -10,6 +10,7 @@ import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
 import com.monito.domains.dashboard.dto.response.*;
+import com.monito.domains.dashboard.dto.response.metrics.*;
 import com.monito.domains.dashboard.repository.DashboardRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -288,8 +289,11 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId) {
-        log.info("컨테이너 상세 메트릭 조회 - containerId: {}", containerId);
+    public DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId, LocalDate clientDate) {
+        log.info("컨테이너 상세 메트릭 조회 - containerId: {}, clientDate: {}", containerId, clientDate);
+
+        // clientDate가 null이면 서버 시간 사용
+        LocalDate dateToUse = clientDate != null ? clientDate : LocalDate.now();
 
         // 컨테이너 조회
         Container container = containerRepository.findById(containerId)
@@ -307,7 +311,8 @@ public class DashboardServiceImpl implements DashboardService {
                 container.getAgent(),
                 statsLog,
                 containerLogRepository,
-                dashboardRepository
+                dashboardRepository,
+                dateToUse
         );
     }
 }

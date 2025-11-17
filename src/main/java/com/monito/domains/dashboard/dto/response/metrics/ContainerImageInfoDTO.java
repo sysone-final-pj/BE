@@ -1,4 +1,4 @@
-package com.monito.domains.dashboard.dto.response;
+package com.monito.domains.dashboard.dto.response.metrics;
 
 import com.monito.domains.container.domain.Container;
 import lombok.AllArgsConstructor;

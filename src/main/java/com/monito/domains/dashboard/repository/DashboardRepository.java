@@ -1,9 +1,9 @@
 package com.monito.domains.dashboard.repository;
 
 import com.monito.domains.container.domain.Container;
-import com.monito.domains.dashboard.dto.response.AgentContainerCountDTO;
+import com.monito.domains.dashboard.dto.response.metrics.AgentContainerCountDTO;
 import com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO;
-import com.monito.domains.dashboard.dto.response.ContainerStorageUsageDTO;
+import com.monito.domains.dashboard.dto.response.metrics.ContainerStorageUsageDTO;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,7 +17,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
      * Agent별 컨테이너 개수 집계
      * @return Agent별 컨테이너 개수 목록
      */
-    @Query("SELECT new com.monito.domains.dashboard.dto.response.AgentContainerCountDTO(" +
+    @Query("SELECT new com.monito.domains.dashboard.dto.response.metrics.AgentContainerCountDTO(" +
             "a.id, a.agentName, COUNT(c.id)) " +
             "FROM Container c " +
             "JOIN c.agent a " +
@@ -30,7 +30,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
      * @return 전체 컨테이너의 스토리지 할당량과 사용량 목록
      */
     @Query(value = """
-            SELECT new com.monito.domains.dashboard.dto.response.ContainerStorageUsageDTO(
+            SELECT new com.monito.domains.dashboard.dto.response.metrics.ContainerStorageUsageDTO(
                 c.id,
                 c.name,
                 c.storageLimit,
@@ -106,10 +106,8 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                                WHERE sl2.container.id = c.id
                            )
                         )
-                    ELSE null
+                    ELSE com.monito.domains.container.domain.ContainerHealth.NONE
                 END,
-                c.imageName,
-                c.imageId,
                 CASE WHEN f.id IS NOT NULL THEN true ELSE false END
             )
             FROM Container c
@@ -117,12 +115,14 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             LEFT JOIN com.monito.domains.favorite.domain.Favorite f
                 ON f.container.id = c.id
                 AND f.member.id = :memberId
+            WHERE c.state != com.monito.domains.container.domain.ContainerState.UNKNOWN
             ORDER BY
                 CASE WHEN :sort = 'FAVORITE' THEN
                     CASE WHEN f.id IS NOT NULL THEN 0 ELSE 1 END
+                    ELSE NULL
                 END ASC,
-                CASE WHEN :sort = 'FAVORITE' THEN c.name END ASC,
-                CASE WHEN :sort = 'NAME' THEN c.name END ASC,
+                CASE WHEN :sort = 'FAVORITE' THEN c.name ELSE NULL END ASC,
+                CASE WHEN :sort = 'NAME' THEN c.name ELSE NULL END ASC,
                 CASE WHEN :sort = 'CPU' THEN
                     (SELECT sl.cpuPercent
                      FROM ContainerStatsLog sl
@@ -133,6 +133,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                            WHERE sl2.container.id = c.id
                        )
                     )
+                    ELSE NULL
                 END DESC,
                 CASE WHEN :sort = 'MEM' THEN
                     (SELECT sl.memPercent
@@ -144,6 +145,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                            WHERE sl2.container.id = c.id
                        )
                     )
+                    ELSE NULL
                 END DESC
             """)
     List<ContainerCardResponseDTO> findAllContainerCardsForDashboard(
@@ -198,10 +200,8 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                                WHERE sl2.container.id = c.id
                            )
                         )
-                    ELSE null
+                    ELSE com.monito.domains.container.domain.ContainerHealth.NONE
                 END,
-                c.imageName,
-                c.imageId,
                 CASE WHEN f.id IS NOT NULL THEN true ELSE false END
             )
             FROM Container c
@@ -209,7 +209,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             LEFT JOIN com.monito.domains.favorite.domain.Favorite f
                 ON f.container.id = c.id
                 AND f.member.id = :memberId
-            WHERE 1 = 1
+            WHERE c.state != com.monito.domains.container.domain.ContainerState.UNKNOWN
                 AND (:keyword IS NULL OR :keyword = ''
                      OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                      OR LOWER(c.imageName) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -235,9 +235,10 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
             ORDER BY
                 CASE WHEN :sort = 'FAVORITE' THEN
                     CASE WHEN f.id IS NOT NULL THEN 0 ELSE 1 END
+                    ELSE NULL
                 END ASC,
-                CASE WHEN :sort = 'FAVORITE' THEN c.name END ASC,
-                CASE WHEN :sort = 'NAME' THEN c.name END ASC,
+                CASE WHEN :sort = 'FAVORITE' THEN c.name ELSE NULL END ASC,
+                CASE WHEN :sort = 'NAME' THEN c.name ELSE NULL END ASC,
                 CASE WHEN :sort = 'CPU' THEN
                     (SELECT sl.cpuPercent
                      FROM ContainerStatsLog sl
@@ -248,6 +249,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                            WHERE sl2.container.id = c.id
                        )
                     )
+                    ELSE NULL
                 END DESC,
                 CASE WHEN :sort = 'MEM' THEN
                     (SELECT sl.memPercent
@@ -259,6 +261,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                            WHERE sl2.container.id = c.id
                        )
                     )
+                    ELSE NULL
                 END DESC
             """)
     List<ContainerCardResponseDTO> findContainerCardsWithFilters(

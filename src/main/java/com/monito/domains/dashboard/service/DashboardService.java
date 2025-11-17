@@ -4,7 +4,9 @@ import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
 import com.monito.domains.dashboard.dto.response.*;
+import com.monito.domains.dashboard.dto.response.metrics.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -62,7 +64,8 @@ public interface DashboardService {
      * 컨테이너 상세 메트릭 조회 (최초 상세 패널 로드용)
      * WebSocket으로 발행되는 것과 동일한 형식의 데이터 반환
      * @param containerId 컨테이너 ID
+     * @param clientDate 클라이언트의 날짜 (로그 집계 기준, null이면 서버 시간 사용)
      * @return 컨테이너 상세 메트릭 (로그, 스토리지 포함)
      */
-    DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId);
+    DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId, LocalDate clientDate);
 }

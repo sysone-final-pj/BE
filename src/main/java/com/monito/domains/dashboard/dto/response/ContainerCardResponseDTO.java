@@ -4,7 +4,6 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.domain.ContainerStatsLog;
-import com.monito.domains.container.util.ImageIdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -63,16 +62,6 @@ public class ContainerCardResponseDTO {
     private String health;
 
     /**
-     * 이미지 이름
-     */
-    private String imageName;
-
-    /**
-     * 이미지 ID (짧은 버전)
-     */
-    private String imageId;
-
-    /**
      * 즐겨찾기 여부
      */
     private Boolean isFavorite;
@@ -90,8 +79,6 @@ public class ContainerCardResponseDTO {
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
                 .health(statsLog.getHealth().name())
-                .imageName(ImageIdUtil.removePrefix(container.getImageName()))
-                .imageId(ImageIdUtil.removePrefix(container.getImageId()))
                 .isFavorite(false)
                 .build();
     }
@@ -109,8 +96,6 @@ public class ContainerCardResponseDTO {
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
                 .health(statsLog.getHealth().name())
-                .imageName(ImageIdUtil.removePrefix(container.getImageName()))
-                .imageId(ImageIdUtil.removePrefix(container.getImageId()))
                 .isFavorite(isFavorite)
                 .build();
     }
@@ -121,7 +106,6 @@ public class ContainerCardResponseDTO {
     public ContainerCardResponseDTO(Long containerId, String containerName, String containerHash, Long agentId,
                                      BigDecimal cpuPercent, BigDecimal memPercent,
                                      ContainerState state, ContainerHealth health,
-                                     String imageName, String imageId,
                                      Boolean isFavorite) {
         this.containerId = containerId;
         this.containerName = containerName;
@@ -131,8 +115,6 @@ public class ContainerCardResponseDTO {
         this.memPercent = memPercent;
         this.state = state != null ? state.name() : null;
         this.health = health != null ? health.name() : null;
-        this.imageName = ImageIdUtil.removePrefix(imageName);
-        this.imageId = ImageIdUtil.removePrefix(imageId);
         this.isFavorite = isFavorite;
     }
 }

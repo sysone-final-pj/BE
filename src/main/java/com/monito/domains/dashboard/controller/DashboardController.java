@@ -6,8 +6,13 @@ import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
 import com.monito.domains.dashboard.dto.response.*;
+import com.monito.domains.dashboard.dto.response.metrics.AgentContainerCountDTO;
+import com.monito.domains.dashboard.dto.response.BlockIOStatsTimeSeriesDTO;
+import com.monito.domains.dashboard.dto.response.NetworkStatsTimeSeriesDTO;
 import com.monito.domains.dashboard.service.DashboardService;
 import com.monito.global.common.response.ApiResponse;
+
+import java.time.LocalDate;
 import java.util.List;
 
 import com.monito.global.security.userdetails.CustomUserDetails;
@@ -16,6 +21,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -185,18 +191,21 @@ public class DashboardController {
      * 컨테이너 상세 메트릭 조회 (최초 로드용)
      * GET /api/dashboard/containers/{containerId}/metrics
      * @param containerId 컨테이너 ID
+     * @param date 클라이언트 날짜 (로그 집계 기준, 형식: yyyy-MM-dd, 생략 시 서버 시간 사용)
      * @return 컨테이너 상세 메트릭 (중첩 구조, 로그/스토리지 포함)
      */
     @Operation(summary = "컨테이너 상세 메트릭 조회",
-            description = "최초 상세 패널 로드 시 사용하는 API. 중첩 구조로 구성된 컨테이너 상세 정보(로그, 스토리지 포함)를 반환합니다.")
+            description = "최초 상세 패널 로드 시 사용하는 API. 중첩 구조로 구성된 컨테이너 상세 정보(로그, 스토리지 포함)를 반환합니다. date 파라미터로 로그 집계 기준 날짜를 지정할 수 있습니다.")
     @GetMapping("/containers/{containerId}/metrics")
     public ApiResponse<DashboardContainerDetailDTO> getContainerDetailMetrics(
-            @PathVariable Long containerId) {
+            @PathVariable Long containerId,
+            @Parameter(description = "로그 집계 기준 날짜 (yyyy-MM-dd 형식, 생략 시 서버 시간 사용)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        log.info("GET /api/dashboard/containers/{}/metrics - 컨테이너 상세 메트릭 조회", containerId);
+        log.info("GET /api/dashboard/containers/{}/metrics - 컨테이너 상세 메트릭 조회 (date: {})", containerId, date);
 
         DashboardContainerDetailDTO metrics =
-                dashboardService.getContainerDetailMetrics(containerId);
+                dashboardService.getContainerDetailMetrics(containerId, date);
 
         return ApiResponse.ok(metrics, "컨테이너 상세 메트릭을 성공적으로 조회했습니다.");
     }

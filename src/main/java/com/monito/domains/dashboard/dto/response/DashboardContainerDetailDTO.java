@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -77,19 +78,21 @@ public class DashboardContainerDetailDTO {
      *
      * @param containerLogRepository 로그 카운트 조회용
      * @param dashboardRepository 스토리지 사용량 조회용
+     * @param clientDate 클라이언트의 날짜 (해당 날짜의 0시부터 집계)
      */
     public static DashboardContainerDetailDTO forRealtimeUpdateWithMetrics(
             Container container,
             Agent agent,
             ContainerStatsLog statsLog,
             ContainerLogRepository containerLogRepository,
-            DashboardRepository dashboardRepository
+            DashboardRepository dashboardRepository,
+            LocalDate clientDate
     ) {
-        // 당일 0시 계산
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        // 클라이언트 날짜의 0시 계산
+        LocalDateTime startOfDay = clientDate.atStartOfDay();
         LocalDateTime startOfNextDay = startOfDay.plusDays(1);
 
-        // STDOUT 로그 개수 조회
+        // STDOUT 로그 개수 조회 (loggedAt 기준)
         long stdoutCount = containerLogRepository.countByContainerIdAndSourceAndLoggedAtBetween(
                 container.getId(),
                 LogSource.STDOUT,
@@ -97,8 +100,24 @@ public class DashboardContainerDetailDTO {
                 startOfNextDay
         );
 
-        // STDERR 로그 개수 조회
+        // STDERR 로그 개수 조회 (loggedAt 기준)
         long stderrCount = containerLogRepository.countByContainerIdAndSourceAndLoggedAtBetween(
+                container.getId(),
+                LogSource.STDERR,
+                startOfDay,
+                startOfNextDay
+        );
+
+        // STDOUT 로그 개수 조회 (createdAt 기준)
+        long stdoutCountByCreatedAt = containerLogRepository.countByContainerIdAndSourceAndCreatedAtBetween(
+                container.getId(),
+                LogSource.STDOUT,
+                startOfDay,
+                startOfNextDay
+        );
+
+        // STDERR 로그 개수 조회 (createdAt 기준)
+        long stderrCountByCreatedAt = containerLogRepository.countByContainerIdAndSourceAndCreatedAtBetween(
                 container.getId(),
                 LogSource.STDERR,
                 startOfDay,
@@ -114,7 +133,7 @@ public class DashboardContainerDetailDTO {
                 .memory(DashboardMemoryMetricsDTO.from(container, statsLog))
                 .network(DashboardNetworkMetricsDTO.from(statsLog))
                 .blockIO(DashboardBlockIOMetricsDTO.from(statsLog))
-                .logs(DashboardLogsMetricsDTO.of(stdoutCount, stderrCount))
+                .logs(DashboardLogsMetricsDTO.of(stdoutCount, stderrCount, stdoutCountByCreatedAt, stderrCountByCreatedAt))
                 .storage(DashboardStorageMetricsDTO.of(container, storageUsed))
                 .build();
     }
