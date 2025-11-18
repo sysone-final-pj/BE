@@ -9,11 +9,14 @@ import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
+import com.monito.domains.container.dto.response.timeseries.TimeSeriesResponse;
 import java.util.Set;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
+import com.monito.domains.container.repository.projection.TimeSeriesDataPoint;
 import com.monito.domains.container.util.CpuMetricsCalculator;
+import com.monito.domains.container.util.TimeSeriesDownSampler;
 import com.monito.domains.favorite.repository.FavoriteRepository;
 import com.monito.global.cache.*;
 import com.monito.global.exception.ExceptionMessage;
@@ -671,5 +674,167 @@ public class ContainerServiceImpl implements ContainerService {
                 favoriteCache.removeContainerFromAll(container.getId());
             }
         }
+    }
+
+    // ==================== 시계열 데이터 전용 메서드 구현 ====================
+
+    @Override
+    public TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsRequest request) {
+        // 1. 컨테이너 존재 확인
+        if (!containerRepository.existsById(containerId)) {
+            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
+        }
+
+        // 2. 시간 범위 계산
+        LocalDateTime startTime = request.getCalculatedStartTime();
+        LocalDateTime endTime = request.getCalculatedEndTime();
+        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+
+        // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
+        List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findCpuUsageTimeSeries(
+                containerId, startTime, endTime
+        );
+
+        // 4. TimeSeriesDataDTO로 변환
+        List<TimeSeriesDataDTO> rawData = projections.stream()
+                .map(projection -> TimeSeriesDataDTO.builder()
+                        .timestamp(projection.getCollectedAt())
+                        .value(projection.getValue())
+                        .build())
+                .toList();
+
+        // 5. 자동 다운샘플링 적용
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(rawData, totalMinutes);
+
+        // 6. 메타데이터와 함께 응답
+        return TimeSeriesResponse.of(startTime, endTime, sampledData);
+    }
+
+    @Override
+    public TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsRequest request) {
+        // 1. 컨테이너 존재 확인
+        if (!containerRepository.existsById(containerId)) {
+            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
+        }
+
+        // 2. 시간 범위 계산
+        LocalDateTime startTime = request.getCalculatedStartTime();
+        LocalDateTime endTime = request.getCalculatedEndTime();
+        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+
+        // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
+        List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findMemoryUsageTimeSeries(
+                containerId, startTime, endTime
+        );
+
+        // 4. TimeSeriesDataDTO로 변환
+        List<TimeSeriesDataDTO> rawData = projections.stream()
+                .map(projection -> TimeSeriesDataDTO.builder()
+                        .timestamp(projection.getCollectedAt())
+                        .value(projection.getValue())
+                        .build())
+                .toList();
+
+        // 5. 자동 다운샘플링 적용
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(rawData, totalMinutes);
+
+        // 6. 메타데이터와 함께 응답
+        return TimeSeriesResponse.of(startTime, endTime, sampledData);
+    }
+
+    @Override
+    public TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsRequest request) {
+        // 1. 컨테이너 존재 확인
+        if (!containerRepository.existsById(containerId)) {
+            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
+        }
+
+        // 2. 시간 범위 계산
+        LocalDateTime startTime = request.getCalculatedStartTime();
+        LocalDateTime endTime = request.getCalculatedEndTime();
+        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+
+        // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
+        List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findNetworkRxTimeSeries(
+                containerId, startTime, endTime
+        );
+
+        // 4. TimeSeriesDataDTO로 변환 (bytes/sec)
+        List<TimeSeriesDataDTO> rawData = projections.stream()
+                .map(projection -> TimeSeriesDataDTO.builder()
+                        .timestamp(projection.getCollectedAt())
+                        .value(projection.getValue())
+                        .build())
+                .toList();
+
+        // 5. 자동 다운샘플링 적용
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(rawData, totalMinutes);
+
+        // 6. 메타데이터와 함께 응답
+        return TimeSeriesResponse.of(startTime, endTime, sampledData);
+    }
+
+    @Override
+    public TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsRequest request) {
+        // 1. 컨테이너 존재 확인
+        if (!containerRepository.existsById(containerId)) {
+            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
+        }
+
+        // 2. 시간 범위 계산
+        LocalDateTime startTime = request.getCalculatedStartTime();
+        LocalDateTime endTime = request.getCalculatedEndTime();
+        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+
+        // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
+        List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findNetworkTxTimeSeries(
+                containerId, startTime, endTime
+        );
+
+        // 4. TimeSeriesDataDTO로 변환 (bytes/sec)
+        List<TimeSeriesDataDTO> rawData = projections.stream()
+                .map(projection -> TimeSeriesDataDTO.builder()
+                        .timestamp(projection.getCollectedAt())
+                        .value(projection.getValue())
+                        .build())
+                .toList();
+
+        // 5. 자동 다운샘플링 적용
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(rawData, totalMinutes);
+
+        // 6. 메타데이터와 함께 응답
+        return TimeSeriesResponse.of(startTime, endTime, sampledData);
+    }
+
+    @Override
+    public TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsRequest request) {
+        // 1. 컨테이너 존재 확인
+        if (!containerRepository.existsById(containerId)) {
+            throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
+        }
+
+        // 2. 시간 범위 계산
+        LocalDateTime startTime = request.getCalculatedStartTime();
+        LocalDateTime endTime = request.getCalculatedEndTime();
+        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+
+        // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
+        List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findNetworkPacketsTimeSeries(
+                containerId, startTime, endTime
+        );
+
+        // 4. TimeSeriesDataDTO로 변환 (RX + TX packets/sec)
+        List<TimeSeriesDataDTO> rawData = projections.stream()
+                .map(projection -> TimeSeriesDataDTO.builder()
+                        .timestamp(projection.getCollectedAt())
+                        .value(projection.getValue())
+                        .build())
+                .toList();
+
+        // 5. 자동 다운샘플링 적용
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(rawData, totalMinutes);
+
+        // 6. 메타데이터와 함께 응답
+        return TimeSeriesResponse.of(startTime, endTime, sampledData);
     }
 }

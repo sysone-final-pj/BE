@@ -8,6 +8,7 @@ import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
 import com.monito.domains.container.dto.response.DeletedContainerResponseDTO;
+import com.monito.domains.container.dto.response.timeseries.TimeSeriesResponse;
 import com.monito.domains.container.service.ContainerService;
 import com.monito.global.common.response.ApiResponse;
 import com.monito.global.security.userdetails.CustomUserDetails;
@@ -161,6 +162,173 @@ public class ContainerController {
 
         List<DeletedContainerResponseDTO> deletedContainers = containerService.getDeletedContainers();
         return ApiResponse.ok(deletedContainers, "삭제된 컨테이너 목록 조회 성공");
+    }
+
+    // ==================== 시계열 데이터 전용 엔드포인트 ====================
+
+    /**
+     * CPU 사용률(%) 시계열 데이터 조회
+     * GET /api/containers/{id}/metrics/cpu-usage
+     *
+     * Query Parameters:
+     * - quickRange: LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR,
+     *               LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS
+     * - startTime: Custom range 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     * - endTime: Custom range 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     *
+     * 예시:
+     * - Quick Range: GET /api/containers/1/metrics/cpu-usage?quickRange=LAST_1_HOUR
+     * - Custom Range: GET /api/containers/1/metrics/cpu-usage?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
+     *
+     * 응답: TimeSeriesResponse (자동 다운샘플링 적용, 메타데이터 포함)
+     */
+    @GetMapping("/containers/{id}/metrics/cpu-usage")
+    public ApiResponse<TimeSeriesResponse> getCpuUsageTimeSeries(
+            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) QuickRangeType quickRange,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime
+    ) {
+        log.info("CPU 사용률 시계열 데이터 조회 요청 - containerId: {}, quickRange: {}, startTime: {}, endTime: {}",
+                containerId, quickRange, startTime, endTime);
+
+        TimeSeriesResponse response = containerService.getCpuUsageTimeSeries(
+                containerId,
+                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+        );
+        return ApiResponse.ok(response, "CPU 사용률 시계열 데이터 조회 성공");
+    }
+
+    /**
+     * 메모리 사용률(%) 시계열 데이터 조회
+     * GET /api/containers/{id}/metrics/memory-usage
+     *
+     * Query Parameters:
+     * - quickRange: LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR,
+     *               LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS
+     * - startTime: Custom range 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     * - endTime: Custom range 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     *
+     * 예시:
+     * - Quick Range: GET /api/containers/1/metrics/memory-usage?quickRange=LAST_1_HOUR
+     * - Custom Range: GET /api/containers/1/metrics/memory-usage?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
+     *
+     * 응답: TimeSeriesResponse (자동 다운샘플링 적용, 메타데이터 포함)
+     */
+    @GetMapping("/containers/{id}/metrics/memory-usage")
+    public ApiResponse<TimeSeriesResponse> getMemoryUsageTimeSeries(
+            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) QuickRangeType quickRange,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime
+    ) {
+        log.info("메모리 사용률 시계열 데이터 조회 요청 - containerId: {}, quickRange: {}, startTime: {}, endTime: {}",
+                containerId, quickRange, startTime, endTime);
+
+        TimeSeriesResponse response = containerService.getMemoryUsageTimeSeries(
+                containerId,
+                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+        );
+        return ApiResponse.ok(response, "메모리 사용률 시계열 데이터 조회 성공");
+    }
+
+    /**
+     * 네트워크 수신(RX) 속도 시계열 데이터 조회
+     * GET /api/containers/{id}/metrics/network-rx
+     *
+     * Query Parameters:
+     * - quickRange: LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR,
+     *               LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS
+     * - startTime: Custom range 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     * - endTime: Custom range 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     *
+     * 예시:
+     * - Quick Range: GET /api/containers/1/metrics/network-rx?quickRange=LAST_1_HOUR
+     * - Custom Range: GET /api/containers/1/metrics/network-rx?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
+     *
+     * 응답: TimeSeriesResponse (자동 다운샘플링 적용, 메타데이터 포함, 단위: bytes/sec)
+     */
+    @GetMapping("/containers/{id}/metrics/network-rx")
+    public ApiResponse<TimeSeriesResponse> getNetworkRxTimeSeries(
+            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) QuickRangeType quickRange,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime
+    ) {
+        log.info("네트워크 수신 속도 시계열 데이터 조회 요청 - containerId: {}, quickRange: {}, startTime: {}, endTime: {}",
+                containerId, quickRange, startTime, endTime);
+
+        TimeSeriesResponse response = containerService.getNetworkRxTimeSeries(
+                containerId,
+                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+        );
+        return ApiResponse.ok(response, "네트워크 수신 속도 시계열 데이터 조회 성공");
+    }
+
+    /**
+     * 네트워크 송신(TX) 속도 시계열 데이터 조회
+     * GET /api/containers/{id}/metrics/network-tx
+     *
+     * Query Parameters:
+     * - quickRange: LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR,
+     *               LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS
+     * - startTime: Custom range 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     * - endTime: Custom range 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     *
+     * 예시:
+     * - Quick Range: GET /api/containers/1/metrics/network-tx?quickRange=LAST_1_HOUR
+     * - Custom Range: GET /api/containers/1/metrics/network-tx?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
+     *
+     * 응답: TimeSeriesResponse (자동 다운샘플링 적용, 메타데이터 포함, 단위: bytes/sec)
+     */
+    @GetMapping("/containers/{id}/metrics/network-tx")
+    public ApiResponse<TimeSeriesResponse> getNetworkTxTimeSeries(
+            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) QuickRangeType quickRange,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime
+    ) {
+        log.info("네트워크 송신 속도 시계열 데이터 조회 요청 - containerId: {}, quickRange: {}, startTime: {}, endTime: {}",
+                containerId, quickRange, startTime, endTime);
+
+        TimeSeriesResponse response = containerService.getNetworkTxTimeSeries(
+                containerId,
+                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+        );
+        return ApiResponse.ok(response, "네트워크 송신 속도 시계열 데이터 조회 성공");
+    }
+
+    /**
+     * 네트워크 패킷 레이트 시계열 데이터 조회
+     * GET /api/containers/{id}/metrics/network-packets
+     *
+     * Query Parameters:
+     * - quickRange: LAST_5_MINUTES, LAST_10_MINUTES, LAST_30_MINUTES, LAST_1_HOUR,
+     *               LAST_3_HOURS, LAST_6_HOURS, LAST_12_HOURS, LAST_24_HOURS
+     * - startTime: Custom range 시작 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     * - endTime: Custom range 종료 시간 (ISO 8601: yyyy-MM-dd'T'HH:mm:ss)
+     *
+     * 예시:
+     * - Quick Range: GET /api/containers/1/metrics/network-packets?quickRange=LAST_1_HOUR
+     * - Custom Range: GET /api/containers/1/metrics/network-packets?startTime=2025-10-30T08:00:00&endTime=2025-10-30T10:00:00
+     *
+     * 응답: TimeSeriesResponse (자동 다운샘플링 적용, 메타데이터 포함, 단위: packets/sec, RX+TX 합계)
+     */
+    @GetMapping("/containers/{id}/metrics/network-packets")
+    public ApiResponse<TimeSeriesResponse> getNetworkPacketsTimeSeries(
+            @PathVariable("id") Long containerId,
+            @RequestParam(required = false) QuickRangeType quickRange,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime
+    ) {
+        log.info("네트워크 패킷 레이트 시계열 데이터 조회 요청 - containerId: {}, quickRange: {}, startTime: {}, endTime: {}",
+                containerId, quickRange, startTime, endTime);
+
+        TimeSeriesResponse response = containerService.getNetworkPacketsTimeSeries(
+                containerId,
+                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+        );
+        return ApiResponse.ok(response, "네트워크 패킷 레이트 시계열 데이터 조회 성공");
     }
 
 }

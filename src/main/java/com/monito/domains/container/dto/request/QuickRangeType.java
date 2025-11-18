@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum QuickRangeType {
+    LAST_1_MINUTES(1, "최근 1분"),
     LAST_5_MINUTES(5, "최근 5분"),
     LAST_10_MINUTES(10, "최근 10분"),
     LAST_30_MINUTES(30, "최근 30분"),
