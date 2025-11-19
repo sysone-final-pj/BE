@@ -71,4 +71,18 @@ public interface ContainerRepository extends JpaRepository<Container, Long>, Jpa
             "ORDER BY c.updated_at DESC",
             nativeQuery = true)
     List<Container> findAllDeletedWithin24Hours(@Param("since") LocalDateTime since);
+
+    /**
+     * 히스토리 조회용 컨테이너 목록 조회 (isDeleted 필터링)
+     * - @SQLRestriction 우회를 위해 네이티브 쿼리 사용
+     * - isDeleted가 null이면 전체 조회, 0이면 활성만, 1이면 삭제된 것만
+     * @param isDeleted 삭제 여부 (0: 활성, 1: 삭제됨, null: 전체)
+     * @return 컨테이너 기본 정보 리스트 (id, name, containerHash, isDeleted)
+     */
+    @Query(value = "SELECT c.id, c.name, c.container_hash, c.is_deleted " +
+            "FROM containers c " +
+            "WHERE (:isDeleted IS NULL OR c.is_deleted = :isDeleted) " +
+            "ORDER BY c.is_deleted ASC, c.name ASC",
+            nativeQuery = true)
+    List<Object[]> findContainerListForHistory(@Param("isDeleted") Integer isDeleted);
 }

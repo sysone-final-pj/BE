@@ -2,6 +2,7 @@ package com.monito.domains.history.controller;
 
 import com.monito.domains.history.dto.request.ContainerHistoryRequest;
 import com.monito.domains.history.dto.response.ContainerHistoryPageResponse;
+import com.monito.domains.history.dto.response.ContainerListForHistoryDTO;
 import com.monito.domains.history.service.ContainerHistoryService;
 import com.monito.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 컨테이너 히스토리 API Controller
@@ -43,77 +45,77 @@ public class HistoryController {
     )
     @GetMapping("/containers")
     public ApiResponse<ContainerHistoryPageResponse> getContainerHistory(
-            @Parameter(
-                    description = "조회 시작 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)",
-                    required = true,
-                    example = "2024-01-01T00:00:00"
-            )
+            @Parameter(description = "조회 시작 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)", required = true, example = "2024-01-01T00:00:00")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
 
-            @Parameter(
-                    description = "조회 종료 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)",
-                    required = true,
-                    example = "2024-01-31T23:59:59"
-            )
+            @Parameter(description = "조회 종료 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)", required = true, example = "2024-01-31T23:59:59")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
 
-            @Parameter(
-                    description = "컨테이너 ID (선택, 특정 컨테이너만 조회)",
-                    example = "123"
-            )
+            @Parameter(description = "컨테이너 ID (선택, 특정 컨테이너만 조회)", example = "123")
             @RequestParam(required = false) Long containerId,
 
-            @Parameter(
-                    description = """
-                            삭제 여부 필터:
-                            - 0: 활성 컨테이너만 조회
-                            - 1: 삭제된 컨테이너만 조회
-                            - null: 전체 조회 (삭제 여부 관계없이)
-                            """,
-                    example = "0"
-            )
+            @Parameter(description = "삭제 여부 필터 (0: 활성, 1: 삭제됨, null: 전체)", example = "0")
             @RequestParam(required = false) Integer isDeleted,
 
-            @Parameter(
-                    description = "페이지 번호 (0부터 시작)",
-                    example = "0"
-            )
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") Integer page,
 
-            @Parameter(
-                    description = "페이지 크기 (한 페이지당 데이터 개수)",
-                    example = "20"
-            )
+            @Parameter(description = "페이지 크기 (한 페이지당 데이터 개수)", example = "20")
             @RequestParam(defaultValue = "20") Integer size,
 
-            @Parameter(
-                    description = "정렬 기준 (엔티티 필드명, 예: collectedAt, cpuPercent, memUsage 등)",
-                    example = "collectedAt"
-            )
+            @Parameter(description = "정렬 기준 (엔티티 필드명)", example = "collectedAt")
             @RequestParam(defaultValue = "collectedAt") String sortBy,
 
-            @Parameter(
-                    description = "정렬 방향 (ASC: 오름차순, DESC: 내림차순)",
-                    example = "DESC"
-            )
+            @Parameter(description = "정렬 방향 (ASC: 오름차순, DESC: 내림차순)", example = "DESC")
             @RequestParam(defaultValue = "DESC") String sortDirection
     ) {
         log.info("컨테이너 히스토리 조회 요청 - startTime: {}, endTime: {}, containerId: {}, isDeleted: {}, page: {}, size: {}",
                 startTime, endTime, containerId, isDeleted, page, size);
 
         ContainerHistoryRequest request = new ContainerHistoryRequest(
-                startTime,
-                endTime,
-                containerId,
-                isDeleted,
-                page,
-                size,
-                sortBy,
-                sortDirection
+                startTime, endTime, containerId, isDeleted,
+                page, size, sortBy, sortDirection
         );
 
         ContainerHistoryPageResponse response = containerHistoryService.getContainerHistory(request);
 
         return ApiResponse.ok(response);
+    }
+
+    @Operation(
+            summary = "히스토리 조회용 컨테이너 목록",
+            description = """
+                    히스토리 조회 시 필터링할 수 있도록 컨테이너 목록을 제공합니다.
+
+                    **주요 기능:**
+                    - 활성 컨테이너와 삭제된 컨테이너 목록 조회
+                    - 컨테이너 ID, 이름, 해시 정보 제공
+                    - 삭제 여부 필터링 지원
+
+                    **반환 필드:**
+                    - id: 컨테이너 ID
+                    - containerName: 컨테이너 이름
+                    - containerHash: 컨테이너 해시 (12자리)
+                    - isDeleted: 삭제 여부 (0: 활성, 1: 삭제됨)
+                    """
+    )
+    @GetMapping("/containers/list")
+    public ApiResponse<List<ContainerListForHistoryDTO>> getContainerListForHistory(
+            @Parameter(
+                    description = """
+                            삭제 여부 필터:
+                            - 0: 활성 컨테이너만 조회
+                            - 1: 삭제된 컨테이너만 조회
+                            - null: 전체 조회 (활성 + 삭제됨)
+                            """,
+                    example = "0"
+            )
+            @RequestParam(required = false) Integer isDeleted
+    ) {
+        log.info("히스토리 조회용 컨테이너 목록 요청 - isDeleted: {}", isDeleted);
+
+        List<ContainerListForHistoryDTO> containers = containerHistoryService.getContainerListForHistory(isDeleted);
+
+        return ApiResponse.ok(containers, "컨테이너 목록을 성공적으로 조회했습니다.");
     }
 }

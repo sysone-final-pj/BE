@@ -151,7 +151,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             // - logs, storage 집계 데이터 포함
             try {
                 DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
-                        container, agent, statsLog, containerLogRepository, dashboardRepository
+                        container, agent, statsLog, containerLogRepository, dashboardRepository, LocalDate.now()
                 );
                 messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 

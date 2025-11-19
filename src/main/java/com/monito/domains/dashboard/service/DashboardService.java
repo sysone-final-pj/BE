@@ -4,7 +4,9 @@ import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
 import com.monito.domains.dashboard.dto.response.*;
+import com.monito.domains.dashboard.dto.response.metrics.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -23,43 +25,10 @@ public interface DashboardService {
     List<ContainerCardResponseDTO> getAllContainers(ContainerSortType sortType, Long memberId, ContainerFilterDTO filter);
 
     /**
-     * 특정 Agent의 컨테이너 목록 조회 (최신 통계 포함)
-     * @param agentId Agent ID
-     * @return Agent에 속한 컨테이너 목록
-     */
-    List<ContainerDashboardResponseDTO> getContainersByAgentId(Long agentId);
-
-    /**
      * Agent별 컨테이너 개수 집계
      * @return Agent별 컨테이너 개수 목록 (개수 내림차순)
      */
     List<AgentContainerCountDTO> getContainerCountByAgent();
-
-    /**
-     * Agent별 컨테이너 그룹핑 (컨테이너 리스트 포함)
-     * @return Agent별 컨테이너 그룹 목록 (개수 내림차순)
-     */
-    List<AgentContainerGroupDTO> getContainersGroupedByAgent();
-
-    /**
-     * 구동중인 컨테이너 목록 조회 (state = RUNNING)
-     * @return RUNNING 상태의 컨테이너 목록
-     */
-    List<ContainerDashboardResponseDTO> getRunningContainers();
-
-    /**
-     * 특정 컨테이너 상세 정보 조회
-     * @param containerId 컨테이너 ID
-     * @return 컨테이너 상세 정보
-     */
-    ContainerDashboardResponseDTO getContainerDetail(Long containerId);
-
-    /**
-     * 모든 컨테이너 목록 조회 (즐겨찾기 우선 정렬)
-     * @param memberId Member ID
-     * @return 즐겨찾기가 먼저 오는 모든 컨테이너 목록
-     */
-    List<ContainerWithFavoriteDTO> getAllContainersSortedByFavorite(Long memberId);
 
     /**
      * 당일 0시 기준 STDOUT/STDERR 로그 개수 조회
@@ -95,7 +64,8 @@ public interface DashboardService {
      * 컨테이너 상세 메트릭 조회 (최초 상세 패널 로드용)
      * WebSocket으로 발행되는 것과 동일한 형식의 데이터 반환
      * @param containerId 컨테이너 ID
+     * @param clientDate 클라이언트의 날짜 (로그 집계 기준, null이면 서버 시간 사용)
      * @return 컨테이너 상세 메트릭 (로그, 스토리지 포함)
      */
-    DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId);
+    DashboardContainerDetailDTO getContainerDetailMetrics(Long containerId, LocalDate clientDate);
 }

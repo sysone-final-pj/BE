@@ -6,8 +6,13 @@ import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
 import com.monito.domains.dashboard.dto.request.ContainerSortType;
 import com.monito.domains.dashboard.dto.request.TimeRange;
 import com.monito.domains.dashboard.dto.response.*;
+import com.monito.domains.dashboard.dto.response.metrics.AgentContainerCountDTO;
+import com.monito.domains.dashboard.dto.response.BlockIOStatsTimeSeriesDTO;
+import com.monito.domains.dashboard.dto.response.NetworkStatsTimeSeriesDTO;
 import com.monito.domains.dashboard.service.DashboardService;
 import com.monito.global.common.response.ApiResponse;
+
+import java.time.LocalDate;
 import java.util.List;
 
 import com.monito.global.security.userdetails.CustomUserDetails;
@@ -16,6 +21,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -124,105 +130,6 @@ public class DashboardController {
         return ApiResponse.ok(agentContainerCounts, "Agent별 컨테이너 개수를 성공적으로 집계했습니다.");
     }
 
-    /**
-     * Agent별 컨테이너 그룹핑 (컨테이너 리스트 포함)
-     * GET /api/dashboard/containers/group-by-agent
-     * @return Agent별 컨테이너 그룹 목록 (개수 내림차순)
-     */
-    @Operation(summary = "Agent별 컨테이너 그룹 조회",
-            description = "agent별 컨테이너 수와 컨테이너 리스트 포함")
-    @GetMapping("/containers/group-by-agent")
-    public ApiResponse<List<AgentContainerGroupDTO>> getContainersGroupedByAgent() {
-        log.info("GET /api/dashboard/containers/group-by-agent - Agent별 컨테이너 그룹핑 (리스트 포함)");
-
-        List<AgentContainerGroupDTO> agentGroups = dashboardService.getContainersGroupedByAgent();
-
-        return ApiResponse.ok(agentGroups, "Agent별 컨테이너 그룹을 성공적으로 조회했습니다.");
-    }
-
-    /**
-     * 구동중인 컨테이너 목록 조회
-     * GET /api/dashboard/containers/running
-     * @return RUNNING 상태의 컨테이너 목록
-     */
-    @Operation(summary = "구동중인 컨테이너 조회",
-            description = "state=RUNNING인 컨테이너만 조회")
-    @GetMapping("/containers/running")
-    public ApiResponse<List<ContainerDashboardResponseDTO>> getRunningContainers() {
-        log.info("GET /api/dashboard/containers/running - 구동중인 컨테이너 목록 조회");
-
-        List<ContainerDashboardResponseDTO> runningContainers = dashboardService.getRunningContainers();
-
-        return ApiResponse.ok(runningContainers, "구동중인 컨테이너 목록을 성공적으로 조회했습니다.");
-    }
-
-    /**
-     * 특정 컨테이너 상세 정보 조회
-     * GET /api/dashboard/containers/{containerId}
-     * @param containerId 컨테이너 ID
-     * @return 컨테이너 상세 정보 (이미지 정보 포함)
-     */
-    @Operation(summary = "컨테이너 상세 조회",
-            description = "특정 컨테이너의 상세 정보 (imageName, imageSize 포함)")
-    @GetMapping("/containers/{containerId}")
-    public ApiResponse<ContainerDashboardResponseDTO> getContainerDetail(
-            @PathVariable Long containerId) {
-        log.info("GET /api/dashboard/containers/{} - 컨테이너 상세 정보 조회", containerId);
-
-        ContainerDashboardResponseDTO container = dashboardService.getContainerDetail(containerId);
-
-        return ApiResponse.ok(container, "컨테이너 상세 정보를 성공적으로 조회했습니다.");
-    }
-
-    /**
-     * 모든 컨테이너 목록 조회 (즐겨찾기 우선 정렬)
-     * GET /api/dashboard/favorites
-     * @param userDetails 현재 로그인한 사용자 ID
-     * @return 즐겨찾기가 먼저 오는 모든 컨테이너 목록 (최신 통계 포함)
-     */
-    @Operation(summary = "모든 컨테이너 조회 (즐겨찾기 우선)",
-            description = "즐겨찾기 컨테이너가 먼저 오고, 나머지 컨테이너가 뒤따르는 전체 목록 조회")
-    @GetMapping("/favorites")
-    public ApiResponse<List<ContainerWithFavoriteDTO>> getAllContainersSortedByFavorite(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        log.info("GET /api/dashboard/favorites - 즐겨찾기 우선 정렬된 컨테이너 목록 조회 - memberId: {}", userDetails.getId());
-
-        List<ContainerWithFavoriteDTO> containers = dashboardService.getAllContainersSortedByFavorite(Long.valueOf(userDetails.getId()));
-
-        return ApiResponse.ok(containers, "즐겨찾기 우선 정렬된 컨테이너 목록을 성공적으로 조회했습니다.");
-    }
-
-    /**
-     * 당일 0시 기준 STDOUT/STDERR 로그 개수 조회
-     * GET /api/dashboard/logs/daily-count
-     * @return 당일 STDOUT/STDERR 로그 개수
-     */
-    @Operation(summary = "당일 로그 개수 조회",
-            description = "당일 0시 기준으로 STDOUT과 STDERR 로그의 개수를 조회합니다.")
-    @GetMapping("/logs/daily-count")
-    public ApiResponse<DailyLogCountDTO> getDailyLogCount() {
-        log.info("GET /api/dashboard/logs/daily-count - 당일 로그 개수 조회");
-
-        DailyLogCountDTO dailyLogCount = dashboardService.getDailyLogCount();
-
-        return ApiResponse.ok(dailyLogCount, "당일 로그 개수를 성공적으로 조회했습니다.");
-    }
-
-    /**
-     * 전체 컨테이너의 스토리지 사용량 조회
-     * GET /api/dashboard/containers/storage-usage
-     * @return 전체 컨테이너의 스토리지 할당량과 사용량 목록
-     */
-    @Operation(summary = "컨테이너 스토리지 사용량 조회",
-            description = "전체 컨테이너의 스토리지 할당량(storageLimit)과 현재 사용량(sizeRootFs)을 조회합니다.")
-    @GetMapping("/containers/storage-usage")
-    public ApiResponse<List<ContainerStorageUsageDTO>> getAllContainerStorageUsage() {
-        log.info("GET /api/dashboard/containers/storage-usage - 전체 컨테이너 스토리지 사용량 조회");
-
-        List<ContainerStorageUsageDTO> storageUsage = dashboardService.getAllContainerStorageUsage();
-
-        return ApiResponse.ok(storageUsage, "컨테이너 스토리지 사용량을 성공적으로 조회했습니다.");
-    }
 
     /**
      * 컨테이너의 네트워크 통계 시계열 데이터 조회
@@ -284,18 +191,21 @@ public class DashboardController {
      * 컨테이너 상세 메트릭 조회 (최초 로드용)
      * GET /api/dashboard/containers/{containerId}/metrics
      * @param containerId 컨테이너 ID
+     * @param date 클라이언트 날짜 (로그 집계 기준, 형식: yyyy-MM-dd, 생략 시 서버 시간 사용)
      * @return 컨테이너 상세 메트릭 (중첩 구조, 로그/스토리지 포함)
      */
     @Operation(summary = "컨테이너 상세 메트릭 조회",
-            description = "최초 상세 패널 로드 시 사용하는 API. 중첩 구조로 구성된 컨테이너 상세 정보(로그, 스토리지 포함)를 반환합니다.")
+            description = "최초 상세 패널 로드 시 사용하는 API. 중첩 구조로 구성된 컨테이너 상세 정보(로그, 스토리지 포함)를 반환합니다. date 파라미터로 로그 집계 기준 날짜를 지정할 수 있습니다.")
     @GetMapping("/containers/{containerId}/metrics")
     public ApiResponse<DashboardContainerDetailDTO> getContainerDetailMetrics(
-            @PathVariable Long containerId) {
+            @PathVariable Long containerId,
+            @Parameter(description = "로그 집계 기준 날짜 (yyyy-MM-dd 형식, 생략 시 서버 시간 사용)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        log.info("GET /api/dashboard/containers/{}/metrics - 컨테이너 상세 메트릭 조회", containerId);
+        log.info("GET /api/dashboard/containers/{}/metrics - 컨테이너 상세 메트릭 조회 (date: {})", containerId, date);
 
         DashboardContainerDetailDTO metrics =
-                dashboardService.getContainerDetailMetrics(containerId);
+                dashboardService.getContainerDetailMetrics(containerId, date);
 
         return ApiResponse.ok(metrics, "컨테이너 상세 메트릭을 성공적으로 조회했습니다.");
     }

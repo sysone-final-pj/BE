@@ -1,4 +1,4 @@
-package com.monito.domains.dashboard.dto.response;
+package com.monito.domains.dashboard.dto.response.metrics;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

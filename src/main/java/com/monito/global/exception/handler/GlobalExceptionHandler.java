@@ -5,6 +5,7 @@ import com.monito.global.exception.BadRequestException;
 import com.monito.global.exception.ConflictException;
 import com.monito.global.exception.ForbiddenException;
 import com.monito.global.exception.NotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -138,6 +140,34 @@ public class GlobalExceptionHandler {
         problemDetail.setTitle("접근 권한 없음");
 
         log.warn("Access denied: {}", e.getMessage());
+        return problemDetail;
+    }
+
+    /**
+     * 정적 리소스를 찾을 수 없는 경우 (favicon.ico, robots.txt 등)
+     * 클라이언트가 존재하지 않는 정적 리소스를 요청할 때 발생 (일반적인 상황)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    ProblemDetail handleNoResourceFoundException(
+            final NoResourceFoundException e,
+            HttpServletRequest request
+    ) {
+        // 요청 출처 파악을 위한 상세 로깅
+        log.warn("Static resource not found - Path: {} | Method: {} | User-Agent: {} | Referer: {} | Remote-Addr: {}",
+                e.getResourcePath(),
+                request.getMethod(),
+                request.getHeader("User-Agent"),
+                request.getHeader("Referer"),
+                request.getRemoteAddr()
+        );
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                "요청한 리소스를 찾을 수 없습니다."
+        );
+        problemDetail.setTitle("리소스 없음");
+        problemDetail.setProperty("resourcePath", e.getResourcePath());
+
         return problemDetail;
     }
 

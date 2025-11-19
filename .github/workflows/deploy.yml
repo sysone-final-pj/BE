@@ -114,6 +114,7 @@ jobs:
               --name monito-backend \
               -p 8080:8080 \
               --env-file ~/backend.env \
+              -e TZ=Asia/Seoul \
               --restart unless-stopped \
               --network monito-network \
               --health-cmd="nc -z localhost 8080 || exit 1" \
