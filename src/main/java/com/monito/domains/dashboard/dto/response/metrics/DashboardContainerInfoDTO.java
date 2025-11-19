@@ -24,6 +24,9 @@ public class DashboardContainerInfoDTO {
     @Schema(description = "컨테이너 ID")
     private Long containerId;
 
+    @Schema(description = "Agent ID")
+    private Long agentId;
+
     @Schema(description = "Agent 이름")
     private String agentName;
 
@@ -76,6 +79,7 @@ public class DashboardContainerInfoDTO {
 
         return DashboardContainerInfoDTO.builder()
                 .containerId(container.getId())
+                .agentId(agent.getId())
                 .agentName(agent.getAgentName())
                 .containerName(container.getName())
                 .containerHash(container.getContainerHash())
