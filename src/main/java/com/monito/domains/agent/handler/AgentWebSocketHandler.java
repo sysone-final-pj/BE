@@ -35,7 +35,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 @Slf4j
 public class AgentWebSocketHandler extends TextWebSocketHandler {
-    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;

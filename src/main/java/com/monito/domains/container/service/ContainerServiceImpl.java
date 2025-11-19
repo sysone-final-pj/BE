@@ -47,7 +47,6 @@ public class ContainerServiceImpl implements ContainerService {
     private final ContainerRepository containerRepository;
     private final ContainerStatsLogRepository containerStatsLogRepository;
     private final ContainerLogRepository containerLogRepository;
-    private final AgentMetadataCache agentMetadataCache;
     private final AgentRepository agentRepository;
     private final OomEventCache oomEventCache;
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
