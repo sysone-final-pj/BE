@@ -4,6 +4,7 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.alert.facade.AlertEvaluationFacade;
 import com.monito.domains.container.domain.Container;
+import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.domain.ContainerStatsLog;
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
@@ -58,7 +59,22 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             // 1. 입력값 검증
             validateMetricsRequest(metricsDto);
 
-            // 2. Agent 조회
+            // 2. running 상태가 아닌 컨테이너는 메트릭 수집 스킵
+            // (created, restarting, paused, exited, dead 등은 메트릭이 null이거나 의미 없음)
+            if (!isRunningState(metricsDto)) {
+                log.debug("메트릭 수집 스킵 - 컨테이너 상태가 running이 아님: {}, Hash: {}",
+                        metricsDto.getState(), metricsDto.getContainerHash());
+                return;
+            }
+
+            // 3. running 상태여도 필수 메트릭이 null이면 스킵 (막 시작된 컨테이너)
+            if (!hasRequiredMetrics(metricsDto)) {
+                log.debug("메트릭 수집 스킵 - 필수 메트릭이 null (컨테이너 시작 중): {}, Hash: {}",
+                        metricsDto.getState(), metricsDto.getContainerHash());
+                return;
+            }
+
+            // 3. Agent 조회
             Agent agent = agentRepository.findByAgentKey(agentKey)
                     .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
 
@@ -181,6 +197,26 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         if (metricsDto.getContainerHash().length() < 12) {
             throw new BadRequestException(ExceptionMessage.CONTAINER_HASH_INVALID);
         }
+    }
+
+    /**
+     * running 상태인지 확인
+     * - Docker의 컨테이너는 running 상태일 때만 의미있는 메트릭을 제공
+     * - created, restarting, paused, exited, dead 등의 상태는 메트릭이 null이거나 의미 없음
+     */
+    private boolean isRunningState(ContainerMetricsRequestDTO metricsDto) {
+        return ContainerState.RUNNING.equals(metricsDto.getState());
+    }
+
+    /**
+     * 필수 메트릭이 존재하는지 확인
+     * - running 상태여도 막 시작된 컨테이너는 메트릭이 null일 수 있음
+     * - Docker가 메트릭 수집을 시작하기까지 1-2초 소요
+     */
+    private boolean hasRequiredMetrics(ContainerMetricsRequestDTO metricsDto) {
+        return metricsDto.getOnlineCpus() != null
+                && metricsDto.getMemUsage() != null
+                && metricsDto.getMemLimit() != null;
     }
 
     /**

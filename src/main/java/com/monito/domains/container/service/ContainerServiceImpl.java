@@ -648,8 +648,11 @@ public class ContainerServiceImpl implements ContainerService {
         Agent agent = agentRepository.findByAgentKey(agentKey)
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
 
-        // 2. DB에서 해당 Agent의 활성 컨테이너 조회
+        // 2. DB에서 해당 Agent의 활성 컨테이너 조회 (is_deleted = 0)
         List<Container> dbContainers = containerRepository.findAllByAgent_Id(agent.getId());
+
+        log.info("🔄 Agent 컨테이너 동기화 - Agent: {}, DB 활성 컨테이너: {}개, Agent 보고: {}개",
+                agentKey, dbContainers.size(), agentContainerHashes.size());
 
         // 3. DB에는 있지만 Agent가 보내지 않은 컨테이너 = 삭제된 것
         List<Container> missingContainers = dbContainers.stream()
@@ -658,13 +661,12 @@ public class ContainerServiceImpl implements ContainerService {
 
         // 4. 삭제 처리
         if (!missingContainers.isEmpty()) {
-            log.info("Agent 동기화 - 삭제된 컨테이너 감지: {}개 (Agent: {})",
-                    missingContainers.size(), agentKey);
+            log.warn("⚠️  삭제된 컨테이너 감지: {}개", missingContainers.size());
 
             for (Container container : missingContainers) {
                 container.markAsDeleted();
-                log.info("컨테이너 자동 삭제 처리 - Agent: {}, ContainerHash: {}, Name: {}",
-                        agentKey, container.getContainerHash(), container.getName());
+                log.warn("   🗑️  컨테이너 삭제 처리 - ID: {}, Hash: {}, Name: {}",
+                        container.getId(), container.getContainerHash(), container.getName());
 
                 // 캐시 및 관련 데이터 삭제
                 cpuMetricsBufferCache.removeContainer(container.getId());
@@ -673,6 +675,10 @@ public class ContainerServiceImpl implements ContainerService {
                 favoriteRepository.deleteByContainerId(container.getId());
                 favoriteCache.removeContainerFromAll(container.getId());
             }
+
+            log.info("✅ 컨테이너 동기화 완료 - {}개 삭제 처리됨", missingContainers.size());
+        } else {
+            log.info("✅ 컨테이너 동기화 완료 - 삭제할 컨테이너 없음 (DB와 Agent 일치)");
         }
     }
 
