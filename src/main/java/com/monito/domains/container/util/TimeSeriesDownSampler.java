@@ -118,32 +118,4 @@ public class TimeSeriesDownSampler {
 
         return sum.divide(BigDecimal.valueOf(count), 4, RoundingMode.HALF_UP);
     }
-
-    /**
-     * 다운샘플링 정보 계산 (디버깅/모니터링용)
-     */
-    public static SamplingInfo getSamplingInfo(int originalSize, long totalMinutes) {
-        int interval = determineSamplingInterval(totalMinutes);
-        int sampledSize = interval == 1 ? originalSize : (int) Math.ceil((double) originalSize / interval);
-        int intervalSeconds = interval * 5; // 원본 수집 간격 5초
-
-        return new SamplingInfo(originalSize, sampledSize, intervalSeconds, interval > 1);
-    }
-
-    /**
-     * 샘플링 정보를 담는 클래스
-     */
-    public static class SamplingInfo {
-        public final int originalDataPoints;
-        public final int sampledDataPoints;
-        public final int samplingIntervalSeconds;
-        public final boolean downSampled;
-
-        public SamplingInfo(int originalDataPoints, int sampledDataPoints, int samplingIntervalSeconds, boolean downSampled) {
-            this.originalDataPoints = originalDataPoints;
-            this.sampledDataPoints = sampledDataPoints;
-            this.samplingIntervalSeconds = samplingIntervalSeconds;
-            this.downSampled = downSampled;
-        }
-    }
 }
