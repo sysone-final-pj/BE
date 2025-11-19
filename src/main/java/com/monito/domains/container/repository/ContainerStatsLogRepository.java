@@ -87,16 +87,18 @@ public interface ContainerStatsLogRepository extends JpaRepository<ContainerStat
     );
 
     /**
-     * 메모리 사용률(%) 시계열 데이터 조회 (최적화)
+     * 메모리 사용량(MB) 시계열 데이터 조회 (최적화)
      * - Projection 사용으로 필요한 컬럼만 조회
      * - Covering Index (IDX_CONTAINER_STATS_TIMESERIES) 활용
+     * - bytes를 MB로 변환 (1 MB = 1024 * 1024 bytes)
      *
      * @param containerId 컨테이너 ID
      * @param startTime 시작 시간
      * @param endTime 종료 시간
-     * @return 메모리 사용률 시계열 데이터
+     * @return 메모리 사용량 시계열 데이터 (단위: MB)
      */
-    @Query("SELECT csl.collectedAt as collectedAt, csl.memPercent as value " +
+    @Query("SELECT csl.collectedAt as collectedAt, " +
+           "CAST(csl.memUsage / 1048576.0 AS java.math.BigDecimal) as value " +
            "FROM ContainerStatsLog csl " +
            "WHERE csl.container.id = :containerId " +
            "AND csl.collectedAt BETWEEN :startTime AND :endTime " +
