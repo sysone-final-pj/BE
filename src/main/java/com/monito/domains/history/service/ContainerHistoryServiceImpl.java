@@ -33,6 +33,9 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
 
     @Override
     public ContainerHistoryPageResponse getContainerHistory(ContainerHistoryRequest request) {
+        // 엔티티 필드명을 데이터베이스 컬럼명으로 변환(네이티브쿼리)
+        String sortColumn = convertToColumnName(request.getSortBy());
+
         // 페이지 요청 생성 (정렬 포함)
         Pageable pageable = PageRequest.of(
                 request.getPage(),
@@ -41,7 +44,7 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
                         "DESC".equalsIgnoreCase(request.getSortDirection())
                                 ? Sort.Direction.DESC
                                 : Sort.Direction.ASC,
-                        request.getSortBy()
+                        sortColumn
                 )
         );
 
@@ -81,68 +84,68 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
 
         return ContainerHistoryResponse.builder()
                 // 기본 정보
-                .collectedAt((LocalDateTime) row[idx++])
+                .collectedAt(toLocalDateTime(row[idx++]))
                 .containerName((String) row[idx++])
                 .containerHash((String) row[idx++])
                 .agentName((String) row[idx++])
                 .imgNameTag((String) row[idx++])
-                .state((ContainerState) row[idx++])
-                .health((ContainerHealth) row[idx++])
-                .containerCreatedAt((LocalDateTime) row[idx++])
-                .isDeleted((Integer) row[idx++])
+                .state(ContainerState.valueOf((String) row[idx++]))
+                .health(ContainerHealth.valueOf((String) row[idx++]))
+                .containerCreatedAt(toLocalDateTime(row[idx++]))
+                .isDeleted(((Number) row[idx++]).intValue())
 
                 // CPU 메트릭
-                .cpuPercent((BigDecimal) row[idx++])
-                .cpuCoreUsage((BigDecimal) row[idx++])
-                .hostCpuUsageTotal((Long) row[idx++])
-                .cpuUsageTotal((Long) row[idx++])
-                .cpuUser((Long) row[idx++])
-                .cpuSystem((Long) row[idx++])
-                .cpuQuota((Long) row[idx++])
-                .cpuPeriod((Long) row[idx++])
-                .onlineCpus((Integer) row[idx++])
-                .throttlingPeriods((Long) row[idx++])
-                .throttledPeriods((Long) row[idx++])
-                .throttledTime((Long) row[idx++])
-                .cpuLimitCores((BigDecimal) row[idx++])
-                .isCpuUnlimited((Boolean) row[idx++])
+                .cpuPercent(toBigDecimal(row[idx++]))
+                .cpuCoreUsage(toBigDecimal(row[idx++]))
+                .hostCpuUsageTotal(toLong(row[idx++]))
+                .cpuUsageTotal(toLong(row[idx++]))
+                .cpuUser(toLong(row[idx++]))
+                .cpuSystem(toLong(row[idx++]))
+                .cpuQuota(toLong(row[idx++]))
+                .cpuPeriod(toLong(row[idx++]))
+                .onlineCpus(toInteger(row[idx++]))
+                .throttlingPeriods(toLong(row[idx++]))
+                .throttledPeriods(toLong(row[idx++]))
+                .throttledTime(toLong(row[idx++]))
+                .cpuLimitCores(toBigDecimal(row[idx++]))
+                .isCpuUnlimited(toBoolean(row[idx++]))
 
                 // Memory 메트릭
-                .memPercent((BigDecimal) row[idx++])
-                .memUsage((Long) row[idx++])
-                .memMaxUsage((Long) row[idx++])
-                .memLimit((Long) row[idx++])
-                .isMemoryUnlimited((Boolean) row[idx++])
-                .lastOomKilledAt((LocalDateTime) row[idx++])
+                .memPercent(toBigDecimal(row[idx++]))
+                .memUsage(toLong(row[idx++]))
+                .memMaxUsage(toLong(row[idx++]))
+                .memLimit(toLong(row[idx++]))
+                .isMemoryUnlimited(toBoolean(row[idx++]))
+                .lastOomKilledAt(toLocalDateTime(row[idx++]))
 
                 // Block I/O 메트릭
-                .blkRead((Long) row[idx++])
-                .blkWrite((Long) row[idx++])
-                .blkReadPerSec((Long) row[idx++])
-                .blkWritePerSec((Long) row[idx++])
+                .blkRead(toLong(row[idx++]))
+                .blkWrite(toLong(row[idx++]))
+                .blkReadPerSec(toLong(row[idx++]))
+                .blkWritePerSec(toLong(row[idx++]))
 
                 // Network 메트릭
-                .rxBytes((Long) row[idx++])
-                .txBytes((Long) row[idx++])
-                .rxPackets((Long) row[idx++])
-                .txPackets((Long) row[idx++])
-                .networkTotalBytes((Long) row[idx++])
-                .rxBytesPerSec((Long) row[idx++])
-                .txBytesPerSec((Long) row[idx++])
-                .rxPps((Long) row[idx++])
-                .txPps((Long) row[idx++])
-                .rxFailureRate((BigDecimal) row[idx++])
-                .txFailureRate((BigDecimal) row[idx++])
-                .rxErrors((Integer) row[idx++])
-                .txErrors((Integer) row[idx++])
-                .rxDropped((Integer) row[idx++])
-                .txDropped((Integer) row[idx++])
+                .rxBytes(toLong(row[idx++]))
+                .txBytes(toLong(row[idx++]))
+                .rxPackets(toLong(row[idx++]))
+                .txPackets(toLong(row[idx++]))
+                .networkTotalBytes(toLong(row[idx++]))
+                .rxBytesPerSec(toLong(row[idx++]))
+                .txBytesPerSec(toLong(row[idx++]))
+                .rxPps(toLong(row[idx++]))
+                .txPps(toLong(row[idx++]))
+                .rxFailureRate(toBigDecimal(row[idx++]))
+                .txFailureRate(toBigDecimal(row[idx++]))
+                .rxErrors(toInteger(row[idx++]))
+                .txErrors(toInteger(row[idx++]))
+                .rxDropped(toInteger(row[idx++]))
+                .txDropped(toInteger(row[idx++]))
 
                 // Storage 메트릭
-                .sizeRw((Long) row[idx++])
-                .sizeRootFs((Long) row[idx++])
-                .storageLimit((Long) row[idx++])
-                .isStorageUnlimited((Boolean) row[idx++])
+                .sizeRw(toLong(row[idx++]))
+                .sizeRootFs(toLong(row[idx++]))
+                .storageLimit(toLong(row[idx++]))
+                .isStorageUnlimited(toBoolean(row[idx++]))
 
                 .build();
     }
@@ -163,5 +166,107 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
                         .isDeleted(((Number) row[3]).intValue())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 엔티티 필드명을 데이터베이스 컬럼명으로 변환 (네이티브 쿼리용)
+     * 카멜 케이스 -> 스네이크 케이스 변환
+     * @param fieldName 엔티티 필드명
+     * @return 데이터베이스 컬럼명
+     */
+    private String convertToColumnName(String fieldName) {
+        // 카멜 케이스를 스네이크 케이스로 변환
+        return fieldName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    /**
+     * Object를 LocalDateTime으로 변환 (네이티브 쿼리용)
+     * - 네이티브 쿼리에서는 Oracle이 날짜/시간을 java.sql.Timestamp로 반환
+     * @param obj Timestamp 또는 LocalDateTime 객체
+     * @return LocalDateTime (null 가능)
+     */
+    private LocalDateTime toLocalDateTime(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof java.sql.Timestamp) {
+            return ((java.sql.Timestamp) obj).toLocalDateTime();
+        }
+        if (obj instanceof LocalDateTime) {
+            return (LocalDateTime) obj;
+        }
+        throw new IllegalArgumentException("Cannot convert " + obj.getClass() + " to LocalDateTime");
+    }
+
+    /**
+     * Object를 Long으로 변환 (네이티브 쿼리용)
+     * - Oracle 네이티브 쿼리에서는 숫자를 BigDecimal로 반환
+     * @param obj Number 객체
+     * @return Long (null 가능)
+     */
+    private Long toLong(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).longValue();
+        }
+        throw new IllegalArgumentException("Cannot convert " + obj.getClass() + " to Long");
+    }
+
+    /**
+     * Object를 Integer로 변환 (네이티브 쿼리용)
+     * - Oracle 네이티브 쿼리에서는 숫자를 BigDecimal로 반환
+     * @param obj Number 객체
+     * @return Integer (null 가능)
+     */
+    private Integer toInteger(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).intValue();
+        }
+        throw new IllegalArgumentException("Cannot convert " + obj.getClass() + " to Integer");
+    }
+
+    /**
+     * Object를 BigDecimal로 변환 (네이티브 쿼리용)
+     * @param obj BigDecimal 또는 Number 객체
+     * @return BigDecimal (null 가능)
+     */
+    private BigDecimal toBigDecimal(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof BigDecimal) {
+            return (BigDecimal) obj;
+        }
+        if (obj instanceof Number) {
+            return BigDecimal.valueOf(((Number) obj).doubleValue());
+        }
+        throw new IllegalArgumentException("Cannot convert " + obj.getClass() + " to BigDecimal");
+    }
+
+    /**
+     * Object를 Boolean으로 변환 (네이티브 쿼리용)
+     * - Oracle에서는 Boolean을 숫자(0 또는 1)로 저장
+     * @param obj Boolean, Number, 또는 String 객체
+     * @return Boolean (null 가능)
+     */
+    private Boolean toBoolean(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Boolean) {
+            return (Boolean) obj;
+        }
+        if (obj instanceof Number) {
+            return ((Number) obj).intValue() != 0;
+        }
+        if (obj instanceof String) {
+            return "1".equals(obj) || "true".equalsIgnoreCase((String) obj);
+        }
+        throw new IllegalArgumentException("Cannot convert " + obj.getClass() + " to Boolean");
     }
 }

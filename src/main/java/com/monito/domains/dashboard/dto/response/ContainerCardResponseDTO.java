@@ -42,6 +42,11 @@ public class ContainerCardResponseDTO {
     private Long agentId;
 
     /**
+     * Agent Name
+     */
+    private String agentName;
+
+    /**
      * CPU 사용률 (%)
      */
     private BigDecimal cpuPercent;
@@ -75,6 +80,7 @@ public class ContainerCardResponseDTO {
                 .containerName(container.getName())
                 .containerHash(container.getContainerHash())
                 .agentId(container.getAgent().getId())
+                .agentName(container.getAgent().getAgentName())
                 .cpuPercent(statsLog.getCpuPercent())
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
@@ -92,6 +98,7 @@ public class ContainerCardResponseDTO {
                 .containerName(container.getName())
                 .containerHash(container.getContainerHash())
                 .agentId(container.getAgent().getId())
+                .agentName(container.getAgent().getAgentName())
                 .cpuPercent(statsLog.getCpuPercent())
                 .memPercent(statsLog.getMemPercent())
                 .state(statsLog.getState().name())
@@ -104,13 +111,14 @@ public class ContainerCardResponseDTO {
      * JPQL 쿼리에서 사용하는 생성자 (enum 타입 직접 수용)
      */
     public ContainerCardResponseDTO(Long containerId, String containerName, String containerHash, Long agentId,
-                                     BigDecimal cpuPercent, BigDecimal memPercent,
+                                     String agentName, BigDecimal cpuPercent, BigDecimal memPercent,
                                      ContainerState state, ContainerHealth health,
                                      Boolean isFavorite) {
         this.containerId = containerId;
         this.containerName = containerName;
         this.containerHash = containerHash;
         this.agentId = agentId;
+        this.agentName = agentName;
         this.cpuPercent = cpuPercent;
         this.memPercent = memPercent;
         this.state = state != null ? state.name() : null;

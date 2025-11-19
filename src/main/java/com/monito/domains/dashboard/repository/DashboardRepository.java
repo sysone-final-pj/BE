@@ -76,6 +76,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                 c.name,
                 c.containerHash,
                 a.id,
+                a.agentName,
                 (SELECT sl.cpuPercent
                  FROM ContainerStatsLog sl
                  WHERE sl.container.id = c.id
@@ -170,6 +171,7 @@ public interface DashboardRepository extends JpaRepository<Container, Long> {
                 c.name,
                 c.containerHash,
                 a.id,
+                a.agentName,
                 (SELECT sl.cpuPercent
                  FROM ContainerStatsLog sl
                  WHERE sl.container.id = c.id
