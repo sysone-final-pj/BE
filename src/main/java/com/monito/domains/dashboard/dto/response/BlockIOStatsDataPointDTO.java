@@ -28,4 +28,16 @@ public class BlockIOStatsDataPointDTO {
      * 블록 쓰기 속도 (bytes/sec)
      */
     private Long blkWrite;
+
+    /**
+     * 블록 읽기 속도 (bytes/sec)
+     */
+    private Long blkReadPerSec;
+
+    /**
+     * 블록 쓰기 속도 (bytes/sec)
+     */
+    private Long blkWritePerSec;
+
+
 }

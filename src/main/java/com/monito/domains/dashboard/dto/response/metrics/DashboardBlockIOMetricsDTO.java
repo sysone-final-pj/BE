@@ -23,10 +23,18 @@ public class DashboardBlockIOMetricsDTO {
     @Schema(description = "블록 쓰기 (누적, bytes)")
     private Long blkWrite;
 
+    @Schema(description = "블록 읽기 (초당 평균)")
+    private Long blkReadPerSec;
+
+    @Schema(description = "블록 쓰기 (초당 평균)")
+    private Long blkWritePerSec;
+
     public static DashboardBlockIOMetricsDTO from(ContainerStatsLog statsLog) {
         return DashboardBlockIOMetricsDTO.builder()
                 .blkRead(statsLog.getBlkRead())
                 .blkWrite(statsLog.getBlkWrite())
+                .blkReadPerSec(statsLog.getBlkReadPerSec())
+                .blkWritePerSec(statsLog.getBlkWritePerSec())
                 .build();
     }
 }

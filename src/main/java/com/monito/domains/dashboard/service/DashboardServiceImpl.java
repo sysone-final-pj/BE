@@ -265,6 +265,8 @@ public class DashboardServiceImpl implements DashboardService {
                             .timestamp(log.getCollectedAt())
                             .blkRead(log.getBlkRead())
                             .blkWrite(log.getBlkWrite())
+                            .blkReadPerSec(log.getBlkReadPerSec())
+                            .blkWritePerSec(log.getBlkWritePerSec())
                             .build())
                     .collect(Collectors.toList());
         }
@@ -281,6 +283,8 @@ public class DashboardServiceImpl implements DashboardService {
                         .timestamp(log.getCollectedAt())
                         .blkRead(log.getBlkRead())
                         .blkWrite(log.getBlkWrite())
+                        .blkReadPerSec(log.getBlkReadPerSec())
+                        .blkWritePerSec(log.getBlkWritePerSec())
                         .build());
             }
         }
