@@ -21,9 +21,10 @@ public class TimeSeriesDownSampler {
 
     /**
      * 시간 범위에 따라 자동으로 다운샘플링 간격을 결정하고 적용
+     * - 모든 시간 범위에서 약 60개 포인트를 목표로 일관된 차트 밀도 유지
      *
      * @param dataPoints 원본 데이터 포인트
-     * @param totalMinutes 전체 시간 범위 (분)
+     * @param totalMinutes 전체 시간 범위 (분) - 현재 미사용, 하위 호환성 유지
      * @return 다운샘플링된 데이터 포인트
      */
     public static List<TimeSeriesDataDTO> autoDownSample(List<TimeSeriesDataDTO> dataPoints, long totalMinutes) {
@@ -31,7 +32,7 @@ public class TimeSeriesDownSampler {
             return new ArrayList<>();
         }
 
-        int samplingInterval = determineSamplingInterval(totalMinutes);
+        int samplingInterval = determineSamplingInterval(dataPoints.size());
 
         // 샘플링이 필요 없는 경우 (간격이 1 = 원본 그대로)
         if (samplingInterval == 1) {
@@ -42,28 +43,33 @@ public class TimeSeriesDownSampler {
     }
 
     /**
-     * 시간 범위에 따라 샘플링 간격 결정
-     * - 1-5분: 샘플링 없음 (원본 5초 간격) -> ~60 포인트
-     * - 10-30분: 30초 간격 (6개당 1개) -> 20-60 포인트
-     * - 1-3시간: 2분 간격 (24개당 1개) -> 30-90 포인트
-     * - 6-12시간: 5분 간격 (60개당 1개) -> 72-144 포인트
-     * - 24시간: 10분 간격 (120개당 1개) -> ~144 포인트
+     * 데이터 포인트 수에 따라 샘플링 간격 결정
+     * - 목표: 모든 시간 범위에서 약 60개 포인트 유지
+     * - 일관된 차트 밀도로 시각화 품질 향상
      *
-     * @param totalMinutes 전체 시간 범위 (분)
+     * 예시:
+     * - 5분 (60개):       간격 1   → 60개 유지
+     * - 10분 (120개):     간격 2   → 60개
+     * - 30분 (360개):     간격 6   → 60개
+     * - 1시간 (720개):    간격 12  → 60개
+     * - 3시간 (2160개):   간격 36  → 60개
+     * - 12시간 (8640개):  간격 144 → 60개
+     * - 24시간 (17280개): 간격 288 → 60개
+     *
+     * @param dataPointCount 원본 데이터 포인트 개수
      * @return 샘플링 간격 (몇 개당 1개를 선택할지)
      */
-    private static int determineSamplingInterval(long totalMinutes) {
-        if (totalMinutes <= 5) {
-            return 1;      // 샘플링 없음
-        } else if (totalMinutes <= 30) {
-            return 6;      // 30초 간격 (5초 * 6 = 30초)
-        } else if (totalMinutes <= 180) {
-            return 24;     // 2분 간격 (5초 * 24 = 120초)
-        } else if (totalMinutes <= 720) {
-            return 60;     // 5분 간격 (5초 * 60 = 300초)
-        } else {
-            return 120;    // 10분 간격 (5초 * 120 = 600초)
+    private static int determineSamplingInterval(int dataPointCount) {
+        final int TARGET_POINTS = 60;
+
+        // 원본 데이터가 타겟보다 적거나 같으면 샘플링 불필요
+        if (dataPointCount <= TARGET_POINTS) {
+            return 1;
         }
+
+        // 타겟 포인트 수에 맞춰 간격 계산
+        // 예: 360개 데이터 → 360/60 = 6 → 6개당 1개 선택 → 결과 60개
+        return Math.max(1, dataPointCount / TARGET_POINTS);
     }
 
     /**
