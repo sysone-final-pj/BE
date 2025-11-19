@@ -9,6 +9,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 시계열 데이터 다운샘플링 유틸리티
@@ -104,12 +105,12 @@ public class TimeSeriesDownSampler {
 
         BigDecimal sum = chunk.stream()
                 .map(TimeSeriesDataDTO::getValue)
-                .filter(value -> value != null)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long count = chunk.stream()
                 .map(TimeSeriesDataDTO::getValue)
-                .filter(value -> value != null)
+                .filter(Objects::nonNull)
                 .count();
 
         if (count == 0) {
