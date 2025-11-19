@@ -300,8 +300,11 @@ public class DashboardServiceImpl implements DashboardService {
                 .orElseThrow(() -> new NotFoundException(
                         ExceptionMessage.CONTAINER_NOT_FOUND));
 
-        // 최신 StatsLog 조회
-        ContainerStatsLog statsLog = containerStatsLogRepository.findTopByContainerIdOrderByCollectedAtDesc(containerId)
+        // 최신 StatsLog 조회 - 파티션 프루닝을 위해 1시간 전부터 조회
+        ContainerStatsLog statsLog = containerStatsLogRepository.findLatestByContainerId(
+                        containerId,
+                        LocalDateTime.now().minusHours(1)
+                )
                 .orElseThrow(() -> new NotFoundException(
                         ExceptionMessage.CONTAINER_STATS_LOG_NOT_FOUND));
 

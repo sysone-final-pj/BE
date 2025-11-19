@@ -10,6 +10,7 @@ import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
 import com.monito.domains.container.dto.response.ContainerSummaryResponseDTO;
 import com.monito.domains.container.dto.response.DeletedContainerResponseDTO;
+import com.monito.domains.container.dto.response.timeseries.TimeSeriesResponse;
 import org.springframework.data.domain.Sort.Direction;
 import java.util.List;
 import java.util.Set;
@@ -77,4 +78,46 @@ public interface ContainerService {
      * @param agentContainerHashes Agent가 현재 보유한 컨테이너 해시 목록
      */
     void syncAgentContainers(String agentKey, Set<String> agentContainerHashes);
+
+    // ==================== 시계열 데이터 전용 메서드 ====================
+
+    /**
+     * CPU 사용률(%) 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
+     * @param containerId 컨테이너 ID
+     * @param request 시간 범위 조건
+     * @return CPU 사용률 시계열 응답
+     */
+    TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsRequest request);
+
+    /**
+     * 메모리 사용률(%) 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
+     * @param containerId 컨테이너 ID
+     * @param request 시간 범위 조건
+     * @return 메모리 사용률 시계열 응답
+     */
+    TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsRequest request);
+
+    /**
+     * 네트워크 수신(RX) 속도 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
+     * @param containerId 컨테이너 ID
+     * @param request 시간 범위 조건
+     * @return 네트워크 수신 속도 시계열 응답 (bytes/sec)
+     */
+    TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsRequest request);
+
+    /**
+     * 네트워크 송신(TX) 속도 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
+     * @param containerId 컨테이너 ID
+     * @param request 시간 범위 조건
+     * @return 네트워크 송신 속도 시계열 응답 (bytes/sec)
+     */
+    TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsRequest request);
+
+    /**
+     * 네트워크 패킷 레이트 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
+     * @param containerId 컨테이너 ID
+     * @param request 시간 범위 조건
+     * @return 네트워크 패킷 레이트 시계열 응답 (packets/sec, RX+TX 합계)
+     */
+    TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsRequest request);
 }

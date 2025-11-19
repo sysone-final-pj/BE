@@ -18,7 +18,9 @@ import com.monito.global.cache.AgentMetadata;
 import com.monito.global.cache.AgentMetadataCache;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +35,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 @Slf4j
 public class AgentWebSocketHandler extends TextWebSocketHandler {
-    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final AgentService agentService;
     private final ContainerStatsService containerStatsService;
@@ -346,7 +347,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             // 1. Agent가 보낸 컨테이너들을 생성/업데이트
             int successCount = 0;
             int failCount = 0;
-            java.util.Set<String> agentContainerHashes = new java.util.HashSet<>();
+            Set<String> agentContainerHashes = new HashSet<>();
 
             if (sync.getContainers() != null) {
                 for (ContainerSnapshotRequestDTO snapshot : sync.getContainers()) {
@@ -368,13 +369,19 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             }
 
             // 2. DB에는 있지만 Agent가 보내지 않은 컨테이너 삭제 처리
+            // - Agent가 빈 배열(Set)을 보낸 경우: Agent에 컨테이너가 실제로 0개 → 모든 DB 컨테이너 삭제
+            // - Agent가 일부 컨테이너를 보낸 경우: 나머지 DB 컨테이너만 삭제
             try {
                 containerService.syncAgentContainers(agentKey, agentContainerHashes);
             } catch (Exception e) {
                 log.error("컨테이너 삭제 동기화 실패 - agentKey: {}", agentKey, e);
             }
 
-            log.info("컨테이너 전체 동기화 완료 - 성공: {}, 실패: {}", successCount, failCount);
+            if (totalContainers == 0) {
+                log.info("✅ 컨테이너 전체 동기화 완료 - Agent가 컨테이너 0개 보고 (모든 DB 컨테이너 삭제 처리됨)");
+            } else {
+                log.info("✅ 컨테이너 전체 동기화 완료 - 성공: {}, 실패: {}", successCount, failCount);
+            }
 
             sendMessage(session, Map.of(
                     "type", "CONTAINER_SYNC_ACK",

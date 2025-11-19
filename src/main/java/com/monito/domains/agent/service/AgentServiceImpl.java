@@ -13,7 +13,9 @@ import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.global.cache.AgentMetadataCache;
+import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.common.entity.BaseEntity;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
@@ -34,6 +36,7 @@ public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
     private final ContainerRepository containerRepository;
     private final AgentMetadataCache agentMetadataCache;
+    private final ContainerSummaryCache containerSummaryCache;
     private final StompMessagingClient messagingClient;
 
     @Override
@@ -142,8 +145,12 @@ public class AgentServiceImpl implements AgentService {
         List<Container> containers = containerRepository.findAllByAgent(agent);
         for (Container container : containers) {
             container.changeState(ContainerState.UNKNOWN);
+
+            // 캐시 업데이트 - UNKNOWN 상태로 변경된 스냅샷 생성 (메트릭은 null)
+            ContainerSummarySnapshot snapshot = ContainerSummarySnapshot.of(container, null);
+            containerSummaryCache.update(snapshot);
         }
-        log.info("Agent OFFLINE → 컨테이너 {}개 UNKNOWN 처리 - agentKey: {}",
+        log.info("Agent OFFLINE → 컨테이너 {}개 UNKNOWN 처리 및 캐시 업데이트 완료 - agentKey: {}",
                 containers.size(), agent.getAgentKey());
     }
 }
