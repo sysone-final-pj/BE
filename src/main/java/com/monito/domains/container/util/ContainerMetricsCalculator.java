@@ -20,65 +20,93 @@ import org.springframework.stereotype.Component;
 public class ContainerMetricsCalculator {
 
     /**
-     * CPU 사용률 계산 (시간 기반 - Docker CLI 방식)
-     * CPU Percent = (ΔcpuUsage / (시간차 × 10^9)) × 100 / onlineCpus
-     * 참고: Docker CLI 공식 계산 방식
-     * - cpuUsage는 나노초 단위 누적값
-     * - 실제 경과 시간으로 나누어 정확한 % 계산
+     * 실제 CPU 코어 사용량 계산 (코어 단위)
+     * Core Usage = ΔcpuUsage / 시간차
+     * 예: 0.5코어 = 0.5개의 CPU 코어를 사용 중
+     *
+     * 정밀도: 소수점 6자리까지 계산 (percent 계산 정확도 향상)
      */
-    public BigDecimal calculateCpuPercent(
+    public BigDecimal calculateCoreUsage(
             Long currentCpuUsage,
-            Long currentHostCpuUsage,
             Long previousCpuUsage,
-            Long previousHostCpuUsage,
-            Integer onlineCpus,
             LocalDateTime currentTime,
             LocalDateTime previousTime
     ) {
         if (previousCpuUsage == null || previousTime == null) {
-            log.info("[CPU CALC] 이전 데이터 null -> 0% 반환");
+            log.info("[CPU CALC] 이전 데이터 null -> 0 코어 반환");
             return BigDecimal.ZERO;
         }
 
         long deltaCpu = currentCpuUsage - previousCpuUsage;
-        long deltaHost = currentHostCpuUsage - previousHostCpuUsage;
-
-        // 실제 경과 시간 (나노초)
         long timeDiffNanos = Duration.between(previousTime, currentTime).toNanos();
 
-        log.info("[CPU CALC] Delta 계산 - deltaCpu: {}, deltaHost: {}, timeDiff: {}ns ({}s)",
-                deltaCpu, deltaHost, timeDiffNanos, timeDiffNanos / 1_000_000_000.0);
-
         if (timeDiffNanos == 0) {
-            log.warn("[CPU CALC] 시간차가 0 -> 계산 불가, 0% 반환");
+            log.warn("[CPU CALC] 시간차가 0 -> 계산 불가, 0 코어 반환");
             return BigDecimal.ZERO;
         }
 
-        // Docker CLI 방식: (ΔcpuUsage / timeDiff) * 100 / onlineCpus
-        BigDecimal percent = BigDecimal.valueOf(deltaCpu)
-                .divide(BigDecimal.valueOf(timeDiffNanos), 10, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(onlineCpus), 6, RoundingMode.HALF_UP);
+        // 실제 코어 사용량 = deltaCpu / timeDiff
+        // 내부 계산은 고정밀도로, DB 저장/표시 시에만 반올림
+        BigDecimal coreUsage = BigDecimal.valueOf(deltaCpu)
+                .divide(BigDecimal.valueOf(timeDiffNanos), 10, RoundingMode.HALF_UP);
 
-        BigDecimal result = percent.setScale(2, RoundingMode.HALF_UP);
-        log.info("[CPU CALC] 계산 완료 - CPU %: {} (deltaCpu={}ns, timeDiff={}ns)", result, deltaCpu, timeDiffNanos);
+        log.debug("[CPU CALC] 실제 코어 사용량: {} cores (deltaCpu={}ns, timeDiff={}ns)",
+                coreUsage, deltaCpu, timeDiffNanos);
 
-        return result;
+        return coreUsage;
     }
 
     /**
-     * Core 사용량 계산 (코어 단위)
-     * Core Usage = cpuPercent * onlineCpus / 100
-     * 예: 15% × 2코어 = 0.3 코어
+     * CPU 사용률 계산 (제한 기준)
+     * - CPU 제한 있음: (실제 사용량 / CPU 제한) × 100
+     * - CPU 제한 없음: (실제 사용량 / 전체 코어) × 100
+     *
+     * 예시:
+     * - 4코어 시스템, 제한 0.5코어, 실제 사용 0.5코어 -> 100% (제한 대비)
+     * - 4코어 시스템, 제한 없음, 실제 사용 2코어 -> 50% (전체 대비)
      */
-    public BigDecimal calculateCoreUsage(BigDecimal cpuPercent, Integer onlineCpus) {
-        if (cpuPercent == null || onlineCpus == null) {
+    public BigDecimal calculateCpuPercent(
+            BigDecimal actualCoreUsage,
+            BigDecimal cpuLimitCores,
+            Integer onlineCpus,
+            Boolean isCpuUnlimited
+    ) {
+        if (actualCoreUsage == null) {
             return BigDecimal.ZERO;
         }
 
-        return cpuPercent
-                .multiply(BigDecimal.valueOf(onlineCpus))
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal percent;
+
+        // CPU 제한이 있는 경우: 제한 대비 사용률
+        if (isCpuUnlimited != null && !isCpuUnlimited && cpuLimitCores != null && cpuLimitCores.compareTo(BigDecimal.ZERO) > 0) {
+            percent = actualCoreUsage
+                    .divide(cpuLimitCores, 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+
+            log.info("[CPU CALC] 제한 기준 CPU %: {} (사용={} cores, 제한={} cores)",
+                    percent.setScale(2, RoundingMode.HALF_UP), actualCoreUsage, cpuLimitCores);
+
+            // 100% 캐핑 (사용자 경험 개선)
+            if (percent.compareTo(BigDecimal.valueOf(100)) > 0) {
+                log.debug("[CPU CALC] CPU 사용률 100% 초과 ({}%) -> 100%로 캐핑", percent.setScale(2, RoundingMode.HALF_UP));
+                percent = BigDecimal.valueOf(100);
+            }
+        }
+        // CPU 제한이 없는 경우: 전체 코어 대비 사용률
+        else {
+            if (onlineCpus == null || onlineCpus == 0) {
+                return BigDecimal.ZERO;
+            }
+
+            percent = actualCoreUsage
+                    .divide(BigDecimal.valueOf(onlineCpus), 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+
+            log.info("[CPU CALC] 전체 코어 기준 CPU %: {} (사용={} cores, 전체={} cores)",
+                    percent.setScale(2, RoundingMode.HALF_UP), actualCoreUsage, onlineCpus);
+        }
+
+        return percent.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -273,26 +301,27 @@ public class ContainerMetricsCalculator {
      */
     public ContainerStatsLog calculateAndBuild(
             ContainerMetricsRequestDTO metrics,
-            ContainerStatsLog previousStats
+            ContainerStatsLog previousStats,
+            BigDecimal cpuLimitCores,
+            Boolean isCpuUnlimited
     ) {
         // Agent에서 수집한 시간 사용
         LocalDateTime collectedAt = metrics.getCollectedAt();
 
-        // CPU 사용률 계산 (시간 기반)
-        BigDecimal cpuPercent = calculateCpuPercent(
+        // 1. 실제 CPU 코어 사용량 계산 (코어 단위)
+        BigDecimal cpuCoreUsage = calculateCoreUsage(
                 metrics.getCpuUsageTotal(),
-                metrics.getHostCpuUsageTotal(),
                 previousStats != null ? previousStats.getCpuUsageTotal() : null,
-                previousStats != null ? previousStats.getHostCpuUsageTotal() : null,
-                metrics.getOnlineCpus(),
                 collectedAt,
                 previousStats != null ? previousStats.getCollectedAt() : null
         );
 
-        // CPU 코어 사용량 계산 (코어 단위)
-        BigDecimal cpuCoreUsage = calculateCoreUsage(
-                cpuPercent,
-                metrics.getOnlineCpus()
+        // 2. CPU 사용률 계산 (제한 기준 또는 전체 코어 기준)
+        BigDecimal cpuPercent = calculateCpuPercent(
+                cpuCoreUsage,
+                cpuLimitCores,
+                metrics.getOnlineCpus(),
+                isCpuUnlimited
         );
 
         // Memory 사용률 계산

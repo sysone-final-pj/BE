@@ -27,6 +27,7 @@ import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,10 +110,12 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     metricsDto.getHostCpuUsageTotal(),
                     metricsDto.getOnlineCpus());
 
-            // 5. 메트릭 계산 및 StatsLog 생성
+            // 5. 메트릭 계산 및 StatsLog 생성 (CPU 제한 정보 포함)
             ContainerStatsLog statsLog = metricsCalculator.calculateAndBuild(
                     metricsDto,
-                    previousStats
+                    previousStats,
+                    container.getCpuLimitCores(),
+                    container.getIsCpuUnlimited()
             );
 
             // 6. Container 연결
@@ -157,10 +160,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 
                 log.debug("대시보드 상세 정보 발행 완료 (집계 포함) - containerId: {}, containerName: {}",
-                    container.getId(), container.getName());
+                        container.getId(), container.getName());
             } catch (Exception e) {
                 log.error("대시보드 상세 정보 발행 실패 - containerId: {}, error: {}",
-                    container.getId(), e.getMessage(), e);
+                        container.getId(), e.getMessage(), e);
             }
 
             // 11. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
@@ -169,10 +172,10 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 messagingClient.send(WsTopics.containerMetrics(container.getId()), detailMetrics);
 
                 log.info("컨테이너 상세 메트릭 발행 완료 - containerId: {}, containerName: {}",
-                    container.getId(), container.getName());
+                        container.getId(), container.getName());
             } catch (Exception e) {
                 log.error("컨테이너 상세 메트릭 발행 실패 - containerId: {}, error: {}",
-                    container.getId(), e.getMessage(), e);
+                        container.getId(), e.getMessage(), e);
             }
 
             // 캐시에 Snapshot 업데이트
@@ -264,11 +267,11 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private void updateSpecsIfChanged(Container container, ContainerMetricsRequestDTO metric) {
         // 리소스 제한값 변경 감지
         boolean changed = !container.getCpuQuota().equals(metric.getCpuQuota()) ||
-                          !container.getMemLimit().equals(metric.getMemLimit()) ||
-                          !container.getStorageLimit().equals(metric.getStorageLimit()) ||
-                          !container.getIsCpuUnlimited().equals(metric.getIsCpuUnlimited()) ||
-                          !container.getIsMemoryUnlimited().equals(metric.getIsMemoryUnlimited()) ||
-                          !container.getIsStorageUnlimited().equals(metric.getIsStorageUnlimited());
+                !container.getMemLimit().equals(metric.getMemLimit()) ||
+                !container.getStorageLimit().equals(metric.getStorageLimit()) ||
+                !container.getIsCpuUnlimited().equals(metric.getIsCpuUnlimited()) ||
+                !container.getIsMemoryUnlimited().equals(metric.getIsMemoryUnlimited()) ||
+                !container.getIsStorageUnlimited().equals(metric.getIsStorageUnlimited());
 
         if (!changed) {
             return; // 변경 없음 → Skip
