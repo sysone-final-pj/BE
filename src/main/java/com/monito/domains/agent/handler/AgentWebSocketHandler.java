@@ -18,13 +18,13 @@ import com.monito.global.cache.AgentMetadata;
 import com.monito.global.cache.AgentMetadataCache;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -123,17 +123,36 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         log.info("   Agent Key: {}", agentKey);
         log.info("═══════════════════════════════════════");
 
-        // 중복 연결 체크
+        // 중복 연결 체크 및 기존 세션 종료
         if (authenticatedAgents.containsValue(agentKey)) {
-            sendMessage(session, Map.of(
-                    "type", "AUTH_FAILED",
-                    "message", "Agent already connected from another session",
-                    "timestamp", System.currentTimeMillis()
-            ));
+            // 기존 세션 찾기
+            String oldSessionId = authenticatedAgents.entrySet().stream()
+                    .filter(entry -> agentKey.equals(entry.getValue()))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse(null);
 
-            log.warn("인증 실패: 이미 연결된 Agent - agentKey: {}", agentKey);
-            session.close(CloseStatus.NOT_ACCEPTABLE);
-            return;
+            if (oldSessionId != null) {
+                log.warn("⚠️  동일 Agent의 재연결 감지 - agentKey: {}", agentKey);
+                log.warn("   기존 세션 ID: {}", oldSessionId);
+                log.warn("   새 세션 ID: {}", sessionId);
+                log.warn("   → 기존 세션 강제 종료 후 새 연결 허용");
+
+                // 기존 세션 정리
+                authenticatedAgents.remove(oldSessionId);
+
+                // 기존 세션이 열려있다면 종료
+                for (WebSocketSession openSession : new ArrayList<>(sessions.values())) {
+                    if (openSession.getId().equals(oldSessionId) && openSession.isOpen()) {
+                        try {
+                            openSession.close(CloseStatus.GOING_AWAY);
+                            log.info("   ✓ 기존 세션 종료 완료");
+                        } catch (Exception e) {
+                            log.warn("   기존 세션 종료 실패 (이미 종료되었을 수 있음): {}", e.getMessage());
+                        }
+                    }
+                }
+            }
         }
 
         // Agent 인증
