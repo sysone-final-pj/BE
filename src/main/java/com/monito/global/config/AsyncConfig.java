@@ -54,6 +54,32 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
+    /**
+     * WebSocket 브로드캐스트 전용 스레드 풀
+     * - DB 트랜잭션과 분리하여 성능 최적화
+     */
+    @Bean(name = "broadcastTaskExecutor")
+    public Executor broadcastTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        // 브로드캐스트는 I/O 바운드 작업이므로 많은 스레드 허용
+        executor.setCorePoolSize(15);      // 브로드캐스트 전용
+        executor.setMaxPoolSize(50);       // 피크 시간 대응
+        executor.setQueueCapacity(500);    // 대기 큐
+        executor.setThreadNamePrefix("broadcast-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+
+        executor.initialize();
+
+        log.info("WebSocket 브로드캐스트 스레드 풀 초기화 완료 - core: {}, max: {}, queue: {}",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+
+        return executor;
+    }
+
     @Override
     public Executor getAsyncExecutor() {
         return websocketTaskExecutor();
