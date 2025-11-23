@@ -14,6 +14,7 @@ import com.monito.domains.dashboard.dto.response.DashboardContainerDetailDTO;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.dashboard.repository.DashboardRepository;
+import com.monito.global.cache.ContainerLastStatsCache;
 import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.infrastructure.messaging.StompMessagingClient;
@@ -27,7 +28,6 @@ import com.monito.global.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +53,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final StompMessagingClient messagingClient;
     private final ContainerSummaryCache containerSummaryCache;
+    private final ContainerLastStatsCache lastStatsCache;
 
     @Override
     @Transactional
@@ -87,13 +88,24 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
             updateSpecsIfChanged(container, metricsDto);
 
-            // 4. 이전 통계 조회 (계산용) - 파티션 프루닝을 위해 1시간 전부터 조회
-            ContainerStatsLog previousStats = statsLogRepository
-                    .findLatestByContainerHash(
-                            metricsDto.getContainerHash(),
-                            LocalDateTime.now().minusHours(1)
-                    )
-                    .orElse(null);
+            // 4. 이전 통계 조회 (캐시 우선, DB는 폴백)
+            ContainerStatsLog previousStats = lastStatsCache.get(metricsDto.getContainerHash());
+
+            // 캐시에 없으면 DB에서 조회 (첫 수집 시)
+            if (previousStats == null) {
+                previousStats = statsLogRepository
+                        .findLatestByContainerHash(
+                                metricsDto.getContainerHash(),
+                                LocalDateTime.now().minusHours(1)
+                        )
+                        .orElse(null);
+
+                if (previousStats != null) {
+                    log.info("[CACHE] 캐시 미스 - DB에서 이전 통계 조회 성공 (containerHash: {})", metricsDto.getContainerHash());
+                }
+            } else {
+                log.debug("[CACHE] 캐시 히트 - 이전 통계 조회 (containerHash: {})", metricsDto.getContainerHash());
+            }
 
             // [DEBUG] 이전 데이터 확인
             if (previousStats == null) {
@@ -130,10 +142,13 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                     statsLog.getMemPercent()
             );
 
-            // 8. CPU 통계치 계산을 위한 캐싱 처리
+            // 8. 최신 통계 캐시 업데이트 (다음 메트릭 계산 시 사용)
+            lastStatsCache.put(metricsDto.getContainerHash(), statsLog);
+
+            // 9. CPU 통계치 계산을 위한 캐싱 처리
             cpuMetricsBufferCache.addCpuSample(container.getId(), statsLog.getCpuPercent());
 
-            // 9. 알림 규칙 평가 (자동 알림 발생)
+            // 10. 알림 규칙 평가 (자동 알림 발생)
             try {
                 alertEvaluationFacade.evaluateContainerStats(statsLog);
             } catch (Exception e) {
@@ -141,7 +156,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         metricsDto.getContainerHash(), e.getMessage());
             }
 
-            // 10. 컨테이너 리스트 브로드캐스트 (/topic/dashboard/list)
+            // 11. 컨테이너 리스트 브로드캐스트 (/topic/dashboard/list)
             try {
                 ContainerCardResponseDTO cardDto = ContainerCardResponseDTO.of(container, statsLog);
                 messagingTemplate.convertAndSend(WsTopics.DASHBOARD_STATUS, cardDto);
@@ -151,7 +166,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 log.error("대시보드 리스트 브로드캐스트 실패 - containerHash: {}", metricsDto.getContainerHash(), e);
             }
 
-            // 10-1. 대시보드 컨테이너 상세 발행 (/topic/dashboard/detail/{id})
+            // 12. 대시보드 컨테이너 상세 발행 (/topic/dashboard/detail/{id})
             // - logs, storage 집계 데이터 포함
             try {
                 DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
@@ -166,7 +181,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         container.getId(), e.getMessage(), e);
             }
 
-            // 11. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
+            // 13. 컨테이너 상세 메트릭 발행 (/topic/container/{id}/metrics)
             try {
                 ContainerDetailResponseDTO detailMetrics = ContainerDetailResponseDTO.forRealtimeUpdate(container, agent, statsLog);
                 messagingClient.send(WsTopics.containerMetrics(container.getId()), detailMetrics);
