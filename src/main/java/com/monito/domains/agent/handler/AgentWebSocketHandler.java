@@ -20,9 +20,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -740,50 +742,37 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             log.info("   시각: {}", getCurrentTime());
             log.info("═══════════════════════════════════════");
 
-            // 비동기 처리
+            // 비동기 배치 처리
+            int finalContainerCount = containerCount;
             CompletableFuture.runAsync(() -> {
-                int successCount = 0;
-                int failCount = 0;
-
                 try {
-                    if (agentMetrics.getMetrics() != null) {
-                        for (ContainerMetricsRawRequestDTO rawMetric : agentMetrics.getMetrics()) {
-                            try {
-                                // Flat DTO로 변환
-                                ContainerMetricsRequestDTO flatMetric = rawMetric.toFlatDTO();
+                    if (agentMetrics.getMetrics() != null && !agentMetrics.getMetrics().isEmpty()) {
+                        // 모든 메트릭을 Flat DTO로 변환
+                        List<ContainerMetricsRequestDTO> metricsList = agentMetrics.getMetrics()
+                                .stream()
+                                .map(ContainerMetricsRawRequestDTO::toFlatDTO)
+                                .collect(Collectors.toList());
 
-                                // DB 저장 (계산 포함)
-                                containerStatsService.processMetrics(agentKey, flatMetric);
-                                successCount++;
+                        // Batch 처리 (한 번에 INSERT)
+                        containerStatsService.processMetricsBatch(agentKey, metricsList);
 
-                                log.debug("컨테이너 메트릭 저장 성공 (비동기) - Hash: {}, Name: {}",
-                                        flatMetric.getContainerHash(),
-                                        flatMetric.getContainerName());
-                            } catch (Exception e) {
-                                failCount++;
-                                log.error("컨테이너 메트릭 처리 실패 (비동기) - Hash: {}",
-                                        rawMetric.getContainerHash(), e);
-                            }
+                        log.info("✅ 메트릭 배치 처리 완료 (비동기) - agentKey: {}, 총: {}개",
+                                agentKey, metricsList.size());
+
+                        // 처리 완료 메시지 전송
+                        try {
+                            sendMessage(session, Map.of(
+                                    "type", "ACK",
+                                    "message", String.format("Metrics batch processed: %d containers", metricsList.size()),
+                                    "containerCount", metricsList.size(),
+                                    "timestamp", System.currentTimeMillis()
+                            ));
+                        } catch (Exception e) {
+                            log.error("메트릭 처리 완료 메시지 전송 실패", e);
                         }
                     }
-
-                    log.info("✅ 메트릭 처리 완료 (비동기) - agentKey: {}, 성공: {}, 실패: {}",
-                            agentKey, successCount, failCount);
-
-                    // 처리 완료 메시지 전송
-                    try {
-                        sendMessage(session, Map.of(
-                                "type", "ACK",
-                                "message", String.format("Metrics processed: %d success, %d failed", successCount, failCount),
-                                "successCount", successCount,
-                                "failCount", failCount,
-                                "timestamp", System.currentTimeMillis()
-                        ));
-                    } catch (Exception e) {
-                        log.error("메트릭 처리 완료 메시지 전송 실패", e);
-                    }
                 } catch (Exception e) {
-                    log.error("❌ 메트릭 처리 중 예외 발생 - agentKey: {}", agentKey, e);
+                    log.error("❌ 메트릭 배치 처리 중 예외 발생 - agentKey: {}", agentKey, e);
 
                     // 에러 메시지 전송
                     try {

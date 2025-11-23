@@ -19,6 +19,11 @@ import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.infrastructure.messaging.StompMessagingClient;
 import com.monito.infrastructure.messaging.WsTopics;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -54,6 +59,7 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     private final StompMessagingClient messagingClient;
     private final ContainerSummaryCache containerSummaryCache;
     private final ContainerLastStatsCache lastStatsCache;
+    private final Executor broadcastTaskExecutor;
 
     @Override
     @Transactional
@@ -318,5 +324,138 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 container.getContainerHash(), metric.getCpuQuota(), metric.getIsCpuUnlimited(),
                 metric.getMemLimit(), metric.getIsMemoryUnlimited(), metric.getStorageLimit(), metric.getIsStorageUnlimited(),
                 metric.getImageId());
+    }
+
+    @Override
+    @Transactional
+    public void processMetricsBatch(String agentKey, List<ContainerMetricsRequestDTO> metricsList) {
+        if (metricsList == null || metricsList.isEmpty()) {
+            return;
+        }
+
+        long startTime = System.currentTimeMillis();
+        int totalMetrics = metricsList.size();
+
+        try {
+            // 1. Agent 조회 (1회만)
+            Agent agent = agentRepository.findByAgentKey(agentKey)
+                    .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+
+            List<ContainerStatsLog> statsLogList = new ArrayList<>();
+            List<ContainerSummarySnapshot> snapshotList = new ArrayList<>();
+
+            // 2. 각 메트릭 처리 (계산 및 준비)
+            for (ContainerMetricsRequestDTO metricsDto : metricsList) {
+                try {
+                    // 검증
+                    validateMetricsRequest(metricsDto);
+
+                    // running 상태가 아니거나 필수 메트릭이 없으면 스킵
+                    if (!isRunningState(metricsDto) || !hasRequiredMetrics(metricsDto)) {
+                        log.debug("메트릭 수집 스킵 - containerHash: {}, state: {}",
+                                metricsDto.getContainerHash(), metricsDto.getState());
+                        continue;
+                    }
+
+                    // Container 조회 또는 생성
+                    Container container = containerRepository
+                            .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
+                            .orElseGet(() -> createNewContainer(agent, metricsDto));
+
+                    updateSpecsIfChanged(container, metricsDto);
+
+                    // 이전 통계 조회 (캐시 우선)
+                    ContainerStatsLog previousStats = lastStatsCache.get(metricsDto.getContainerHash());
+                    if (previousStats == null) {
+                        previousStats = statsLogRepository
+                                .findLatestByContainerHash(
+                                        metricsDto.getContainerHash(),
+                                        LocalDateTime.now().minusHours(1)
+                                )
+                                .orElse(null);
+                    }
+
+                    // 메트릭 계산 및 StatsLog 생성
+                    ContainerStatsLog statsLog = metricsCalculator.calculateAndBuild(
+                            metricsDto,
+                            previousStats,
+                            container.getCpuLimitCores(),
+                            container.getIsCpuUnlimited()
+                    );
+
+                    // Container 연결
+                    statsLog = ContainerStatsLog.of(container, statsLog);
+                    statsLogList.add(statsLog);
+
+                    // 캐시 및 스냅샷 준비
+                    lastStatsCache.put(metricsDto.getContainerHash(), statsLog);
+                    cpuMetricsBufferCache.addCpuSample(container.getId(), statsLog.getCpuPercent());
+                    snapshotList.add(ContainerSummarySnapshot.of(container, statsLog));
+
+                } catch (Exception e) {
+                    log.error("메트릭 처리 실패 (배치) - containerHash: {}, error: {}",
+                            metricsDto.getContainerHash(), e.getMessage());
+                }
+            }
+
+            // 3. Batch INSERT (핵심 성능 개선!)
+            if (!statsLogList.isEmpty()) {
+                statsLogRepository.saveAll(statsLogList);
+                statsLogRepository.flush();  // 즉시 DB 반영
+
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                log.info("✅ 배치 메트릭 저장 완료 - agentKey: {}, 성공: {}/{}, 소요시간: {}ms",
+                        agentKey, statsLogList.size(), totalMetrics, elapsedTime);
+
+                // 4. 캐시 업데이트 (트랜잭션 내에서 처리)
+                for (int i = 0; i < snapshotList.size(); i++) {
+                    containerSummaryCache.update(snapshotList.get(i));
+                }
+            }
+
+            // 5. 비동기 후처리 (트랜잭션 외부 - 별도 스레드에서 실행)
+            if (!statsLogList.isEmpty()) {
+                List<ContainerStatsLog> finalStatsList = new ArrayList<>(statsLogList);
+                Agent finalAgent = agent;
+
+                CompletableFuture.runAsync(() -> {
+                    for (ContainerStatsLog statsLog : finalStatsList) {
+                        Container container = statsLog.getContainer();
+
+                        // 알림 규칙 평가
+                        try {
+                            alertEvaluationFacade.evaluateContainerStats(statsLog);
+                        } catch (Exception e) {
+                            log.error("알림 규칙 평가 중 오류 발생 - containerHash: {}",
+                                    statsLog.getContainerHash(), e);
+                        }
+
+                        // WebSocket 브로드캐스트
+                        try {
+                            ContainerCardResponseDTO cardDto = ContainerCardResponseDTO.of(container, statsLog);
+                            messagingTemplate.convertAndSend(WsTopics.DASHBOARD_STATUS, cardDto);
+
+                            DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
+                                    container, finalAgent, statsLog, containerLogRepository, dashboardRepository, LocalDate.now()
+                            );
+                            messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
+
+                            ContainerDetailResponseDTO detailMetrics = ContainerDetailResponseDTO.forRealtimeUpdate(container, finalAgent, statsLog);
+                            messagingClient.send(WsTopics.containerMetrics(container.getId()), detailMetrics);
+                        } catch (Exception e) {
+                            log.error("WebSocket 브로드캐스트 실패 - containerId: {}", container.getId(), e);
+                        }
+                    }
+                    log.debug("비동기 브로드캐스트 완료 - {} 건", finalStatsList.size());
+                }, broadcastTaskExecutor);
+            }
+
+        } catch (NotFoundException | BadRequestException e) {
+            log.error("배치 메트릭 처리 실패 - agentKey: {}, error: {}", agentKey, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("배치 메트릭 처리 중 예상치 못한 오류 발생 - agentKey: {}", agentKey, e);
+            throw new BadRequestException(ExceptionMessage.CONTAINER_METRICS_PROCESSING_FAILED);
+        }
     }
 }

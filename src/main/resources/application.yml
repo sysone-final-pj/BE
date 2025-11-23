@@ -21,6 +21,13 @@ spring:
 
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100              # Batch INSERT 크기
+        order_inserts: true            # INSERT 순서 정렬 (배치 최적화)
+        order_updates: true            # UPDATE 순서 정렬
+        batch_versioned_data: true     # 버전 데이터도 배치 처리
 
   flyway:
     enabled: true
