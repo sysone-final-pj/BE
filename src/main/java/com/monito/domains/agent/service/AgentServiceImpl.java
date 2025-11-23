@@ -14,9 +14,12 @@ import com.monito.domains.container.domain.Container;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
+import com.monito.domains.favorite.repository.FavoriteRepository;
 import com.monito.global.cache.AgentMetadataCache;
 import com.monito.global.cache.ContainerSummaryCache;
-import com.monito.global.common.entity.BaseEntity;
+import com.monito.global.cache.CpuMetricsBufferCache;
+import com.monito.global.cache.FavoriteCache;
+import com.monito.global.cache.OomEventCache;
 import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import com.monito.infrastructure.messaging.StompMessagingClient;
@@ -37,6 +40,10 @@ public class AgentServiceImpl implements AgentService {
     private final ContainerRepository containerRepository;
     private final AgentMetadataCache agentMetadataCache;
     private final ContainerSummaryCache containerSummaryCache;
+    private final CpuMetricsBufferCache cpuMetricsBufferCache;
+    private final OomEventCache oomEventCache;
+    private final FavoriteCache favoriteCache;
+    private final FavoriteRepository favoriteRepository;
     private final StompMessagingClient messagingClient;
 
     @Override
@@ -118,9 +125,24 @@ public class AgentServiceImpl implements AgentService {
 
         agent.markAsDeleted();
 
-        // Soft delete all containers belonging to this agent
-        containerRepository.findAllByAgent_Id(id)
-                .forEach(BaseEntity::markAsDeleted);
+        // Soft delete all containers belonging to this agent and clean up caches
+        List<Container> containers = containerRepository.findAllByAgent_Id(id);
+        for (Container container : containers) {
+            container.markAsDeleted();
+
+            // 컨테이너 삭제 시 관련된 모든 데이터 삭제
+            // 1. 메트릭 캐시 삭제
+            cpuMetricsBufferCache.removeContainer(container.getId());
+            oomEventCache.removeContainer(container.getId());
+            containerSummaryCache.remove(container.getId());
+
+            // 2. 즐겨찾기 데이터 삭제 (DB + 캐시)
+            favoriteRepository.deleteByContainerId(container.getId());
+            favoriteCache.removeContainerFromAll(container.getId());
+        }
+
+        log.info("Agent 삭제 완료 - agentId: {}, agentKey: {}, 삭제된 컨테이너 수: {}",
+                id, agent.getAgentKey(), containers.size());
 
         // agent 메타 데이터 삭제
         agentMetadataCache.removeMetadata(agent.getAgentKey());
