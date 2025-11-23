@@ -27,14 +27,14 @@ public class AsyncConfig implements AsyncConfigurer {
     public Executor websocketTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        // 코어 스레드 수: 최소 5개 (동시 처리)
-        executor.setCorePoolSize(5);
+        // 코어 스레드 수: Agent 7개 × 1.5 = 10개 (동시 처리)
+        executor.setCorePoolSize(10);
 
-        // 최대 스레드 수: 20개 (피크 시간)
-        executor.setMaxPoolSize(20);
+        // 최대 스레드 수: 40개 (피크 시간, 버스트 대응)
+        executor.setMaxPoolSize(40);
 
-        // 큐 용량: 100개 (대기 가능한 작업 수)
-        executor.setQueueCapacity(100);
+        // 큐 용량: 300개 (대기 가능한 작업 수, 70 컨테이너 × 4 = 280)
+        executor.setQueueCapacity(300);
 
         // 스레드 이름 접두사
         executor.setThreadNamePrefix("ws-async-");
