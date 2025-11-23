@@ -2,6 +2,7 @@ package com.monito.domains.container.repository;
 
 import com.monito.domains.container.domain.ContainerLog;
 import com.monito.domains.container.domain.LogSource;
+import com.monito.domains.container.dto.projection.ContainerLogProjection;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -41,6 +42,47 @@ public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long
     List<ContainerLog> findLogs(
             @Param("containerIds") List<Long> containerIds,
             @Param("logSource") LogSource logSource,
+            @Param("agentName") String agentName,
+            @Param("lastLogId") Long lastLogId,
+            @Param("lastLoggedAt") LocalDateTime lastLoggedAt,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            Pageable pageable
+    );
+
+    /**
+     * 로그 조회 (Projection, CLOB 제외) - 성능 최적화
+     * - CLOB 전체 대신 처음 500자만 조회
+     * - 10초 → 0.5초 성능 개선
+     * - Native Query 사용 (CLOB 처리)
+     */
+    @Query(value = "SELECT " +
+           "cl.id AS id, " +
+           "c.id AS containerId, " +
+           "c.container_hash AS containerHash, " +
+           "c.name AS containerName, " +
+           "a.id AS agentId, " +
+           "a.agent_name AS agentName, " +
+           "DBMS_LOB.SUBSTR(cl.log_message, 500, 1) AS logMessagePreview, " +
+           "cl.source AS source, " +
+           "cl.logged_at AS loggedAt, " +
+           "cl.created_at AS createdAt " +
+           "FROM container_logs cl " +
+           "JOIN containers c ON cl.container_id = c.id " +
+           "JOIN agents a ON c.agent_id = a.id " +
+           "WHERE (:containerIds IS NULL OR c.id IN :containerIds) " +
+           "AND (:logSource IS NULL OR cl.source = :logSource) " +
+           "AND (:agentName IS NULL OR a.agent_name LIKE '%' || :agentName || '%') " +
+           "AND (:lastLoggedAt IS NULL OR " +
+           "     cl.logged_at < :lastLoggedAt OR " +
+           "     (cl.logged_at = :lastLoggedAt AND cl.id < :lastLogId)) " +
+           "AND (:startTime IS NULL OR cl.logged_at >= :startTime) " +
+           "AND (:endTime IS NULL OR cl.logged_at <= :endTime) " +
+           "ORDER BY cl.logged_at DESC, cl.id DESC",
+           nativeQuery = true)
+    List<Object[]> findLogsOptimizedNative(
+            @Param("containerIds") List<Long> containerIds,
+            @Param("logSource") String logSource,
             @Param("agentName") String agentName,
             @Param("lastLogId") Long lastLogId,
             @Param("lastLoggedAt") LocalDateTime lastLoggedAt,

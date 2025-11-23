@@ -14,6 +14,8 @@ import com.monito.global.exception.ExceptionMessage;
 import com.monito.global.exception.NotFoundException;
 import com.monito.infrastructure.messaging.StompMessagingClient;
 import com.monito.infrastructure.messaging.WsTopics;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ public class ContainerLogServiceImpl implements ContainerLogService {
     private final ContainerRepository containerRepository;
     private final AgentRepository agentRepository;
     private final StompMessagingClient messagingClient;
+    private final Executor broadcastTaskExecutor;
 
     @Override
     @Transactional
@@ -87,16 +90,30 @@ public class ContainerLogServiceImpl implements ContainerLogService {
                 }
             }
 
-            // 7. 배치 저장
+            // 7. 배치 저장 (트랜잭션 내)
             if (!containerLogs.isEmpty()) {
                 containerLogRepository.saveAll(containerLogs);
+                containerLogRepository.flush();  // 즉시 DB 반영
+
                 log.info("로그 저장 완료 - agentKey: {}, 총 로그: {}개, 스킵된 컨테이너: {}개",
                         agentKey, totalLogCount, skippedContainerCount);
 
-                containerLogs.forEach(logEntity -> messagingClient.send(
-                        WsTopics.containerLogs(logEntity.getContainer().getId()),
-                        ContainerLogEntryDTO.from(logEntity)
-                ));
+                // 8. WebSocket 브로드캐스트 (비동기, 트랜잭션 외부)
+                List<ContainerLog> finalLogs = new ArrayList<>(containerLogs);
+                CompletableFuture.runAsync(() -> {
+                    for (ContainerLog logEntity : finalLogs) {
+                        try {
+                            messagingClient.send(
+                                    WsTopics.containerLogs(logEntity.getContainer().getId()),
+                                    ContainerLogEntryDTO.from(logEntity)
+                            );
+                        } catch (Exception e) {
+                            log.error("로그 브로드캐스트 실패 - containerId: {}",
+                                    logEntity.getContainer().getId(), e);
+                        }
+                    }
+                    log.debug("로그 비동기 브로드캐스트 완료 - {} 건", finalLogs.size());
+                }, broadcastTaskExecutor);
             } else {
                 log.debug("저장할 로그가 없음 - agentKey: {}", agentKey);
             }
