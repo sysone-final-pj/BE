@@ -52,7 +52,7 @@ public class ContainerLog {
     private Container container;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String logMessage;
 
     @Enumerated(EnumType.STRING)
