@@ -85,6 +85,12 @@ public class ContainerMetricsCalculator {
 
             log.info("[CPU CALC] 제한 기준 CPU %: {} (사용={} cores, 제한={} cores)",
                     percent.setScale(2, RoundingMode.HALF_UP), actualCoreUsage, cpuLimitCores);
+
+            // 100% 캐핑 (사용자 경험 개선)
+            if (percent.compareTo(BigDecimal.valueOf(100)) > 0) {
+                log.debug("[CPU CALC] CPU 사용률 100% 초과 ({}%) -> 100%로 캐핑", percent.setScale(2, RoundingMode.HALF_UP));
+                percent = BigDecimal.valueOf(100);
+            }
         }
         // CPU 제한이 없는 경우: 전체 코어 대비 사용률
         else {
