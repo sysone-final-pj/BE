@@ -4,6 +4,7 @@ import com.monito.domains.agent.domain.Agent;
 import com.monito.domains.agent.domain.AgentStatus;
 import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.*;
+import com.monito.domains.container.dto.projection.ContainerLogProjection;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
 import com.monito.domains.container.dto.request.ContainerMetricsRequest;
 import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
@@ -188,10 +189,10 @@ public class ContainerServiceImpl implements ContainerService {
         LocalDateTime startTime = request.isInitialLoad() ? request.getCalculatedStartTime() : null;
         LocalDateTime endTime = request.isInitialLoad() ? request.getCalculatedEndTime() : null;
 
-        // 5. 통합 메서드로 로그 조회
-        List<ContainerLog> logs = containerLogRepository.findLogs(
+        // 5. 통합 메서드로 로그 조회 (Native Query - CLOB 제외, 500자 미리보기)
+        List<Object[]> rawLogs = containerLogRepository.findLogsOptimizedNative(
                 validContainerIds,  // null이면 모든 컨테이너, 아니면 지정된 컨테이너들
-                request.getLogSource(),
+                request.getLogSource() != null ? request.getLogSource().name() : null,
                 request.getAgentName(),
                 request.getLastLogId(),
                 request.getLastLoggedAt(),
@@ -200,20 +201,38 @@ public class ContainerServiceImpl implements ContainerService {
                 pageRequest
         );
 
-        // 6. hasMore 판단 및 실제 반환할 로그 분리
-        boolean hasMore = logs.size() > requestSize;
-        List<ContainerLog> actualLogs = hasMore ? logs.subList(0, requestSize) : logs;
+        // 6. Object[] → ContainerLogProjection 변환
+        List<ContainerLogProjection> logs = rawLogs.stream()
+                .map(row -> new ContainerLogProjection(
+                        ((Number) row[0]).longValue(),  // id
+                        ((Number) row[1]).longValue(),  // containerId
+                        (String) row[2],                // containerHash
+                        (String) row[3],                // containerName
+                        ((Number) row[4]).longValue(),  // agentId
+                        (String) row[5],                // agentName
+                        (String) row[6],                // logMessagePreview
+                        LogSource.valueOf((String) row[7]),  // source
+                        ((java.sql.Timestamp) row[8]).toLocalDateTime(),  // loggedAt
+                        ((java.sql.Timestamp) row[9]).toLocalDateTime()   // createdAt
+                ))
+                .toList();
 
-        // 7. DTO 변환
+        // 7. hasMore 판단 및 실제 반환할 로그 분리
+        boolean hasMore = logs.size() > requestSize;
+        List<ContainerLogProjection> actualLogs =
+                hasMore ? logs.subList(0, requestSize) : logs;
+
+        // 8. DTO 변환 (Projection에서 변환)
         List<ContainerLogEntryDTO> logEntries = actualLogs.stream()
                 .map(ContainerLogEntryDTO::from)
                 .toList();
 
-        // 8. 다음 커서 정보
+        // 9. 다음 커서 정보
         Long lastLogId = null;
         LocalDateTime lastLoggedAt = null;
         if (!actualLogs.isEmpty()) {
-            ContainerLog lastLog = actualLogs.get(actualLogs.size() - 1);
+            ContainerLogProjection lastLog =
+                    actualLogs.get(actualLogs.size() - 1);
             lastLogId = lastLog.getId();
             lastLoggedAt = lastLog.getLoggedAt();
         }
