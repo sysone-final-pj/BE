@@ -45,6 +45,12 @@ public class ContainerMetricsCalculator {
             return BigDecimal.ZERO;
         }
 
+        // 음수 방지 (컨테이너 재시작, 카운터 리셋 등)
+        if (deltaCpu < 0) {
+            log.warn("[CPU CALC] CPU 사용량 음수 감지 (deltaCpu={}ns) -> 0 코어 반환 (컨테이너 재시작 또는 카운터 리셋 추정)", deltaCpu);
+            return BigDecimal.ZERO;
+        }
+
         // 실제 코어 사용량 = deltaCpu / timeDiff
         // 내부 계산은 고정밀도로, DB 저장/표시 시에만 반올림
         BigDecimal coreUsage = BigDecimal.valueOf(deltaCpu)
@@ -86,6 +92,12 @@ public class ContainerMetricsCalculator {
             log.info("[CPU CALC] 제한 기준 CPU %: {} (사용={} cores, 제한={} cores)",
                     percent.setScale(2, RoundingMode.HALF_UP), actualCoreUsage, cpuLimitCores);
 
+            // 음수 방지 (혹시 모를 예외 케이스)
+            if (percent.compareTo(BigDecimal.ZERO) < 0) {
+                log.warn("[CPU CALC] CPU 사용률 음수 감지 ({}%) -> 0%로 설정", percent.setScale(2, RoundingMode.HALF_UP));
+                percent = BigDecimal.ZERO;
+            }
+
             // 100% 캐핑 (사용자 경험 개선)
             if (percent.compareTo(BigDecimal.valueOf(100)) > 0) {
                 log.debug("[CPU CALC] CPU 사용률 100% 초과 ({}%) -> 100%로 캐핑", percent.setScale(2, RoundingMode.HALF_UP));
@@ -104,6 +116,12 @@ public class ContainerMetricsCalculator {
 
             log.info("[CPU CALC] 전체 코어 기준 CPU %: {} (사용={} cores, 전체={} cores)",
                     percent.setScale(2, RoundingMode.HALF_UP), actualCoreUsage, onlineCpus);
+
+            // 음수 방지 (혹시 모를 예외 케이스)
+            if (percent.compareTo(BigDecimal.ZERO) < 0) {
+                log.warn("[CPU CALC] CPU 사용률 음수 감지 ({}%) -> 0%로 설정", percent.setScale(2, RoundingMode.HALF_UP));
+                percent = BigDecimal.ZERO;
+            }
         }
 
         return percent.setScale(2, RoundingMode.HALF_UP);

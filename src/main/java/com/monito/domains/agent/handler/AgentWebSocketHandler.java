@@ -31,6 +31,9 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -41,6 +44,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private final ContainerLogService containerLogService;
     private final ContainerService containerService;
     private final AgentMetadataCache metadataCache;
+    private final Executor websocketTaskExecutor;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, String> authenticatedAgents = new ConcurrentHashMap<>();
@@ -89,10 +93,10 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                     handleContainerStateChange(session, data);
                     break;
                 case "METRICS":
-                    handleMetrics(session, data);
+                    handleMetricsAsync(session, data);
                     break;
                 case "LOGS":
-                    handleLogs(session, data);
+                    handleLogsAsync(session, data);
                     break;
                 case "PING":
                     handlePing(session);
@@ -615,6 +619,191 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         log.error("   Session ID: {}", sessionId);
         log.error("   Error: ", exception);
         log.error("═══════════════════════════════════════");
+    }
+
+    /**
+     * 로그 처리 (비동기)
+     * - 즉시 ACK 응답 후 백그라운드에서 처리
+     */
+    private void handleLogsAsync(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 로그 전송 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> logsData = (Map<String, Object>) data.get("data");
+            AgentLogsRequestDTO agentLogs = objectMapper.convertValue(
+                    logsData,
+                    AgentLogsRequestDTO.class
+            );
+
+            int totalContainers = agentLogs.getLogs() != null ? agentLogs.getLogs().size() : 0;
+            int totalLogs = 0;
+            if (agentLogs.getLogs() != null) {
+                totalLogs = agentLogs.getLogs().values().stream()
+                        .mapToInt(list -> list != null ? list.size() : 0)
+                        .sum();
+            }
+
+            log.info("═══════════════════════════════════════");
+            log.info("📝 로그 수신 (비동기 처리)");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   컨테이너 개수: {}", totalContainers);
+            log.info("   총 로그 개수: {}", totalLogs);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            // 비동기 처리
+            int finalTotalContainers = totalContainers;
+            int finalTotalLogs = totalLogs;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    containerLogService.processLogs(agentKey, agentLogs);
+                    log.info("✅ 로그 처리 완료 (비동기) - agentKey: {}, 총 로그: {}개", agentKey, finalTotalLogs);
+
+                    // 처리 완료 메시지 전송
+                    try {
+                        sendMessage(session, Map.of(
+                                "type", "LOGS_ACK",
+                                "message", String.format("Logs processed: %d logs from %d containers", finalTotalLogs, finalTotalContainers),
+                                "totalContainers", finalTotalContainers,
+                                "totalLogs", finalTotalLogs,
+                                "timestamp", System.currentTimeMillis()
+                        ));
+                    } catch (Exception e) {
+                        log.error("로그 처리 완료 메시지 전송 실패", e);
+                    }
+                } catch (Exception e) {
+                    log.error("❌ 로그 처리 실패 (비동기) - agentKey: {}", agentKey, e);
+
+                    // 에러 메시지 전송
+                    try {
+                        sendMessage(session, Map.of(
+                                "type", "ERROR",
+                                "message", "Failed to process logs: " + e.getMessage()
+                        ));
+                    } catch (Exception sendEx) {
+                        log.error("로그 처리 에러 메시지 전송 실패", sendEx);
+                    }
+                }
+            }, websocketTaskExecutor);
+
+        } catch (Exception e) {
+            log.error("로그 수신 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to receive logs: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 메트릭 처리 (비동기)
+     * - 즉시 ACK 응답 후 백그라운드에서 처리
+     */
+    private void handleMetricsAsync(WebSocketSession session, Map<String, Object> data) throws Exception {
+        String sessionId = session.getId();
+        String agentKey = authenticatedAgents.get(sessionId);
+
+        if (agentKey == null) {
+            log.warn("인증되지 않은 세션에서 메트릭 전송 시도: {}", sessionId);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Not authenticated. Please authenticate first."
+            ));
+            return;
+        }
+
+        try {
+            // JSON 데이터를 DTO로 변환
+            Map<String, Object> metricsData = (Map<String, Object>) data.get("data");
+            AgentMetricsRequestDTO agentMetrics = objectMapper.convertValue(
+                    metricsData,
+                    AgentMetricsRequestDTO.class
+            );
+
+            int containerCount = agentMetrics.getMetrics() != null ? agentMetrics.getMetrics().size() : 0;
+
+            log.info("═══════════════════════════════════════");
+            log.info("메트릭 수신 (비동기 처리)");
+            log.info("   Agent Key: {}", agentKey);
+            log.info("   컨테이너 개수: {}", containerCount);
+            log.info("   시각: {}", getCurrentTime());
+            log.info("═══════════════════════════════════════");
+
+            // 비동기 처리
+            CompletableFuture.runAsync(() -> {
+                int successCount = 0;
+                int failCount = 0;
+
+                try {
+                    if (agentMetrics.getMetrics() != null) {
+                        for (ContainerMetricsRawRequestDTO rawMetric : agentMetrics.getMetrics()) {
+                            try {
+                                // Flat DTO로 변환
+                                ContainerMetricsRequestDTO flatMetric = rawMetric.toFlatDTO();
+
+                                // DB 저장 (계산 포함)
+                                containerStatsService.processMetrics(agentKey, flatMetric);
+                                successCount++;
+
+                                log.debug("컨테이너 메트릭 저장 성공 (비동기) - Hash: {}, Name: {}",
+                                        flatMetric.getContainerHash(),
+                                        flatMetric.getContainerName());
+                            } catch (Exception e) {
+                                failCount++;
+                                log.error("컨테이너 메트릭 처리 실패 (비동기) - Hash: {}",
+                                        rawMetric.getContainerHash(), e);
+                            }
+                        }
+                    }
+
+                    log.info("✅ 메트릭 처리 완료 (비동기) - agentKey: {}, 성공: {}, 실패: {}",
+                            agentKey, successCount, failCount);
+
+                    // 처리 완료 메시지 전송
+                    try {
+                        sendMessage(session, Map.of(
+                                "type", "ACK",
+                                "message", String.format("Metrics processed: %d success, %d failed", successCount, failCount),
+                                "successCount", successCount,
+                                "failCount", failCount,
+                                "timestamp", System.currentTimeMillis()
+                        ));
+                    } catch (Exception e) {
+                        log.error("메트릭 처리 완료 메시지 전송 실패", e);
+                    }
+                } catch (Exception e) {
+                    log.error("❌ 메트릭 처리 중 예외 발생 - agentKey: {}", agentKey, e);
+
+                    // 에러 메시지 전송
+                    try {
+                        sendMessage(session, Map.of(
+                                "type", "ERROR",
+                                "message", "Failed to process metrics: " + e.getMessage()
+                        ));
+                    } catch (Exception sendEx) {
+                        log.error("메트릭 처리 에러 메시지 전송 실패", sendEx);
+                    }
+                }
+            }, websocketTaskExecutor);
+
+        } catch (Exception e) {
+            log.error("메트릭 수신 실패", e);
+            sendMessage(session, Map.of(
+                    "type", "ERROR",
+                    "message", "Failed to receive metrics: " + e.getMessage()
+            ));
+        }
     }
 
     private void sendMessage(WebSocketSession session, Map<String, Object> data) throws Exception {
