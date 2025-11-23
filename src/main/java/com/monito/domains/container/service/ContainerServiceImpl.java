@@ -52,6 +52,7 @@ public class ContainerServiceImpl implements ContainerService {
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final CpuMetricsCalculator cpuMetricsCalculator;
     private final ContainerSummaryCache containerSummaryCache;
+    private final ContainerLastStatsCache lastStatsCache;
     private final FavoriteCache favoriteCache;
     private final FavoriteRepository favoriteRepository;
 
@@ -442,6 +443,7 @@ public class ContainerServiceImpl implements ContainerService {
                 cpuMetricsBufferCache.removeContainer(container.getId());
                 oomEventCache.removeContainer(container.getId());
                 containerSummaryCache.remove(container.getId());
+                lastStatsCache.remove(container.getContainerHash());
 
                 // 2. 즐겨찾기 데이터 삭제 (DB + 캐시)
                 favoriteRepository.deleteByContainerId(container.getId());  // DB 삭제

@@ -16,6 +16,7 @@ import com.monito.domains.container.repository.ContainerRepository;
 import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.domains.favorite.repository.FavoriteRepository;
 import com.monito.global.cache.AgentMetadataCache;
+import com.monito.global.cache.ContainerLastStatsCache;
 import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
 import com.monito.global.cache.FavoriteCache;
@@ -40,6 +41,7 @@ public class AgentServiceImpl implements AgentService {
     private final ContainerRepository containerRepository;
     private final AgentMetadataCache agentMetadataCache;
     private final ContainerSummaryCache containerSummaryCache;
+    private final ContainerLastStatsCache lastStatsCache;
     private final CpuMetricsBufferCache cpuMetricsBufferCache;
     private final OomEventCache oomEventCache;
     private final FavoriteCache favoriteCache;
@@ -135,6 +137,7 @@ public class AgentServiceImpl implements AgentService {
             cpuMetricsBufferCache.removeContainer(container.getId());
             oomEventCache.removeContainer(container.getId());
             containerSummaryCache.remove(container.getId());
+            lastStatsCache.remove(container.getContainerHash());
 
             // 2. 즐겨찾기 데이터 삭제 (DB + 캐시)
             favoriteRepository.deleteByContainerId(container.getId());
