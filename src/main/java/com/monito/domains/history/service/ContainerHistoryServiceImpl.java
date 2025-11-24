@@ -2,8 +2,12 @@ package com.monito.domains.history.service;
 
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
+import com.monito.domains.container.dto.response.metrics.TimeSeriesDataDTO;
 import com.monito.domains.container.repository.ContainerRepository;
+import com.monito.domains.container.util.TimeSeriesDownSampler;
+import com.monito.domains.history.dto.request.ContainerChartRequest;
 import com.monito.domains.history.dto.request.ContainerHistoryRequest;
+import com.monito.domains.history.dto.response.ContainerChartResponse;
 import com.monito.domains.history.dto.response.ContainerHistoryPageResponse;
 import com.monito.domains.history.dto.response.ContainerHistoryResponse;
 import com.monito.domains.history.dto.response.ContainerListForHistoryDTO;
@@ -18,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -166,6 +172,129 @@ public class ContainerHistoryServiceImpl implements ContainerHistoryService {
                         .isDeleted(((Number) row[3]).intValue())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ContainerChartResponse getContainerChart(ContainerChartRequest request) {
+        log.info("컨테이너 차트 데이터 조회 - containerId: {}, metricField: {}, startTime: {}, endTime: {}",
+                request.getContainerId(), request.getMetricField(), request.getStartTime(), request.getEndTime());
+
+        // 1. 모든 히스토리 데이터 조회 (페이지 크기를 충분히 크게 설정)
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Direction.ASC, "collected_at"));
+        Page<Object[]> resultPage = containerHistoryRepository.findContainerHistory(
+                request.getStartTime(),
+                request.getEndTime(),
+                request.getContainerId(),
+                null, // isDeleted 필터 사용 안 함 (모든 데이터 조회)
+                pageable
+        );
+
+        // 2. 히스토리 데이터를 ContainerHistoryResponse로 변환
+        List<ContainerHistoryResponse> historyResponses = resultPage.getContent().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        // 3. 특정 메트릭 필드만 추출하여 TimeSeriesDataDTO 리스트 생성
+        List<TimeSeriesDataDTO> timeSeriesData = new ArrayList<>();
+        for (ContainerHistoryResponse response : historyResponses) {
+            BigDecimal value = extractMetricValue(response, request.getMetricField());
+            if (value != null) {
+                timeSeriesData.add(TimeSeriesDataDTO.from(response.getCollectedAt(), value));
+            }
+        }
+
+        int originalCount = timeSeriesData.size();
+        log.info("원본 데이터 포인트 개수: {}", originalCount);
+
+        // 4. 다운샘플링 적용
+        Duration duration = Duration.between(request.getStartTime(), request.getEndTime());
+        long totalMinutes = duration.toMinutes();
+        List<TimeSeriesDataDTO> sampledData = TimeSeriesDownSampler.autoDownSample(timeSeriesData, totalMinutes);
+
+        log.info("다운샘플링 후 데이터 포인트 개수: {}", sampledData.size());
+
+        // 5. 응답 생성
+        return ContainerChartResponse.builder()
+                .containerId(request.getContainerId())
+                .metricField(request.getMetricField())
+                .dataPoints(sampledData)
+                .originalCount(originalCount)
+                .sampledCount(sampledData.size())
+                .build();
+    }
+
+    /**
+     * ContainerHistoryResponse에서 특정 메트릭 필드의 값을 추출
+     * @param response 히스토리 응답 객체
+     * @param metricField 추출할 메트릭 필드명
+     * @return 메트릭 값 (BigDecimal)
+     */
+    private BigDecimal extractMetricValue(ContainerHistoryResponse response, String metricField) {
+        return switch (metricField) {
+            // CPU 메트릭
+            case "cpuPercent" -> response.getCpuPercent();
+            case "cpuCoreUsage" -> response.getCpuCoreUsage();
+            case "hostCpuUsageTotal" -> convertToBigDecimal(response.getHostCpuUsageTotal());
+            case "cpuUsageTotal" -> convertToBigDecimal(response.getCpuUsageTotal());
+            case "cpuUser" -> convertToBigDecimal(response.getCpuUser());
+            case "cpuSystem" -> convertToBigDecimal(response.getCpuSystem());
+            case "cpuQuota" -> convertToBigDecimal(response.getCpuQuota());
+            case "cpuPeriod" -> convertToBigDecimal(response.getCpuPeriod());
+            case "onlineCpus" -> convertToBigDecimal(response.getOnlineCpus());
+            case "throttlingPeriods" -> convertToBigDecimal(response.getThrottlingPeriods());
+            case "throttledPeriods" -> convertToBigDecimal(response.getThrottledPeriods());
+            case "throttledTime" -> convertToBigDecimal(response.getThrottledTime());
+            case "cpuLimitCores" -> response.getCpuLimitCores();
+
+            // Memory 메트릭
+            case "memPercent" -> response.getMemPercent();
+            case "memUsage" -> convertToBigDecimal(response.getMemUsage());
+            case "memMaxUsage" -> convertToBigDecimal(response.getMemMaxUsage());
+            case "memLimit" -> convertToBigDecimal(response.getMemLimit());
+
+            // Block I/O 메트릭
+            case "blkRead" -> convertToBigDecimal(response.getBlkRead());
+            case "blkWrite" -> convertToBigDecimal(response.getBlkWrite());
+            case "blkReadPerSec" -> convertToBigDecimal(response.getBlkReadPerSec());
+            case "blkWritePerSec" -> convertToBigDecimal(response.getBlkWritePerSec());
+
+            // Network 메트릭
+            case "rxBytes" -> convertToBigDecimal(response.getRxBytes());
+            case "txBytes" -> convertToBigDecimal(response.getTxBytes());
+            case "rxPackets" -> convertToBigDecimal(response.getRxPackets());
+            case "txPackets" -> convertToBigDecimal(response.getTxPackets());
+            case "networkTotalBytes" -> convertToBigDecimal(response.getNetworkTotalBytes());
+            case "rxBytesPerSec" -> convertToBigDecimal(response.getRxBytesPerSec());
+            case "txBytesPerSec" -> convertToBigDecimal(response.getTxBytesPerSec());
+            case "rxPps" -> convertToBigDecimal(response.getRxPps());
+            case "txPps" -> convertToBigDecimal(response.getTxPps());
+            case "rxFailureRate" -> response.getRxFailureRate();
+            case "txFailureRate" -> response.getTxFailureRate();
+            case "rxErrors" -> convertToBigDecimal(response.getRxErrors());
+            case "txErrors" -> convertToBigDecimal(response.getTxErrors());
+            case "rxDropped" -> convertToBigDecimal(response.getRxDropped());
+            case "txDropped" -> convertToBigDecimal(response.getTxDropped());
+
+            // Storage 메트릭
+            case "sizeRw" -> convertToBigDecimal(response.getSizeRw());
+            case "sizeRootFs" -> convertToBigDecimal(response.getSizeRootFs());
+            case "storageLimit" -> convertToBigDecimal(response.getStorageLimit());
+
+            default -> throw new IllegalArgumentException("지원하지 않는 메트릭 필드입니다: " + metricField);
+        };
+    }
+
+    /**
+     * Number 타입을 BigDecimal로 변환 (차트 데이터용)
+     */
+    private BigDecimal convertToBigDecimal(Number value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        return BigDecimal.valueOf(value.doubleValue());
     }
 
     /**
