@@ -172,14 +172,14 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             }
 
             // 12. 대시보드 컨테이너 상세 발행 (/topic/dashboard/detail/{id})
-            // - logs, storage 집계 데이터 포함
+            // - 실시간 메트릭만 전송 (logs, storage는 클라이언트에서 별도 조회)
             try {
-                DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
-                        container, agent, statsLog, containerLogRepository, dashboardRepository, LocalDate.now()
+                DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdate(
+                        container, agent, statsLog
                 );
                 messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 
-                log.debug("대시보드 상세 정보 발행 완료 (집계 포함) - containerId: {}, containerName: {}",
+                log.debug("대시보드 상세 정보 발행 완료 - containerId: {}, containerName: {}",
                         container.getId(), container.getName());
             } catch (Exception e) {
                 log.error("대시보드 상세 정보 발행 실패 - containerId: {}, error: {}",
@@ -417,13 +417,14 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                                     statsLog.getContainerHash(), e);
                         }
 
-                        // WebSocket 브로드캐스트
+                        // WebSocket 브로드캐스트 (DB 조회 없이 실시간 메트릭만 전송)
                         try {
                             ContainerCardResponseDTO cardDto = ContainerCardResponseDTO.of(container, statsLog);
                             messagingTemplate.convertAndSend(WsTopics.DASHBOARD_STATUS, cardDto);
 
-                            DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdateWithMetrics(
-                                    container, finalAgent, statsLog, containerLogRepository, dashboardRepository, LocalDate.now()
+                            // DB 조회 없는 버전 사용 (비동기 스레드에서 connection leak 방지)
+                            DashboardContainerDetailDTO dashboardDetail = DashboardContainerDetailDTO.forRealtimeUpdate(
+                                    container, finalAgent, statsLog
                             );
                             messagingClient.send(WsTopics.dashboardDetail(container.getId()), dashboardDetail);
 
