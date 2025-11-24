@@ -11,6 +11,8 @@ import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
 import com.monito.domains.container.dto.response.timeseries.TimeSeriesResponse;
+
+import java.time.Duration;
 import java.util.Set;
 import com.monito.domains.container.repository.ContainerLogRepository;
 import com.monito.domains.container.repository.ContainerRepository;
@@ -714,7 +716,7 @@ public class ContainerServiceImpl implements ContainerService {
         // 2. 시간 범위 계산
         LocalDateTime startTime = request.getCalculatedStartTime();
         LocalDateTime endTime = request.getCalculatedEndTime();
-        long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+        long totalMinutes = Duration.between(startTime, endTime).toMinutes();
 
         // 3. Projection을 통한 최적화된 데이터 조회 (Index-Only Scan)
         List<TimeSeriesDataPoint> projections = containerStatsLogRepository.findCpuUsageTimeSeries(

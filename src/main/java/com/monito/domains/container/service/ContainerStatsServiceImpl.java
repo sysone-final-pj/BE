@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.monito.domains.container.repository.ContainerStatsLogRepository;
 import com.monito.domains.container.util.ContainerMetricsCalculator;
@@ -327,7 +326,6 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
     }
 
     @Override
-    @Transactional
     public void processMetricsBatch(String agentKey, List<ContainerMetricsRequestDTO> metricsList) {
         if (metricsList == null || metricsList.isEmpty()) {
             return;
@@ -337,14 +335,13 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
         int totalMetrics = metricsList.size();
 
         try {
-            // 1. Agent 조회 (1회만)
-            Agent agent = agentRepository.findByAgentKey(agentKey)
-                    .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+            // 1. Agent 조회 (읽기 전용)
+            Agent agent = findAgentReadOnly(agentKey);
 
             List<ContainerStatsLog> statsLogList = new ArrayList<>();
             List<ContainerSummarySnapshot> snapshotList = new ArrayList<>();
 
-            // 2. 각 메트릭 처리 (계산 및 준비)
+            // 2. 각 메트릭 처리 (계산 및 준비) - 트랜잭션 외부에서 처리
             for (ContainerMetricsRequestDTO metricsDto : metricsList) {
                 try {
                     // 검증
@@ -357,22 +354,13 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                         continue;
                     }
 
-                    // Container 조회 또는 생성
-                    Container container = containerRepository
-                            .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
-                            .orElseGet(() -> createNewContainer(agent, metricsDto));
-
-                    updateSpecsIfChanged(container, metricsDto);
+                    // Container 조회 또는 생성 (필요시 쓰기 트랜잭션)
+                    Container container = findOrCreateContainer(agent, metricsDto);
 
                     // 이전 통계 조회 (캐시 우선)
                     ContainerStatsLog previousStats = lastStatsCache.get(metricsDto.getContainerHash());
                     if (previousStats == null) {
-                        previousStats = statsLogRepository
-                                .findLatestByContainerHash(
-                                        metricsDto.getContainerHash(),
-                                        LocalDateTime.now().minusHours(1)
-                                )
-                                .orElse(null);
+                        previousStats = findLatestStatsReadOnly(metricsDto.getContainerHash());
                     }
 
                     // 메트릭 계산 및 StatsLog 생성
@@ -398,18 +386,17 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
                 }
             }
 
-            // 3. Batch INSERT (핵심 성능 개선!)
+            // 3. Batch INSERT (짧은 쓰기 트랜잭션으로 분리)
             if (!statsLogList.isEmpty()) {
-                statsLogRepository.saveAll(statsLogList);
-                statsLogRepository.flush();  // 즉시 DB 반영
+                saveStatsLogBatch(statsLogList);
 
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 log.info("✅ 배치 메트릭 저장 완료 - agentKey: {}, 성공: {}/{}, 소요시간: {}ms",
                         agentKey, statsLogList.size(), totalMetrics, elapsedTime);
 
-                // 4. 캐시 업데이트 (트랜잭션 내에서 처리)
-                for (int i = 0; i < snapshotList.size(); i++) {
-                    containerSummaryCache.update(snapshotList.get(i));
+                // 4. 캐시 업데이트 (트랜잭션 외부)
+                for (ContainerSummarySnapshot snapshot : snapshotList) {
+                    containerSummaryCache.update(snapshot);
                 }
             }
 
@@ -457,5 +444,34 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
             log.error("배치 메트릭 처리 중 예상치 못한 오류 발생 - agentKey: {}", agentKey, e);
             throw new BadRequestException(ExceptionMessage.CONTAINER_METRICS_PROCESSING_FAILED);
         }
+    }
+
+    @Transactional(readOnly = true)
+    protected Agent findAgentReadOnly(String agentKey) {
+        return agentRepository.findByAgentKey(agentKey)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.AGENT_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    protected ContainerStatsLog findLatestStatsReadOnly(String containerHash) {
+        return statsLogRepository
+                .findLatestByContainerHash(containerHash, LocalDateTime.now().minusHours(1))
+                .orElse(null);
+    }
+
+    @Transactional
+    protected Container findOrCreateContainer(Agent agent, ContainerMetricsRequestDTO metricsDto) {
+        Container container = containerRepository
+                .findByAgentAndContainerHash(agent, metricsDto.getContainerHash())
+                .orElseGet(() -> createNewContainer(agent, metricsDto));
+
+        updateSpecsIfChanged(container, metricsDto);
+        return container;
+    }
+
+    @Transactional
+    protected void saveStatsLogBatch(List<ContainerStatsLog> statsLogList) {
+        statsLogRepository.saveAll(statsLogList);
+        statsLogRepository.flush();
     }
 }
