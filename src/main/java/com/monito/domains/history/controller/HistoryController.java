@@ -20,15 +20,66 @@ import java.util.List;
 
 /**
  * 컨테이너 히스토리 API Controller
- * - 컨테이너의 과거 메트릭 데이터 조회
+ *
+ * <p><b>역할:</b></p>
+ * <ul>
+ *   <li>컨테이너의 과거 메트릭 데이터 조회 API 제공</li>
+ *   <li>HTTP 요청을 받아 Service 계층으로 전달하고 응답 반환 (Presentation Layer)</li>
+ *   <li>RESTful API 설계 원칙 준수 (Resource-based URL, HTTP Method 활용)</li>
+ * </ul>
+ *
+ * <p><b>제공 기능:</b></p>
+ * <ul>
+ *   <li>히스토리 데이터 조회 (페이지네이션, 필터링, 정렬)</li>
+ *   <li>차트 데이터 조회 (특정 메트릭의 시계열 데이터, 다운샘플링)</li>
+ *   <li>컨테이너 목록 조회 (히스토리 조회용 필터 지원)</li>
+ * </ul>
+ *
+ * <p><b>계층화 아키텍처 (Layered Architecture):</b></p>
+ * <pre>
+ * Controller (Presentation) → Service (Business Logic) → Repository (Data Access)
+ * </pre>
+ * <ul>
+ *   <li>각 계층은 인접한 계층하고만 통신 (의존성 방향 단방향)</li>
+ *   <li>관심사의 분리 (Separation of Concerns): 각 계층은 자신의 책임만 수행</li>
+ *   <li>유지보수성, 테스트 용이성, 확장성 향상</li>
+ * </ul>
  */
 @Tag(name = "Container History", description = "컨테이너 히스토리 조회 API - 과거 메트릭 데이터 조회 및 분석")
+// Swagger/OpenAPI 문서에서 API를 그룹화하고 설명 추가
+// 장점: API 문서 자동 생성, 프론트엔드 개발자와 협업 용이
+
 @Slf4j
+// Lombok이 자동으로 Logger 인스턴스를 생성 (private static final Logger log = ...)
+// 장점: 로깅 코드 간결화, 로그 프레임워크 교체 용이 (SLF4J 추상화)
+
 @RestController
+// @Controller + @ResponseBody의 결합
+// 모든 메서드의 반환 값이 HTTP Response Body에 직접 작성됨 (JSON 직렬화)
+// 장점: RESTful API 개발에 최적화, @ResponseBody를 매번 작성할 필요 없음
+
 @RequestMapping("/api/history")
+// 이 컨트롤러의 모든 엔드포인트는 /api/history로 시작
+// 장점: URL 중복 제거, 일관된 API 경로 관리
+
 @RequiredArgsConstructor
+// Lombok이 final 필드에 대한 생성자를 자동 생성
+// Spring의 생성자 주입 패턴 구현 (Constructor Injection)
+// 장점:
+// - 불변성 보장: final 필드는 한 번만 초기화 가능
+// - 순환 참조 방지: 컴파일 타임에 순환 의존성 감지
+// - 테스트 용이성: Mock 객체 주입 쉬움
 public class HistoryController {
 
+    /**
+     * 컨테이너 히스토리 서비스
+     * <p>의존성 주입 (Dependency Injection) 패턴</p>
+     * <ul>
+     *   <li>final 키워드로 불변성 보장</li>
+     *   <li>@RequiredArgsConstructor를 통한 생성자 주입</li>
+     *   <li>인터페이스 타입으로 선언하여 느슨한 결합 (Loose Coupling) 달성</li>
+     * </ul>
+     */
     private final ContainerHistoryService containerHistoryService;
 
     @Operation(
@@ -121,6 +172,29 @@ public class HistoryController {
         return ApiResponse.ok(containers, "컨테이너 목록을 성공적으로 조회했습니다.");
     }
 
+    /**
+     * 컨테이너 차트 데이터 조회 API
+     *
+     * <p><b>기능:</b></p>
+     * <ul>
+     *   <li>특정 컨테이너의 특정 메트릭을 시계열 차트 데이터로 조회</li>
+     *   <li>TimeSeriesDownSampler를 통해 자동 다운샘플링 적용 (약 60개 포인트)</li>
+     *   <li>프론트엔드 차트 라이브러리에서 바로 사용 가능한 형식으로 반환</li>
+     * </ul>
+     *
+     * <p><b>디자인 패턴:</b></p>
+     * <ul>
+     *   <li>Query Parameter 패턴: 조회 조건을 URL 쿼리 파라미터로 전달</li>
+     *   <li>동적 필드 선택: metricField 파라미터로 40개 이상의 메트릭 지원</li>
+     *   <li>통일된 응답 형식: ApiResponse로 감싸서 일관성 있는 API 제공</li>
+     * </ul>
+     *
+     * @param startTime 조회 시작 시간 (ISO 8601 형식: yyyy-MM-dd'T'HH:mm:ss)
+     * @param endTime 조회 종료 시간
+     * @param containerId 컨테이너 ID
+     * @param metricField 조회할 메트릭 필드명 (예: cpuPercent, memPercent)
+     * @return 시계열 차트 데이터 (다운샘플링 적용)
+     */
     @Operation(
             summary = "컨테이너 차트 데이터 조회",
             description = """
@@ -142,6 +216,8 @@ public class HistoryController {
                     """
     )
     @GetMapping("/containers/chart")
+    // HTTP GET 메서드 매핑, URL: /api/history/containers/chart
+    // RESTful 원칙: GET은 데이터 조회(멱등성), 상태 변경 없음
     public ApiResponse<ContainerChartResponse> getContainerChart(
             @Parameter(description = "조회 시작 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)", required = true, example = "2024-01-01T00:00:00")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
