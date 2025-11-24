@@ -12,8 +12,8 @@ spring:
     password: ${DB_PASSWORD}
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      maximum-pool-size: 50          # 스레드 풀(40) + 여유분 10
-      minimum-idle: 10               # 최소 유지 커넥션
+      maximum-pool-size: 120         # 메트릭(20) + 로그(20) + 사용자 조회(60) + 여유분(20)
+      minimum-idle: 25               # 최소 유지 커넥션
       connection-timeout: 30000      # 커넥션 대기 시간 30초
       idle-timeout: 600000           # 유휴 커넥션 타임아웃 10분
       max-lifetime: 1800000          # 커넥션 최대 수명 30분

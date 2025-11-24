@@ -682,7 +682,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                                 "timestamp", System.currentTimeMillis()
                         ));
                     } catch (Exception e) {
-                        log.error("로그 처리 완료 메시지 전송 실패", e);
+                        log.warn("로그 처리 완료 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
                     }
                 } catch (Exception e) {
                     log.error("❌ 로그 처리 실패 (비동기) - agentKey: {}", agentKey, e);
@@ -694,7 +694,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                                 "message", "Failed to process logs: " + e.getMessage()
                         ));
                     } catch (Exception sendEx) {
-                        log.error("로그 처리 에러 메시지 전송 실패", sendEx);
+                        log.warn("로그 처리 에러 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
                     }
                 }
             }, websocketTaskExecutor);
@@ -768,7 +768,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                                     "timestamp", System.currentTimeMillis()
                             ));
                         } catch (Exception e) {
-                            log.error("메트릭 처리 완료 메시지 전송 실패", e);
+                            log.warn("메트릭 처리 완료 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
                         }
                     }
                 } catch (Exception e) {
@@ -781,7 +781,7 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                                 "message", "Failed to process metrics: " + e.getMessage()
                         ));
                     } catch (Exception sendEx) {
-                        log.error("메트릭 처리 에러 메시지 전송 실패", sendEx);
+                        log.warn("메트릭 처리 에러 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
                     }
                 }
             }, websocketTaskExecutor);
@@ -797,9 +797,19 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
     private void sendMessage(WebSocketSession session, Map<String, Object> data) throws Exception {
         if (session.isOpen()) {
-            String json = objectMapper.writeValueAsString(data);
-            session.sendMessage(new TextMessage(json));
-            log.debug("메시지 전송: {}", json);
+            try {
+                String json = objectMapper.writeValueAsString(data);
+                session.sendMessage(new TextMessage(json));
+                log.debug("메시지 전송: {}", json);
+            } catch (java.io.IOException e) {
+                // WebSocket 연결이 이미 끊어진 경우 (정상적인 상황)
+                if (e.getCause() instanceof java.nio.channels.ClosedChannelException ||
+                    e.getMessage() != null && e.getMessage().contains("ClosedChannelException")) {
+                    log.debug("메시지 전송 실패 - 연결이 이미 종료됨: sessionId={}", session.getId());
+                } else {
+                    throw e;  // 다른 IOException은 재throw
+                }
+            }
         }
     }
 
