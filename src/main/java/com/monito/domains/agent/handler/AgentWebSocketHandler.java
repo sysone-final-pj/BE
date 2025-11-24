@@ -664,6 +664,15 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             log.info("   시각: {}", getCurrentTime());
             log.info("═══════════════════════════════════════");
 
+            // 즉시 ACK 전송 (Agent 재연결 방지)
+            sendMessage(session, Map.of(
+                    "type", "LOGS_ACK",
+                    "message", String.format("Logs received: %d logs from %d containers", totalLogs, totalContainers),
+                    "totalContainers", totalContainers,
+                    "totalLogs", totalLogs,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
             // 비동기 처리
             int finalTotalContainers = totalContainers;
             int finalTotalLogs = totalLogs;
@@ -671,31 +680,8 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                 try {
                     containerLogService.processLogs(agentKey, agentLogs);
                     log.info("✅ 로그 처리 완료 (비동기) - agentKey: {}, 총 로그: {}개", agentKey, finalTotalLogs);
-
-                    // 처리 완료 메시지 전송
-                    try {
-                        sendMessage(session, Map.of(
-                                "type", "LOGS_ACK",
-                                "message", String.format("Logs processed: %d logs from %d containers", finalTotalLogs, finalTotalContainers),
-                                "totalContainers", finalTotalContainers,
-                                "totalLogs", finalTotalLogs,
-                                "timestamp", System.currentTimeMillis()
-                        ));
-                    } catch (Exception e) {
-                        log.warn("로그 처리 완료 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
-                    }
                 } catch (Exception e) {
                     log.error("❌ 로그 처리 실패 (비동기) - agentKey: {}", agentKey, e);
-
-                    // 에러 메시지 전송
-                    try {
-                        sendMessage(session, Map.of(
-                                "type", "ERROR",
-                                "message", "Failed to process logs: " + e.getMessage()
-                        ));
-                    } catch (Exception sendEx) {
-                        log.warn("로그 처리 에러 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
-                    }
                 }
             }, websocketTaskExecutor);
 
@@ -742,6 +728,14 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
             log.info("   시각: {}", getCurrentTime());
             log.info("═══════════════════════════════════════");
 
+            // 즉시 ACK 전송 (Agent 재연결 방지)
+            sendMessage(session, Map.of(
+                    "type", "ACK",
+                    "message", String.format("Metrics batch received: %d containers", containerCount),
+                    "containerCount", containerCount,
+                    "timestamp", System.currentTimeMillis()
+            ));
+
             // 비동기 배치 처리
             int finalContainerCount = containerCount;
             CompletableFuture.runAsync(() -> {
@@ -758,31 +752,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
                         log.info("✅ 메트릭 배치 처리 완료 (비동기) - agentKey: {}, 총: {}개",
                                 agentKey, metricsList.size());
-
-                        // 처리 완료 메시지 전송
-                        try {
-                            sendMessage(session, Map.of(
-                                    "type", "ACK",
-                                    "message", String.format("Metrics batch processed: %d containers", metricsList.size()),
-                                    "containerCount", metricsList.size(),
-                                    "timestamp", System.currentTimeMillis()
-                            ));
-                        } catch (Exception e) {
-                            log.warn("메트릭 처리 완료 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
-                        }
                     }
                 } catch (Exception e) {
                     log.error("❌ 메트릭 배치 처리 중 예외 발생 - agentKey: {}", agentKey, e);
-
-                    // 에러 메시지 전송
-                    try {
-                        sendMessage(session, Map.of(
-                                "type", "ERROR",
-                                "message", "Failed to process metrics: " + e.getMessage()
-                        ));
-                    } catch (Exception sendEx) {
-                        log.warn("메트릭 처리 에러 메시지 전송 실패 (연결 종료됨) - agentKey: {}", agentKey);
-                    }
                 }
             }, websocketTaskExecutor);
 
