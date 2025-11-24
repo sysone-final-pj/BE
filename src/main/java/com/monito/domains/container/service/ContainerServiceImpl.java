@@ -192,8 +192,10 @@ public class ContainerServiceImpl implements ContainerService {
         LocalDateTime endTime = request.isInitialLoad() ? request.getCalculatedEndTime() : null;
 
         // 5. 통합 메서드로 로그 조회 (Native Query - CLOB 제외, 500자 미리보기)
+        Integer containerIdsSize = (validContainerIds != null) ? validContainerIds.size() : null;
         List<Object[]> rawLogs = containerLogRepository.findLogsOptimizedNative(
                 validContainerIds,  // null이면 모든 컨테이너, 아니면 지정된 컨테이너들
+                containerIdsSize,   // Oracle IN 절 처리를 위한 size
                 request.getLogSource() != null ? request.getLogSource().name() : null,
                 request.getAgentName(),
                 request.getLastLogId(),

@@ -70,7 +70,7 @@ public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long
            "FROM container_logs cl " +
            "JOIN containers c ON cl.container_id = c.id " +
            "JOIN agents a ON c.agent_id = a.id " +
-           "WHERE (:containerIds IS NULL OR c.id IN :containerIds) " +
+           "WHERE (COALESCE(:containerIdsSize, 0) = 0 OR c.id IN :containerIds) " +
            "AND (:logSource IS NULL OR cl.source = :logSource) " +
            "AND (:agentName IS NULL OR a.agent_name LIKE '%' || :agentName || '%') " +
            "AND (:lastLoggedAt IS NULL OR " +
@@ -82,6 +82,7 @@ public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long
            nativeQuery = true)
     List<Object[]> findLogsOptimizedNative(
             @Param("containerIds") List<Long> containerIds,
+            @Param("containerIdsSize") Integer containerIdsSize,
             @Param("logSource") String logSource,
             @Param("agentName") String agentName,
             @Param("lastLogId") Long lastLogId,
