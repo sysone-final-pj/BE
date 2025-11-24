@@ -1,6 +1,8 @@
 package com.monito.domains.history.controller;
 
+import com.monito.domains.history.dto.request.ContainerChartRequest;
 import com.monito.domains.history.dto.request.ContainerHistoryRequest;
+import com.monito.domains.history.dto.response.ContainerChartResponse;
 import com.monito.domains.history.dto.response.ContainerHistoryPageResponse;
 import com.monito.domains.history.dto.response.ContainerListForHistoryDTO;
 import com.monito.domains.history.service.ContainerHistoryService;
@@ -117,5 +119,61 @@ public class HistoryController {
         List<ContainerListForHistoryDTO> containers = containerHistoryService.getContainerListForHistory(isDeleted);
 
         return ApiResponse.ok(containers, "컨테이너 목록을 성공적으로 조회했습니다.");
+    }
+
+    @Operation(
+            summary = "컨테이너 차트 데이터 조회",
+            description = """
+                    컨테이너의 특정 메트릭 필드를 시계열 데이터로 조회합니다.
+
+                    **주요 기능:**
+                    - ContainerHistoryResponse의 특정 필드만 선택하여 조회
+                    - 시계열 데이터 형태로 반환 (timestamp, value)
+                    - 차트 렌더링에 최적화된 데이터 구조
+
+                    **지원 메트릭 필드:**
+                    - **CPU**: cpuPercent, cpuCoreUsage, cpuUsageTotal 등
+                    - **Memory**: memPercent, memUsage, memMaxUsage 등
+                    - **Network**: rxBytes, txBytes, rxBytesPerSec, txBytesPerSec 등
+                    - **Block I/O**: blkRead, blkWrite, blkReadPerSec, blkWritePerSec 등
+                    - **Storage**: sizeRw, sizeRootFs 등
+
+                    **날짜 형식:** yyyy-MM-dd'T'HH:mm:ss (예: 2024-01-01T00:00:00)
+                    """
+    )
+    @GetMapping("/containers/chart")
+    public ApiResponse<ContainerChartResponse> getContainerChart(
+            @Parameter(description = "조회 시작 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)", required = true, example = "2024-01-01T00:00:00")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+
+            @Parameter(description = "조회 종료 시간 (yyyy-MM-dd'T'HH:mm:ss 형식)", required = true, example = "2024-01-31T23:59:59")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+
+            @Parameter(description = "컨테이너 ID", required = true, example = "123")
+            @RequestParam Long containerId,
+
+            @Parameter(description = """
+                    메트릭 필드명 (ContainerHistoryResponse의 필드명)
+
+                    예시:
+                    - cpuPercent: CPU 사용률
+                    - memPercent: 메모리 사용률
+                    - rxBytes: 네트워크 수신 바이트
+                    - txBytes: 네트워크 송신 바이트
+                    - blkRead: 블록 읽기 바이트
+                    - blkWrite: 블록 쓰기 바이트
+                    """, required = true, example = "cpuPercent")
+            @RequestParam String metricField
+    ) {
+        log.info("컨테이너 차트 데이터 조회 요청 - startTime: {}, endTime: {}, containerId: {}, metricField: {}",
+                startTime, endTime, containerId, metricField);
+
+        ContainerChartRequest request = new ContainerChartRequest(
+                startTime, endTime, containerId, metricField
+        );
+
+        ContainerChartResponse response = containerHistoryService.getContainerChart(request);
+
+        return ApiResponse.ok(response, "차트 데이터를 성공적으로 조회했습니다.");
     }
 }
