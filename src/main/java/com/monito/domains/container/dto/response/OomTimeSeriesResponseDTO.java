@@ -1,3 +1,8 @@
+/**
+ * OOM 시계열 데이터 응답 (HTTP 초기 로드용)
+ * - Histogram/Heatmap 차트 렌더링용
+ * - WebSocket 실시간 업데이트와 함께 사용
+ */
 package com.monito.domains.container.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -8,9 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * OOM 시계열 데이터 응답 (HTTP 초기 로드용)
- * - Histogram/Heatmap 차트 렌더링용
- * - WebSocket 실시간 업데이트와 함께 사용
+ 작성자: 백승준
  */
 @Getter
 @Builder

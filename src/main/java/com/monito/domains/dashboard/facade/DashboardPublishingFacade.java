@@ -1,3 +1,8 @@
+/**
+ * 대시보드 메트릭 발행 Facade
+ * - 컨테이너 메트릭 수집 시 WebSocket으로 브로드캐스트
+ * - 리스트 구독 및 상세 구독 분리
+ */
 package com.monito.domains.dashboard.facade;
 
 import com.monito.domains.agent.domain.Agent;
@@ -13,9 +18,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * 대시보드 메트릭 발행 Facade
- * - 컨테이너 메트릭 수집 시 WebSocket으로 브로드캐스트
- * - 리스트 구독 및 상세 구독 분리
+ 작성자: 이지민
  */
 @Component
 @RequiredArgsConstructor

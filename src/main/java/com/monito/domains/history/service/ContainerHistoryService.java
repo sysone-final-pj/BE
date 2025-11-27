@@ -7,7 +7,9 @@ import com.monito.domains.history.dto.response.ContainerHistoryPageResponse;
 import com.monito.domains.history.dto.response.ContainerListForHistoryDTO;
 
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 public interface ContainerHistoryService {
 
     /**

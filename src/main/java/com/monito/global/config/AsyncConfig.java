@@ -1,3 +1,7 @@
+/**
+ * 비동기 처리 설정
+ * - WebSocket 메시지 처리 (LOGS, METRICS)를 비동기로 처리하여 응답 지연 방지
+ */
 package com.monito.global.config;
 
 import lombok.extern.slf4j.Slf4j;
@@ -9,10 +13,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
-
 /**
- * 비동기 처리 설정
- * - WebSocket 메시지 처리 (LOGS, METRICS)를 비동기로 처리하여 응답 지연 방지
+ 작성자: 백승준
  */
 @Slf4j
 @Configuration

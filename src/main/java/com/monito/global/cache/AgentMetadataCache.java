@@ -1,16 +1,18 @@
-package com.monito.global.cache;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Agent 메타데이터 인메모리 캐시
  * - Agent의 시스템 정보 (hostTotalMemory, hostCpuCores 등)를 캐싱
  * - WebSocket 연결 시 업데이트
  * - 메트릭 계산 시 조회
  * 향후 Redis로 전환 가능
+ */
+package com.monito.global.cache;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.ConcurrentHashMap;
+/**
+ 작성자: 백승준
  */
 @Slf4j
 @Component

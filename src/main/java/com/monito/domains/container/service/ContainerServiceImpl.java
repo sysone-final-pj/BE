@@ -6,7 +6,7 @@ import com.monito.domains.agent.repository.AgentRepository;
 import com.monito.domains.container.domain.*;
 import com.monito.domains.container.dto.projection.ContainerLogProjection;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
-import com.monito.domains.container.dto.request.ContainerMetricsRequest;
+import com.monito.domains.container.dto.request.ContainerMetricsPageRequestDTO;
 import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.*;
 import com.monito.domains.container.dto.response.metrics.*;
@@ -40,7 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-
+/**
+ 작성자: 백승준
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -136,7 +138,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public ContainerDetailResponseDTO getContainerMetrics(Long containerId, ContainerMetricsRequest request) {
+    public ContainerDetailResponseDTO getContainerMetrics(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 조회
         Container container = containerRepository.findById(containerId)
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.DATA_NOT_FOUND));
@@ -709,7 +711,7 @@ public class ContainerServiceImpl implements ContainerService {
     // ==================== 시계열 데이터 전용 메서드 구현 ====================
 
     @Override
-    public TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsRequest request) {
+    public TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 존재 확인
         if (!containerRepository.existsById(containerId)) {
             throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
@@ -741,7 +743,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsRequest request) {
+    public TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 존재 확인
         if (!containerRepository.existsById(containerId)) {
             throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
@@ -773,7 +775,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsRequest request) {
+    public TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 존재 확인
         if (!containerRepository.existsById(containerId)) {
             throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
@@ -805,7 +807,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsRequest request) {
+    public TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 존재 확인
         if (!containerRepository.existsById(containerId)) {
             throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);
@@ -837,7 +839,7 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsRequest request) {
+    public TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request) {
         // 1. 컨테이너 존재 확인
         if (!containerRepository.existsById(containerId)) {
             throw new NotFoundException(ExceptionMessage.DATA_NOT_FOUND);

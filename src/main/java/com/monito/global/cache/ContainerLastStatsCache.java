@@ -1,3 +1,8 @@
+/**
+ * 컨테이너별 최신 통계 캐시
+ * - DB 조회 없이 이전 통계 데이터 제공
+ * - 메트릭 계산 성능 최적화 (delta 계산용)
+ */
 package com.monito.global.cache;
 
 import com.monito.domains.container.domain.ContainerStatsLog;
@@ -6,11 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * 컨테이너별 최신 통계 캐시
- * - DB 조회 없이 이전 통계 데이터 제공
- * - 메트릭 계산 성능 최적화 (delta 계산용)
+ 작성자: 백승준
  */
 @Component
 @Slf4j

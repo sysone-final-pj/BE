@@ -10,7 +10,9 @@ import com.monito.domains.agent.dto.response.AgentSummaryResponseDTO;
 import com.monito.domains.agent.dto.response.AgentUpdateResponseDTO;
 
 import java.util.List;
-
+/**
+ 작성자: 백승준
+ */
 public interface AgentService {
 
     /**

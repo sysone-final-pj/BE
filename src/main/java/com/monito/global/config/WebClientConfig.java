@@ -11,7 +11,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
-
+/**
+ 작성자: 백승준
+ */
 @Configuration
 public class WebClientConfig {
 

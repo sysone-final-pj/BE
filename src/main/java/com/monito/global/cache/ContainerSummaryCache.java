@@ -1,3 +1,8 @@
+/**
+ * 컨테이너 요약 정보 캐시 (사용자별 상태 없음)
+ * - Snapshot: 순수 컨테이너 데이터만 저장
+ * - 모든 사용자가 공유하는 캐시
+ */
 package com.monito.global.cache;
 
 import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
@@ -8,9 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 컨테이너 요약 정보 캐시 (사용자별 상태 없음)
- * - Snapshot: 순수 컨테이너 데이터만 저장
- * - 모든 사용자가 공유하는 캐시
+ 작성자: 백승준
  */
 @Component
 public class ContainerSummaryCache {

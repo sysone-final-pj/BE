@@ -11,7 +11,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+/**
+ 작성자: 백승준
+ */
 @Repository
 public interface ContainerLogRepository extends JpaRepository<ContainerLog, Long> {
 

@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 차트 데이터 응답 DTO
+ * - 특정 메트릭 필드의 시계열 데이터 목록
+ */
 package com.monito.domains.history.dto.response;
 
 import com.monito.domains.container.dto.response.metrics.TimeSeriesDataDTO;
@@ -8,10 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-
 /**
- * 컨테이너 차트 데이터 응답 DTO
- * - 특정 메트릭 필드의 시계열 데이터 목록
+ 작성자: 이지민
  */
 @Schema(description = "컨테이너 차트 데이터 응답 - 시계열 데이터 목록")
 @Getter

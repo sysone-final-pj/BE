@@ -1,3 +1,7 @@
+/**
+ * 대시보드 서비스
+ * - 대시보드 화면에 필요한 데이터 제공
+ */
 package com.monito.domains.dashboard.service;
 
 import com.monito.domains.dashboard.dto.request.ContainerFilterDTO;
@@ -10,8 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 대시보드 서비스
- * - 대시보드 화면에 필요한 데이터 제공
+ 작성자: 이지민
  */
 public interface DashboardService {
 

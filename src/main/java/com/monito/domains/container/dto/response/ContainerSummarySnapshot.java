@@ -1,3 +1,8 @@
+/**
+ * 캐시에 저장되는 컨테이너 스냅샷 (사용자별 상태 없음)
+ * - 모든 사용자가 공유하는 순수 컨테이너 데이터
+ * - isFavorite 필드 없음 (사용자별 상태는 FavoriteCache에서 관리)
+ */
 package com.monito.domains.container.dto.response;
 
 import com.monito.domains.container.domain.Container;
@@ -12,9 +17,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 
 /**
- * 캐시에 저장되는 컨테이너 스냅샷 (사용자별 상태 없음)
- * - 모든 사용자가 공유하는 순수 컨테이너 데이터
- * - isFavorite 필드 없음 (사용자별 상태는 FavoriteCache에서 관리)
+ 작성자: 백승준
  */
 @Getter
 @Builder

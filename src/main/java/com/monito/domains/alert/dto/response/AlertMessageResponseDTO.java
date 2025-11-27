@@ -1,3 +1,7 @@
+/**
+ * WebSocket을 통해 실시간으로 푸시되는 알림 메시지
+ * - 프론트엔드에서 토스트/팝업 알림을 표시하기 위한 응답 DTO
+ */
 package com.monito.domains.alert.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -8,8 +12,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * WebSocket을 통해 실시간으로 푸시되는 알림 메시지
- * - 프론트엔드에서 토스트/팝업 알림을 표시하기 위한 응답 DTO
+ 작성자: 이지민
  */
 @Getter
 @Builder

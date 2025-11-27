@@ -1,3 +1,6 @@
+/**
+ * Agent로부터 WebSocket으로 수신되는 컨테이너 메트릭 데이터
+ */
 package com.monito.domains.container.dto.request;
 
 import com.monito.domains.container.domain.ContainerHealth;
@@ -9,7 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * Agent로부터 WebSocket으로 수신되는 컨테이너 메트릭 데이터
+ 작성자: 백승준
  */
 @Getter
 @Builder

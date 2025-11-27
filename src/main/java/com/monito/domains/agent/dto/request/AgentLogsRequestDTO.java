@@ -1,3 +1,7 @@
+/**
+ * Agent로부터 받는 로그 데이터 DTO
+ * WebSocket LOGS 메시지의 data 필드에 해당
+ */
 package com.monito.domains.agent.dto.request;
 
 import com.monito.domains.container.dto.request.ContainerLogItemRequestDTO;
@@ -7,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Agent로부터 받는 로그 데이터 DTO
- * WebSocket LOGS 메시지의 data 필드에 해당
+ 작성자: 백승준
  */
 @Getter
 @Builder

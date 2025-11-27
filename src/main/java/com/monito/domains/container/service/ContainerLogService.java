@@ -1,9 +1,11 @@
+/**
+ * 컨테이너 로그 수집 및 저장 서비스
+ */
 package com.monito.domains.container.service;
 
 import com.monito.domains.agent.dto.request.AgentLogsRequestDTO;
-
 /**
- * 컨테이너 로그 수집 및 저장 서비스
+ 작성자: 백승준
  */
 public interface ContainerLogService {
 

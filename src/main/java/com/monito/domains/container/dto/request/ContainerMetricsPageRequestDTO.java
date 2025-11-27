@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 메트릭 조회 요청 DTO
+ * - Quick Range 또는 Custom Range로 시간 범위 지정
+ */
 package com.monito.domains.container.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -9,14 +13,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 컨테이너 메트릭 조회 요청 DTO
- * - Quick Range 또는 Custom Range로 시간 범위 지정
+ 작성자: 백승준
  */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ContainerMetricsRequest {
+public class ContainerMetricsPageRequestDTO {
 
     /**
      * Quick Range 사용 시
@@ -63,10 +66,10 @@ public class ContainerMetricsRequest {
         return endTime != null ? endTime : LocalDateTime.now();
     }
 
-    public static ContainerMetricsRequest of(QuickRangeType quickRange,
-                                             LocalDateTime startTime,
-                                             LocalDateTime endTime){
-        return ContainerMetricsRequest.builder()
+    public static ContainerMetricsPageRequestDTO of(QuickRangeType quickRange,
+                                                    LocalDateTime startTime,
+                                                    LocalDateTime endTime){
+        return ContainerMetricsPageRequestDTO.builder()
                 .quickRange(quickRange)
                 .startTime(startTime)
                 .endTime(endTime)

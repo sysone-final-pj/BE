@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
+/**
+ 작성자: 이지민
+ */
 @Getter
 @Builder
 @NoArgsConstructor

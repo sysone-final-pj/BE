@@ -1,3 +1,6 @@
+/**
+ * 삭제된 컨테이너 목록 조회 응답 DTO
+ */
 package com.monito.domains.container.dto.response;
 
 import com.monito.domains.container.domain.Container;
@@ -10,7 +13,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 삭제된 컨테이너 목록 조회 응답 DTO
+ 작성자: 백승준
  */
 @Getter
 @Builder

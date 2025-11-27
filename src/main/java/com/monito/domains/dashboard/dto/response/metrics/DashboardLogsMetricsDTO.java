@@ -1,3 +1,6 @@
+/**
+ * 대시보드 로그 메트릭 DTO (당일 0시 기준 집계)
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -7,7 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 대시보드 로그 메트릭 DTO (당일 0시 기준 집계)
+ 작성자: 이지민
  */
 @Getter
 @Builder

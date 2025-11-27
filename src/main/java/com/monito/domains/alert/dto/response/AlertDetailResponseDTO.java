@@ -1,3 +1,8 @@
+/**
+ * 알림 상세 조회 응답 DTO
+ * - 단일 알림 조회 (GET /api/alerts/{id})
+ * - 알림 생성 후 응답 (POST /api/alerts)
+ */
 package com.monito.domains.alert.dto.response;
 
 import com.monito.domains.alert.domain.Alert;
@@ -12,9 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 알림 상세 조회 응답 DTO
- * - 단일 알림 조회 (GET /api/alerts/{id})
- * - 알림 생성 후 응답 (POST /api/alerts)
+ 작성자: 이지민
  */
 @Getter
 @Builder

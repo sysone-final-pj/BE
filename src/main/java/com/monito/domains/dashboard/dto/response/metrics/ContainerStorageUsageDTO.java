@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+/**
+ 작성자: 이지민
+ */
 @Getter
 @Builder
 @NoArgsConstructor

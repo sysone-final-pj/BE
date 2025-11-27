@@ -1,12 +1,14 @@
+/**
+ * 히스토리 조회용 컨테이너 목록 DTO
+ */
 package com.monito.domains.history.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 /**
- * 히스토리 조회용 컨테이너 목록 DTO
+ 작성자: 이지민
  */
 @Getter
 @Builder

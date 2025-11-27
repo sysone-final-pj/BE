@@ -1,3 +1,6 @@
+/**
+ * STOMP WebSocket 설정 (Dashboard, Alert 전용)
+ */
 package com.monito.global.config;
 
 import lombok.RequiredArgsConstructor;
@@ -7,9 +10,8 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-
 /**
- * STOMP WebSocket 설정 (Dashboard, Alert 전용)
+ 작성자: 백승준
  */
 @Configuration
 @EnableWebSocketMessageBroker

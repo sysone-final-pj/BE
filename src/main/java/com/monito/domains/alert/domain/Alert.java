@@ -15,7 +15,9 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.NumericBooleanConverter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
+/**
+ 공동 작성자: 백승준, 이지민
+ */
 @Entity
 @Table(
         name = "alerts",

@@ -5,7 +5,9 @@ import com.monito.domains.alert.dto.request.AlertRuleUpdateRequestDTO;
 import com.monito.domains.alert.dto.response.AlertRuleResponseDTO;
 
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 /**
  * 알림 규칙 서비스 인터페이스
  */

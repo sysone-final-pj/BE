@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 차트 데이터 조회 요청 DTO
+ * - ContainerHistoryResponse의 특정 필드를 시계열 데이터로 조회
+ */
 package com.monito.domains.history.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -6,10 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
 /**
- * 컨테이너 차트 데이터 조회 요청 DTO
- * - ContainerHistoryResponse의 특정 필드를 시계열 데이터로 조회
+ 작성자: 이지민
  */
 @Schema(description = "컨테이너 차트 데이터 조회 요청")
 @Getter

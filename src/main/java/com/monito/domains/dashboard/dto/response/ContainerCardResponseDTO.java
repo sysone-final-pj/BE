@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 카드 리스트용 경량 DTO
+ * WebSocket 리스트 브로드캐스트에 사용 (/topic/dashboard/list)
+ */
 package com.monito.domains.dashboard.dto.response;
 
 import com.monito.domains.container.domain.Container;
@@ -12,8 +16,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * 컨테이너 카드 리스트용 경량 DTO
- * WebSocket 리스트 브로드캐스트에 사용 (/topic/dashboard/list)
+ 작성자: 이지민
  */
 @Getter
 @Builder

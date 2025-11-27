@@ -1,3 +1,9 @@
+/**
+ * 컨테이너 메트릭 계산 유틸리티
+ * - CPU 사용률 계산
+ * - Memory 사용률 계산
+ * - 네트워크 속도 계산 (Mbps, PPS)
+ */
 package com.monito.domains.container.util;
 
 import com.monito.domains.container.domain.ContainerStatsLog;
@@ -10,10 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 컨테이너 메트릭 계산 유틸리티
- * - CPU 사용률 계산
- * - Memory 사용률 계산
- * - 네트워크 속도 계산 (Mbps, PPS)
+ 작성자: 백승준
  */
 @Component
 @Slf4j

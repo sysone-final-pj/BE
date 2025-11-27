@@ -4,7 +4,9 @@ import com.monito.domains.member.domain.Member;
 import com.monito.domains.member.dto.request.MemberCreateRequestDTO;
 import com.monito.domains.member.dto.request.MemberUpdateRequestDTO;
 import java.util.List;
-
+/**
+ 작성자: 백승준
+ */
 public interface MemberService {
     Member createMember(MemberCreateRequestDTO memberCreateRequestDTO);
     Member getMemberById(Long id);

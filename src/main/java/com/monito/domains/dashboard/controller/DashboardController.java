@@ -1,3 +1,7 @@
+/**
+ * 대시보드 API Controller
+ * - 대시보드 화면 전용 API
+ */
 package com.monito.domains.dashboard.controller;
 
 import com.monito.domains.container.domain.ContainerHealth;
@@ -30,8 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 대시보드 API Controller
- * - 대시보드 화면 전용 API
+ 작성자: 이지민
  */
 @Slf4j
 @RestController

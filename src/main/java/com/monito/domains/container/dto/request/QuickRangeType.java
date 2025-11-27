@@ -1,11 +1,14 @@
+/**
+ * Quick Range 시간 옵션
+ * - 사용자의 현재 시간 기준으로 과거 데이터 조회
+ */
 package com.monito.domains.container.dto.request;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Quick Range 시간 옵션
- * - 사용자의 현재 시간 기준으로 과거 데이터 조회
+ 작성자: 백승준
  */
 @Getter
 @RequiredArgsConstructor

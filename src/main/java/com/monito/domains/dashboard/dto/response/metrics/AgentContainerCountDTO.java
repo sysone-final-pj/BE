@@ -1,3 +1,7 @@
+/**
+ * Agent별 컨테이너 개수 집계 DTO
+ * - 대시보드 통계용
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import lombok.AccessLevel;
@@ -5,8 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * Agent별 컨테이너 개수 집계 DTO
- * - 대시보드 통계용
+ 작성자: 이지민
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PUBLIC)

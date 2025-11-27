@@ -1,3 +1,12 @@
+/**
+ * 알림 규칙 임계값 검증 로직
+ *
+ * 검증 규칙:
+ * 1. 최소 1개 이상의 임계값 필수 (Create 시)
+ * 2. 모든 임계값은 0보다 커야 함
+ * 3. 설정된 임계값들 간의 순서: 0 < info < warning < high < critical
+ * 4. 설정되지 않은 임계값(null)은 무시
+ */
 package com.monito.domains.alert.validator;
 
 import com.monito.domains.alert.dto.request.AlertRuleCreateRequestDTO;
@@ -8,15 +17,8 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
 /**
- * 알림 규칙 임계값 검증 로직
- *
- * 검증 규칙:
- * 1. 최소 1개 이상의 임계값 필수 (Create 시)
- * 2. 모든 임계값은 0보다 커야 함
- * 3. 설정된 임계값들 간의 순서: 0 < info < warning < high < critical
- * 4. 설정되지 않은 임계값(null)은 무시
+ 작성자: 이지민
  */
 public class ThresholdsValidator implements ConstraintValidator<ValidThresholds, Object> {
 

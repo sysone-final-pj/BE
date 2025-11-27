@@ -1,3 +1,7 @@
+/**
+ * OOM 이벤트 정보
+ * - 컨테이너별 OOM 발생 시각 저장
+ */
 package com.monito.global.cache;
 
 import lombok.AllArgsConstructor;
@@ -7,8 +11,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * OOM 이벤트 정보
- * - 컨테이너별 OOM 발생 시각 저장
+ 작성자: 백승준
  */
 @Getter
 @Builder

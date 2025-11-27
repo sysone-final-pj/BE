@@ -1,3 +1,9 @@
+/**
+ * OOM 이벤트 하이브리드 캐시
+ * - 인메모리 캐시: 빠른 조회
+ * - DB 저장: 서버 재시작 시 복구
+ * - 7일 보관, 자동 정리
+ */
 package com.monito.global.cache;
 
 import com.monito.domains.container.domain.Container;
@@ -19,10 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * OOM 이벤트 하이브리드 캐시
- * - 인메모리 캐시: 빠른 조회
- * - DB 저장: 서버 재시작 시 복구
- * - 7일 보관, 자동 정리
+ 작성자: 백승준
  */
 @Slf4j
 @Component

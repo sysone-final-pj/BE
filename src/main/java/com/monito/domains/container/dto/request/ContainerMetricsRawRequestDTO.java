@@ -1,14 +1,3 @@
-package com.monito.domains.container.dto.request;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.monito.domains.container.domain.ContainerHealth;
-import com.monito.domains.container.domain.ContainerState;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import java.time.LocalDateTime;
-
 /**
  * Agent가 보내는 개별 컨테이너 메트릭 (중첩 구조 그대로)
  * {
@@ -21,6 +10,20 @@ import java.time.LocalDateTime;
  *   "blockIO": {...}
  *   "storage": {...}
  * }
+ */
+package com.monito.domains.container.dto.request;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.monito.domains.container.domain.ContainerHealth;
+import com.monito.domains.container.domain.ContainerState;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import java.time.LocalDateTime;
+
+/**
+ 작성자: 백승준
  */
 @Getter
 @Builder

@@ -10,7 +10,9 @@ import org.springframework.stereotype.Repository;
 import com.monito.domains.container.domain.ContainerStatsLog;
 
 import java.time.LocalDateTime;
-
+/**
+ 작성자: 이지민
+ */
 @Repository
 public interface ContainerHistoryRepository extends JpaRepository<ContainerStatsLog, Long> {
 

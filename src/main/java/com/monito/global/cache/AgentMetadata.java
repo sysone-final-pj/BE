@@ -1,14 +1,16 @@
+/**
+ * Agent 메타데이터 (캐싱용)
+ * - 자주 변하지 않는 Agent의 시스템 정보
+ * - 메트릭 계산 시 사용
+ */
 package com.monito.global.cache;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 /**
- * Agent 메타데이터 (캐싱용)
- * - 자주 변하지 않는 Agent의 시스템 정보
- * - 메트릭 계산 시 사용
+ 작성자: 백승준
  */
 @Getter
 @Builder

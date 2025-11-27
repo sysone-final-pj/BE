@@ -1,3 +1,8 @@
+/**
+ * 알림 평가 Facade
+ * - 컨테이너 메트릭 평가 프로세스 전체를 조율
+ * - 외부(Controller, Scheduler, Agent)에서 호출하는 단일 진입점
+ */
 package com.monito.domains.alert.facade;
 
 import com.monito.domains.alert.service.AlertRuleEvaluatorService;
@@ -7,11 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
 /**
- * 알림 평가 Facade
- * - 컨테이너 메트릭 평가 프로세스 전체를 조율
- * - 외부(Controller, Scheduler, Agent)에서 호출하는 단일 진입점
+ 작성자: 이지민
  */
 @Slf4j
 @Component

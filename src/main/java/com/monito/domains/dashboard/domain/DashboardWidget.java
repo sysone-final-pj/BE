@@ -16,7 +16,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
+/**
+ 작성자: 백승준
+ */
 @Entity
 @Table(
         name = "dashboard_widget",

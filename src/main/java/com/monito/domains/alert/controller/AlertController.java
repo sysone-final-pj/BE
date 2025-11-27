@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/alerts")

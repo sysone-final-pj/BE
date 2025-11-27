@@ -1,3 +1,6 @@
+/**
+ * 시계열 데이터 응답 (메타데이터 포함)
+ */
 package com.monito.domains.container.dto.response.timeseries;
 
 import com.monito.domains.container.dto.response.metrics.TimeSeriesDataDTO;
@@ -9,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 시계열 데이터 응답 (메타데이터 포함)
+ 작성자: 백승준
  */
 @Getter
 @Builder

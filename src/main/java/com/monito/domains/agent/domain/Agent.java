@@ -17,7 +17,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLRestriction;
-
+/**
+ 작성자: 백승준
+ */
 @Entity
 @Table(
         name = "agents",

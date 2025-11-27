@@ -1,3 +1,7 @@
+/**
+ * 서버 시작 시 ContainerSummaryCache를 초기화하는 컴포넌트
+ * - DB에서 모든 컨테이너와 최신 메트릭을 조회하여 캐시에 로드
+ */
 package com.monito.global.cache;
 
 import com.monito.domains.container.domain.Container;
@@ -15,8 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 서버 시작 시 ContainerSummaryCache를 초기화하는 컴포넌트
- * - DB에서 모든 컨테이너와 최신 메트릭을 조회하여 캐시에 로드
+ 작성자: 백승준
  */
 @Component
 @RequiredArgsConstructor

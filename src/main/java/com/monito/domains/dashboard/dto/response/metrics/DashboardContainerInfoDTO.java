@@ -1,3 +1,7 @@
+/**
+ * 대시보드 컨테이너 기본 정보 DTO
+ * - 컨테이너 기본 정보 + 이미지 정보 통합
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import com.monito.domains.agent.domain.Agent;
@@ -11,8 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 대시보드 컨테이너 기본 정보 DTO
- * - 컨테이너 기본 정보 + 이미지 정보 통합
+ 작성자: 이지민
  */
 @Getter
 @Builder

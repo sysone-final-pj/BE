@@ -1,3 +1,9 @@
+/**
+ * OOM 메트릭 DTO
+ * - 시간대별 OOM 발생 횟수 (HOURS 고정)
+ * - Bar 차트용: X축=시간대(00~23), Y축=OOM 횟수
+ * - Hover 시 세부 정보 표시용
+ */
 package com.monito.domains.container.dto.response.metrics;
 
 import com.monito.domains.container.domain.Container;
@@ -9,10 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * OOM 메트릭 DTO
- * - 시간대별 OOM 발생 횟수 (HOURS 고정)
- * - Bar 차트용: X축=시간대(00~23), Y축=OOM 횟수
- * - Hover 시 세부 정보 표시용
+ 작성자: 백승준
  */
 @Getter
 @Builder

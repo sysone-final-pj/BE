@@ -1,3 +1,7 @@
+/**
+ * AlertRule의 CRUD API
+ * - 규칙 생성/단일조회/목록조회/단일수정
+ */
 package com.monito.domains.alert.dto.response;
 
 import com.monito.domains.alert.domain.AlertRule;
@@ -10,8 +14,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 /**
- * AlertRule의 CRUD API
- * - 규칙 생성/단일조회/목록조회/단일수정
+ 작성자: 이지민
  */
 @Getter
 @Builder

@@ -1,5 +1,7 @@
 package com.monito.infrastructure.messaging;
-
+/**
+ 작성자: 백승준
+ */
 public final class WsTopics {
     public static final String CONTAINER_SUMMARY = "/topic/containers/summary";
     public static final String AGENT_STATUS = "/topic/agents/status";

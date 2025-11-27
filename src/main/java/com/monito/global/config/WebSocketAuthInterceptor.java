@@ -1,3 +1,8 @@
+/**
+ * WebSocket 인증 Interceptor
+ * - STOMP CONNECT 시 JWT 토큰을 검증하고 사용자 Principal 설정
+ * - convertAndSendToUser()가 동작하기 위해 필수
+ */
 package com.monito.global.config;
 
 import com.monito.global.security.jwt.JwtTokenProvider;
@@ -16,11 +21,8 @@ import org.springframework.stereotype.Component;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
-
 /**
- * WebSocket 인증 Interceptor
- * - STOMP CONNECT 시 JWT 토큰을 검증하고 사용자 Principal 설정
- * - convertAndSendToUser()가 동작하기 위해 필수
+ 작성자: 백승준
  */
 @Slf4j
 @Component

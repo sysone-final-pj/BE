@@ -1,3 +1,7 @@
+/**
+ * AlertRuleEvaluator에서 AlertService로 알림 생성 요청 시 사용하는 DTO
+ * - 파라미터 간소화 및 응집도 향상 용도
+ */
 package com.monito.domains.alert.dto.internal;
 
 import com.monito.domains.alert.domain.Alert;
@@ -13,8 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * AlertRuleEvaluator에서 AlertService로 알림 생성 요청 시 사용하는 DTO
- * - 파라미터 간소화 및 응집도 향상 용도
+ 작성자: 이지민
  */
 @Getter
 @Builder

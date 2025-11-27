@@ -6,7 +6,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-
+/**
+ 작성자: 백승준
+ */
 @Data
 public class MemberCreateRequestDTO {
     @NotBlank(message = "계정 ID는 필수입니다")
