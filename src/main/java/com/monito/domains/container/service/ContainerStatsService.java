@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 통계 수집 및 저장 서비스
+ */
 package com.monito.domains.container.service;
 
 import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
@@ -5,7 +8,7 @@ import com.monito.domains.container.dto.request.ContainerMetricsRequestDTO;
 import java.util.List;
 
 /**
- * 컨테이너 통계 수집 및 저장 서비스
+ 작성자: 백승준
  */
 public interface ContainerStatsService {
 

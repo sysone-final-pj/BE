@@ -1,8 +1,12 @@
+/**
+ * 컨테이너 API Controller
+ * - 컨테이너 목록 조회, 메트릭 조회, 로그 조회
+ */
 package com.monito.domains.container.controller;
 
 import com.monito.domains.container.domain.*;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
-import com.monito.domains.container.dto.request.ContainerMetricsRequest;
+import com.monito.domains.container.dto.request.ContainerMetricsPageRequestDTO;
 import com.monito.domains.container.dto.request.QuickRangeType;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
@@ -21,10 +25,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 /**
- * 컨테이너 API Controller
- * - 컨테이너 목록 조회, 메트릭 조회, 로그 조회
+ 작성자: 백승준
  */
 @Slf4j
 @RestController
@@ -95,7 +97,7 @@ public class ContainerController {
 
         ContainerDetailResponseDTO response = containerService.getContainerMetrics(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "컨테이너 메트릭 조회 성공");
     }
@@ -194,7 +196,7 @@ public class ContainerController {
 
         TimeSeriesResponse response = containerService.getCpuUsageTimeSeries(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "CPU 사용률 시계열 데이터 조회 성공");
     }
@@ -227,7 +229,7 @@ public class ContainerController {
 
         TimeSeriesResponse response = containerService.getMemoryUsageTimeSeries(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "메모리 사용률 시계열 데이터 조회 성공");
     }
@@ -260,7 +262,7 @@ public class ContainerController {
 
         TimeSeriesResponse response = containerService.getNetworkRxTimeSeries(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "네트워크 수신 속도 시계열 데이터 조회 성공");
     }
@@ -293,7 +295,7 @@ public class ContainerController {
 
         TimeSeriesResponse response = containerService.getNetworkTxTimeSeries(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "네트워크 송신 속도 시계열 데이터 조회 성공");
     }
@@ -326,7 +328,7 @@ public class ContainerController {
 
         TimeSeriesResponse response = containerService.getNetworkPacketsTimeSeries(
                 containerId,
-                ContainerMetricsRequest.of(quickRange, startTime, endTime)
+                ContainerMetricsPageRequestDTO.of(quickRange, startTime, endTime)
         );
         return ApiResponse.ok(response, "네트워크 패킷 레이트 시계열 데이터 조회 성공");
     }

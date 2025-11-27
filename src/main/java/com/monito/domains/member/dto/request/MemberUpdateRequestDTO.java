@@ -3,7 +3,9 @@ package com.monito.domains.member.dto.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-
+/**
+ 공동 작성자: 김슬기, 백승준
+ */
 @Data
 public class MemberUpdateRequestDTO {
     @Size(max = 255, message = "이메일은 255자 이하여야 합니다")

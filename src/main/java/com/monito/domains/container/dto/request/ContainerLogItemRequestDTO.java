@@ -1,3 +1,6 @@
+/**
+ * Agent로부터 받는 개별 로그 항목 DTO
+ */
 package com.monito.domains.container.dto.request;
 
 import com.monito.domains.container.domain.Container;
@@ -9,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 
 /**
- * Agent로부터 받는 개별 로그 항목 DTO
+ 작성자: 백승준
  */
 @Slf4j
 @Getter

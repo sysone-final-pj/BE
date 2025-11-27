@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 이미지 정보 DTO
+ * Docker 이미지 정보를 REPOSITORY, TAG, IMAGE ID, SIZE 형태로 제공
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import com.monito.domains.container.domain.Container;
@@ -6,8 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * 컨테이너 이미지 정보 DTO
- * Docker 이미지 정보를 REPOSITORY, TAG, IMAGE ID, SIZE 형태로 제공
+ 작성자: 이지민
  */
 @Getter
 @Builder

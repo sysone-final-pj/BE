@@ -1,3 +1,8 @@
+/**
+ * 시계열 데이터 다운샘플링 유틸리티
+ * - 대량의 시계열 데이터를 효율적으로 축소
+ * - 평균값(AVG) 기반 집계
+ */
 package com.monito.domains.container.util;
 
 import com.monito.domains.container.dto.response.metrics.TimeSeriesDataDTO;
@@ -10,11 +15,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 /**
- * 시계열 데이터 다운샘플링 유틸리티
- * - 대량의 시계열 데이터를 효율적으로 축소
- * - 평균값(AVG) 기반 집계
+ 작성자: 백승준
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TimeSeriesDownSampler {

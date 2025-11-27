@@ -10,7 +10,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+/**
+ 작성자: 백승준
+ */
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor

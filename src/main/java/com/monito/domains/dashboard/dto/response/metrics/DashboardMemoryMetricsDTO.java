@@ -1,3 +1,6 @@
+/**
+ * 대시보드 메모리 메트릭 DTO
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import com.monito.domains.container.domain.Container;
@@ -9,7 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 대시보드 메모리 메트릭 DTO
+ 작성자: 이지민
  */
 @Getter
 @Builder

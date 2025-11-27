@@ -1,3 +1,7 @@
+/**
+ * Agent 메타데이터 정보 DTO
+ * - WebSocket AGENT_INFO 메시지로 수신
+ */
 package com.monito.domains.agent.dto.request;
 
 import lombok.AllArgsConstructor;
@@ -6,8 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * Agent 메타데이터 정보 DTO
- * - WebSocket AGENT_INFO 메시지로 수신
+ 작성자: 백승준
  */
 @Getter
 @Builder

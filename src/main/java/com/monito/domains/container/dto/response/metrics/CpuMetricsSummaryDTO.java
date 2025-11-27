@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-
+/**
+ 작성자: 백승준
+ */
 @Getter
 @Builder
 @AllArgsConstructor

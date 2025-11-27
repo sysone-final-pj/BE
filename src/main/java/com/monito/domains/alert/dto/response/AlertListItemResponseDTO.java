@@ -1,3 +1,8 @@
+/**
+ * 알림 목록 조회 응답 DTO (경량)
+ * - 알림 목록 조회 (GET /api/alerts)
+ * - 읽지 않은 알림 목록 조회 (GET /api/alerts/unread)
+ */
 package com.monito.domains.alert.dto.response;
 
 import com.monito.domains.alert.domain.Alert;
@@ -10,11 +15,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 /**
- * 알림 목록 조회 응답 DTO (경량)
- * - 알림 목록 조회 (GET /api/alerts)
- * - 읽지 않은 알림 목록 조회 (GET /api/alerts/unread)
+ 작성자: 이지민
  */
 @Getter
 @Builder

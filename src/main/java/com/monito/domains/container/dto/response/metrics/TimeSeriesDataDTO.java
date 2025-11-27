@@ -1,3 +1,7 @@
+/**
+ * 시계열 데이터 포인트
+ * - 차트 표시용 데이터
+ */
 package com.monito.domains.container.dto.response.metrics;
 
 import lombok.AllArgsConstructor;
@@ -8,8 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 시계열 데이터 포인트
- * - 차트 표시용 데이터
+ 작성자: 백승준
  */
 @Getter
 @Builder

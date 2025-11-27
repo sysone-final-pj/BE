@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 로그 엔트리 DTO
+ */
 package com.monito.domains.container.dto.response;
 
 import com.monito.domains.container.domain.ContainerLog;
@@ -10,7 +13,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 컨테이너 로그 엔트리 DTO
+ 작성자: 백승준
  */
 @Getter
 @Builder

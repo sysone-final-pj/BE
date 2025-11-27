@@ -1,3 +1,6 @@
+/**
+ * 대시보드 CPU 메트릭 DTO
+ */
 package com.monito.domains.dashboard.dto.response.metrics;
 
 import com.monito.domains.container.domain.Container;
@@ -12,7 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * 대시보드 CPU 메트릭 DTO
+ 작성자: 이지민
  */
 @Getter
 @Builder

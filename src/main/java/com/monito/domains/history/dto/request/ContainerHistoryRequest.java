@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
-
+/**
+ 작성자: 이지민
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

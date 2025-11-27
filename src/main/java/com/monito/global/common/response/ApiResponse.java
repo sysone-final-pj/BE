@@ -2,7 +2,9 @@ package com.monito.global.common.response;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+/**
+ 작성자: 백승준
+ */
 @NoArgsConstructor
 @Getter
 public class ApiResponse<T> {

@@ -1,3 +1,6 @@
+/**
+ * Agent 상태 변경 WebSocket 메시지 DTO
+ */
 package com.monito.domains.agent.dto.response;
 
 import com.monito.domains.agent.domain.Agent;
@@ -10,7 +13,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * Agent 상태 변경 WebSocket 메시지 DTO
+ 작성자: 백승준
  */
 @Getter
 @Builder

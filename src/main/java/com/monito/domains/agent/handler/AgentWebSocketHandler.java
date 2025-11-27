@@ -35,7 +35,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
+/**
+ 작성자: 백승준
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

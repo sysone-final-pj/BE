@@ -1,12 +1,14 @@
+/**
+ * Host 시스템 정보 DTO
+ */
 package com.monito.domains.agent.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 /**
- * Host 시스템 정보 DTO
+ 작성자: 백승준
  */
 @Getter
 @Builder

@@ -1,5 +1,12 @@
 package com.monito.domains.dashboard.dto.request;
-
+/**
+ * 대시보드 컨테이너 필터 DTO
+ * - 검색 키워드
+ * - favorite/All 선택
+ * - State 다중 선택
+ * - Health 다중 선택
+ * - Agent 다중 선택
+ */
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerState;
 import lombok.AllArgsConstructor;
@@ -8,14 +15,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-
 /**
- * 대시보드 컨테이너 필터 DTO
- * - 검색 키워드
- * - favorite/All 선택
- * - State 다중 선택
- * - Health 다중 선택
- * - Agent 다중 선택
+ 작성자: 이지민
  */
 @Getter
 @Builder

@@ -7,7 +7,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+/**
+ 작성자: 백승준
+ */
 public interface OomEventRepository extends JpaRepository<OomEventEntity, Long> {
 
     /**

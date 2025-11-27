@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 @Repository
 public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
 

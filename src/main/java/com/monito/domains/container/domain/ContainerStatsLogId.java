@@ -6,7 +6,9 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+/**
+ 작성자: 백승준
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

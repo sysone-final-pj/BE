@@ -11,7 +11,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+/**
+ 작성자: 백승준
+ */
 @Repository
 public interface ContainerRepository extends JpaRepository<Container, Long>, JpaSpecificationExecutor<Container> {
 

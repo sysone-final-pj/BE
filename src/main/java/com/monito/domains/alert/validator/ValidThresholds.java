@@ -1,3 +1,8 @@
+/**
+ * 알림 규칙 임계값 검증 Annotation
+ * - 최소 1개 이상의 임계값 필수
+ * - 설정된 임계값들의 순서 검증 (info < warning < high < critical)
+ */
 package com.monito.domains.alert.validator;
 
 import jakarta.validation.Constraint;
@@ -8,11 +13,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 /**
- * 알림 규칙 임계값 검증 Annotation
- * - 최소 1개 이상의 임계값 필수
- * - 설정된 임계값들의 순서 검증 (info < warning < high < critical)
+ 작성자: 이지민
  */
 @Documented
 @Constraint(validatedBy = ThresholdsValidator.class)

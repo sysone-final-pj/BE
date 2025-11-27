@@ -1,3 +1,8 @@
+/**
+ * OOM 이벤트 WebSocket 메시지
+ * - 실시간 OOM 발생 시 클라이언트에게 전송
+ * - 클라이언트는 이 데이터로 차트를 증분 업데이트
+ */
 package com.monito.domains.container.dto.response;
 
 import com.monito.global.cache.OomEvent;
@@ -9,9 +14,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 /**
- * OOM 이벤트 WebSocket 메시지
- * - 실시간 OOM 발생 시 클라이언트에게 전송
- * - 클라이언트는 이 데이터로 차트를 증분 업데이트
+ 작성자: 백승준
  */
 @Getter
 @Builder

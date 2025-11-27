@@ -17,7 +17,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+/**
+ 작성자: 백승준
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

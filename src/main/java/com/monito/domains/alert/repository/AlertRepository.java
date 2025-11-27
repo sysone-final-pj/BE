@@ -10,7 +10,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
     /**

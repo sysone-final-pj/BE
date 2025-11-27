@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 @Slf4j
 @Component
+/**
+ 작성자: 백승준
+ */
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;

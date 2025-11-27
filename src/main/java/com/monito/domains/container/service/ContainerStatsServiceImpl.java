@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 통계 수집 및 저장 서비스 구현체
+ */
 package com.monito.domains.container.service;
 
 import com.monito.domains.agent.domain.Agent;
@@ -12,8 +15,6 @@ import com.monito.domains.container.dto.response.ContainerSummarySnapshot;
 import com.monito.domains.dashboard.dto.response.ContainerCardResponseDTO;
 import com.monito.domains.dashboard.dto.response.DashboardContainerDetailDTO;
 import com.monito.domains.container.repository.ContainerRepository;
-import com.monito.domains.container.repository.ContainerLogRepository;
-import com.monito.domains.dashboard.repository.DashboardRepository;
 import com.monito.global.cache.ContainerLastStatsCache;
 import com.monito.global.cache.ContainerSummaryCache;
 import com.monito.global.cache.CpuMetricsBufferCache;
@@ -39,7 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 컨테이너 통계 수집 및 저장 서비스 구현체
+ 공동 작성자: 백승준, 이지민
  */
 @Service
 @RequiredArgsConstructor
@@ -48,8 +49,6 @@ public class ContainerStatsServiceImpl implements ContainerStatsService {
 
     private final ContainerStatsLogRepository statsLogRepository;
     private final ContainerRepository containerRepository;
-    private final ContainerLogRepository containerLogRepository;
-    private final DashboardRepository dashboardRepository;
     private final AgentRepository agentRepository;
     private final ContainerMetricsCalculator metricsCalculator;
     private final AlertEvaluationFacade alertEvaluationFacade;

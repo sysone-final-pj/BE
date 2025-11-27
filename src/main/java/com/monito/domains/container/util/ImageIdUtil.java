@@ -1,7 +1,10 @@
+/**
+ * Docker Image ID 유틸리티
+ */
 package com.monito.domains.container.util;
 
 /**
- * Docker Image ID 유틸리티
+ 작성자: 백승준
  */
 public class ImageIdUtil {
 

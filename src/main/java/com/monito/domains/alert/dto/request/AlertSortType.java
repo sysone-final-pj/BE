@@ -1,10 +1,13 @@
+/**
+ * Alert 정렬 타입
+ */
 package com.monito.domains.alert.dto.request;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Alert 정렬 타입
+ 작성자: 이지민
  */
 @Getter
 @RequiredArgsConstructor

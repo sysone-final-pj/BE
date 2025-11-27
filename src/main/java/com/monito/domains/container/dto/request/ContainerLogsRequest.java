@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 로그 조회 요청 DTO (커서 기반 무한 스크롤)
+ */
 package com.monito.domains.container.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -12,7 +15,7 @@ import org.springframework.data.domain.Sort;
 import java.time.LocalDateTime;
 
 /**
- * 컨테이너 로그 조회 요청 DTO (커서 기반 무한 스크롤)
+ 작성자: 백승준
  */
 @Getter
 @Builder

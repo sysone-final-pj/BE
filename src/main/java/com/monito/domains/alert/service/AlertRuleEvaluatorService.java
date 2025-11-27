@@ -1,10 +1,12 @@
-package com.monito.domains.alert.service;
-
-import com.monito.domains.container.domain.ContainerStatsLog;
-
 /**
  * 컨테이너 메트릭과 사용자별 AlertRule을 비교하여 알림 발생 여부 판단
  * - 중복 알림 방지 (쿨다운)
+ */
+package com.monito.domains.alert.service;
+
+import com.monito.domains.container.domain.ContainerStatsLog;
+/**
+ 작성자: 이지민
  */
 public interface AlertRuleEvaluatorService {
 

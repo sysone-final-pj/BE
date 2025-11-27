@@ -3,6 +3,9 @@ package com.monito.domains.dashboard.dto.request;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ 작성자: 이지민
+ */
 @Getter
 @RequiredArgsConstructor
 public enum TimeRange {

@@ -1,3 +1,6 @@
+/**
+ * Network 메트릭 데이터
+ */
 package com.monito.domains.container.dto.response.metrics;
 
 import com.monito.domains.container.domain.ContainerStatsLog;
@@ -10,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Network 메트릭 데이터
+ 작성자: 백승준
  */
 @Getter
 @Builder

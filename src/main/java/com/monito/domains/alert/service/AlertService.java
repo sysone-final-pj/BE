@@ -7,7 +7,9 @@ import com.monito.domains.alert.dto.response.AlertDetailResponseDTO;
 import com.monito.domains.alert.dto.response.AlertListItemResponseDTO;
 
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 public interface AlertService {
 
     /**

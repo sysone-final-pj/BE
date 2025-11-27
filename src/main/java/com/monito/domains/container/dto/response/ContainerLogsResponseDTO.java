@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 로그 목록 응답 DTO (커서 기반)
+ */
 package com.monito.domains.container.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -8,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 컨테이너 로그 목록 응답 DTO (커서 기반)
+ 작성자: 백승준
  */
 @Getter
 @Builder

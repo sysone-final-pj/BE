@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+/**
+ 작성자: 이지민
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

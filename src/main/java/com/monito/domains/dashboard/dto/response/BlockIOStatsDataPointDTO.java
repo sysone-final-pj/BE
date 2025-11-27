@@ -1,3 +1,7 @@
+/**
+ * Block I/O 통계 데이터 포인트 DTO
+ * 특정 시점의 읽기/쓰기 속도 데이터
+ */
 package com.monito.domains.dashboard.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -7,8 +11,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * Block I/O 통계 데이터 포인트 DTO
- * 특정 시점의 읽기/쓰기 속도 데이터
+ 작성자: 이지민
  */
 @Getter
 @Builder

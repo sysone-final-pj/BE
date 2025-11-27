@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 정보
+ */
 package com.monito.domains.container.dto.response.metrics;
 
 import com.monito.domains.agent.domain.Agent;
@@ -10,7 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * 컨테이너 정보
+ 작성자: 백승준
  */
 @Getter
 @Builder

@@ -1,3 +1,8 @@
+/**
+ * 컨테이너 상세 정보 응답 DTO
+ * - CPU, Memory, Network, OOM 메트릭을 한번에 반환
+ * - 로그는 별도 API로 제공
+ */
 package com.monito.domains.container.dto.response;
 
 import com.monito.domains.agent.domain.Agent;
@@ -17,9 +22,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 컨테이너 상세 정보 응답 DTO
- * - CPU, Memory, Network, OOM 메트릭을 한번에 반환
- * - 로그는 별도 API로 제공
+ 작성자: 백승준
  */
 @Getter
 @Builder

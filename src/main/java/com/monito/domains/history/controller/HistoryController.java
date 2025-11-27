@@ -1,3 +1,7 @@
+/**
+ * 컨테이너 히스토리 API Controller
+ * - 컨테이너의 과거 메트릭 데이터 조회
+ */
 package com.monito.domains.history.controller;
 
 import com.monito.domains.history.dto.request.ContainerChartRequest;
@@ -17,10 +21,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 /**
- * 컨테이너 히스토리 API Controller
- * - 컨테이너의 과거 메트릭 데이터 조회
+ 작성자: 이지민
  */
 @Tag(name = "Container History", description = "컨테이너 히스토리 조회 API - 과거 메트릭 데이터 조회 및 분석")
 @Slf4j

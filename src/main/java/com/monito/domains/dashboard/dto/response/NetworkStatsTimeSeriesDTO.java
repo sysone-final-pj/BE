@@ -8,7 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-
+/**
+ 작성자: 이지민
+ */
 @Getter
 @Builder
 @NoArgsConstructor

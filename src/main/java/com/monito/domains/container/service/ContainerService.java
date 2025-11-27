@@ -1,10 +1,13 @@
+/**
+ * 컨테이너 조회 서비스
+ */
 package com.monito.domains.container.service;
 
 import com.monito.domains.container.domain.ContainerHealth;
 import com.monito.domains.container.domain.ContainerSortField;
 import com.monito.domains.container.domain.ContainerState;
 import com.monito.domains.container.dto.request.ContainerLogsRequest;
-import com.monito.domains.container.dto.request.ContainerMetricsRequest;
+import com.monito.domains.container.dto.request.ContainerMetricsPageRequestDTO;
 import com.monito.domains.container.dto.request.ContainerSnapshotRequestDTO;
 import com.monito.domains.container.dto.response.ContainerDetailResponseDTO;
 import com.monito.domains.container.dto.response.ContainerLogsResponseDTO;
@@ -16,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 컨테이너 조회 서비스
+ 작성자: 백승준
  */
 public interface ContainerService {
 
@@ -45,7 +48,7 @@ public interface ContainerService {
      * @param request 시간 범위 및 필터 조건
      * @return 컨테이너 메트릭 상세 정보
      */
-    ContainerDetailResponseDTO getContainerMetrics(Long containerId, ContainerMetricsRequest request);
+    ContainerDetailResponseDTO getContainerMetrics(Long containerId, ContainerMetricsPageRequestDTO request);
 
     /**
      * 컨테이너 로그 조회 (커서 기반 무한 스크롤 + 다중 컨테이너 지원)
@@ -87,7 +90,7 @@ public interface ContainerService {
      * @param request 시간 범위 조건
      * @return CPU 사용률 시계열 응답
      */
-    TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsRequest request);
+    TimeSeriesResponse getCpuUsageTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request);
 
     /**
      * 메모리 사용률(%) 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
@@ -95,7 +98,7 @@ public interface ContainerService {
      * @param request 시간 범위 조건
      * @return 메모리 사용률 시계열 응답
      */
-    TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsRequest request);
+    TimeSeriesResponse getMemoryUsageTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request);
 
     /**
      * 네트워크 수신(RX) 속도 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
@@ -103,7 +106,7 @@ public interface ContainerService {
      * @param request 시간 범위 조건
      * @return 네트워크 수신 속도 시계열 응답 (bytes/sec)
      */
-    TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsRequest request);
+    TimeSeriesResponse getNetworkRxTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request);
 
     /**
      * 네트워크 송신(TX) 속도 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
@@ -111,7 +114,7 @@ public interface ContainerService {
      * @param request 시간 범위 조건
      * @return 네트워크 송신 속도 시계열 응답 (bytes/sec)
      */
-    TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsRequest request);
+    TimeSeriesResponse getNetworkTxTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request);
 
     /**
      * 네트워크 패킷 레이트 시계열 데이터 조회 (자동 다운샘플링 적용, 메타데이터 포함)
@@ -119,5 +122,5 @@ public interface ContainerService {
      * @param request 시간 범위 조건
      * @return 네트워크 패킷 레이트 시계열 응답 (packets/sec, RX+TX 합계)
      */
-    TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsRequest request);
+    TimeSeriesResponse getNetworkPacketsTimeSeries(Long containerId, ContainerMetricsPageRequestDTO request);
 }

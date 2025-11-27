@@ -1,3 +1,8 @@
+/**
+ * 알림 규칙 생성 요청 DTO
+ * - 컨테이너별 메트릭 임계값 및 알림 규칙 설정 시 사용
+ * - 임계값은 일부만 입력 가능 (최소 1개 이상 필수)
+ */
 package com.monito.domains.alert.dto.request;
 
 import com.monito.domains.alert.validator.ValidThresholds;
@@ -14,9 +19,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * 알림 규칙 생성 요청 DTO
- * - 컨테이너별 메트릭 임계값 및 알림 규칙 설정 시 사용
- * - 임계값은 일부만 입력 가능 (최소 1개 이상 필수)
+ 작성자: 이지민
  */
 @Getter
 @Builder

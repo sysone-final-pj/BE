@@ -1,3 +1,8 @@
+/**
+ * 파티셔닝된 로그 테이블의 오래된 파티션을 자동으로 삭제하는 스케줄러
+ * - 보관 기간: application.yml에서 설정 (기본 30일)
+ * - 실행 시간: application.yml에서 설정 (기본 매일 새벽 2시)
+ */
 package com.monito.global.scheduler;
 
 import java.time.LocalDate;
@@ -9,11 +14,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
 /**
- * 파티셔닝된 로그 테이블의 오래된 파티션을 자동으로 삭제하는 스케줄러
- * - 보관 기간: application.yml에서 설정 (기본 30일)
- * - 실행 시간: application.yml에서 설정 (기본 매일 새벽 2시)
+ 작성자: 백승준
  */
 @Component
 @RequiredArgsConstructor

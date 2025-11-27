@@ -21,7 +21,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+/**
+ 작성자: 백승준
+ */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {

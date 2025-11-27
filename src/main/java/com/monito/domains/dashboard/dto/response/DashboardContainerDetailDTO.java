@@ -1,3 +1,9 @@
+/**
+ * 대시보드 컨테이너 상세 정보 응답 DTO (중첩 구조)
+ * - 컨테이너 카드 클릭 시 상세 정보 표시용
+ * - WebSocket 실시간 업데이트용 (/topic/dashboard/detail/{id})
+ * - 최초 API 호출용 (/api/dashboard/containers/{id}/metrics)
+ */
 package com.monito.domains.dashboard.dto.response;
 
 import com.monito.domains.agent.domain.Agent;
@@ -17,10 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 대시보드 컨테이너 상세 정보 응답 DTO (중첩 구조)
- * - 컨테이너 카드 클릭 시 상세 정보 표시용
- * - WebSocket 실시간 업데이트용 (/topic/dashboard/detail/{id})
- * - 최초 API 호출용 (/api/dashboard/containers/{id}/metrics)
+ 작성자: 이지민
  */
 @Getter
 @Builder

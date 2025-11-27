@@ -14,7 +14,9 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-
+/**
+ 작성자: 백승준
+ */
 @Entity
 @Table(name = "containers")
 @SuperBuilder

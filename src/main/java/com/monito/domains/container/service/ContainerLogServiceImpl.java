@@ -1,3 +1,6 @@
+/**
+ * 컨테이너 로그 수집 및 저장 서비스 구현체
+ */
 package com.monito.domains.container.service;
 
 import com.monito.domains.agent.domain.Agent;
@@ -27,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 컨테이너 로그 수집 및 저장 서비스 구현체
+ 작성자: 백승준
  */
 @Service
 @RequiredArgsConstructor

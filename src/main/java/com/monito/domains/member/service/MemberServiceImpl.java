@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+/**
+ 작성자: 백승준
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

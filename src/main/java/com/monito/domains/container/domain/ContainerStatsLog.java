@@ -22,7 +22,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
+/**
+ 작성자: 백승준
+ */
 @Entity
 @Table(
         name = "container_stats_logs",

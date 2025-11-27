@@ -1,3 +1,11 @@
+/**
+ * Agent로부터 WebSocket으로 수신되는 전체 메트릭 데이터
+ * {
+ *   "agentKey": "...",
+ *   "timestamp": 1234567890,
+ *   "metrics": [...]
+ * }
+ */
 package com.monito.domains.agent.dto.request;
 
 import java.util.List;
@@ -9,12 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * Agent로부터 WebSocket으로 수신되는 전체 메트릭 데이터
- * {
- *   "agentKey": "...",
- *   "timestamp": 1234567890,
- *   "metrics": [...]
- * }
+ 작성자: 백승준
  */
 @Getter
 @Builder

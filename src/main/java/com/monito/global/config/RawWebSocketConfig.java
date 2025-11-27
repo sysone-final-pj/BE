@@ -1,3 +1,6 @@
+/**
+ * Raw WebSocket 설정 (Agent 전용)
+ */
 package com.monito.global.config;
 
 import com.monito.domains.agent.handler.AgentWebSocketHandler;
@@ -9,9 +12,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
-
 /**
- * Raw WebSocket 설정 (Agent 전용)
+ 작성자: 백승준
  */
 @Configuration
 @EnableWebSocket

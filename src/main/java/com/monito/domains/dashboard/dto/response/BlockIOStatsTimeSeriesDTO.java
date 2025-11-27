@@ -1,3 +1,7 @@
+/**
+ * Block I/O 통계 시계열 데이터 DTO
+ * 특정 시간 범위 동안의 읽기/쓰기 속도 변화를 나타냄
+ */
 package com.monito.domains.dashboard.dto.response;
 
 import com.monito.domains.dashboard.dto.request.TimeRange;
@@ -8,8 +12,7 @@ import lombok.Getter;
 import java.util.List;
 
 /**
- * Block I/O 통계 시계열 데이터 DTO
- * 특정 시간 범위 동안의 읽기/쓰기 속도 변화를 나타냄
+ 작성자: 이지민
  */
 @Getter
 @Builder

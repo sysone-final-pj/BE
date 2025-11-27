@@ -8,7 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-
+/**
+ 작성자: 백승준
+ */
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

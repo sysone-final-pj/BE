@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-
+/**
+ 작성자: 백승준
+ */
 @Repository
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     Optional<Favorite> findByMemberIdAndContainerId(Long memberId, Long containerId);
