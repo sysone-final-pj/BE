@@ -22,7 +22,7 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 /**
- 작성자: 백승준
+ 작성자: 이지민
  */
 @Slf4j
 @Component

@@ -3,7 +3,7 @@ package com.monito.global.exception;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 /**
- 작성자: 백승준
+ 공동 작성자: 백승준, 이지민
  */
 @RequiredArgsConstructor
 @Getter
